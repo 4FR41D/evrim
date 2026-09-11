@@ -491,6 +491,29 @@
     "dogru": 1,
     "aciklama": "Parametreli sorgu, girdiyi koddan ayırır — enjeksiyonun köklü çözümü budur; kara liste/escape güvenilmez."
    }
+  },
+  {
+   "no": 24,
+   "baslik": "Bonus: Termux ile Telefonda Linux — Bilgisayarsız Geliştirme Ortamı",
+   "ozet": "Termux, Android telefonunda gerçek bir Linux terminali çalıştırır: ücretsiz, rootsuz, reklamsız. Kurulum: Play Store veya F-Droid'den 'Termux' uygulamasını kur. İlk komutlar: (1) pkg update -y && pkg upgrade -y (2) pkg install -y nodejs-lts git python nano (3) node --version → v20+ görünmeli. Repo klonlama: git clone https://github.com/4FR41D/evrim && cd evrim. Depolama erişimi: termux-setup-storage. SSH ile uzaktan bağlanma: pkg install openssh, sshd, passwd. Kalıcı kısayol: termux-widget ile script çalıştır. Not: iOS'ta Termux yoktur; iOS için iSH veya web tabanlı GitHub Codespaces (ayda 120 saat ücretsiz, tarayıcıdan Linux) kullanılır. EVRIM'in ev bulutu zaten tarayıcıda çalışır — Linux şart değildir.",
+   "kavramlar": [
+    "Termux",
+    "pkg",
+    "Linux terminali",
+    "Codespaces",
+    "sshd"
+   ],
+   "quiz": {
+    "soru": "Termux'ta Node.js kurmanın doğru komutu nedir?",
+    "secenekler": [
+     "apt-get install node",
+     "pkg install nodejs-lts",
+     "npm install node",
+     "sudo yum install nodejs"
+    ],
+    "dogru": 1,
+    "aciklama": "Termux kendi pkg yöneticisini kullanır; nodejs-lts paketi Node.js + npm getirir. sudo gerekmez."
+   }
   }
  ]
 }
