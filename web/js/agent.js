@@ -74,6 +74,12 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('repo_bul', 'AÇIK KAYNAK / GITHUB REPO ARAMA (anahtarsız): açık repo, kütüphane, git projesi, araç ararken çağır. İngilizce sorgu daha iyi sonuç verir (örn. "self improving ai agent"). Sonuçları tabloyla sun: ad, ⭐, dil, lisans, link.', {
+    sorgu: { type: 'string', description: 'arama terimleri (İngilizce önerilir)' },
+    dil: { type: 'string', description: 'dil filtresi: python, javascript, julia… (isteğe bağlı)' },
+    sirala: { type: 'string', description: 'stars (varsayılan) | updated | forks' },
+    adet: { type: 'number', description: 'kaç sonuç (1-10, varsayılan 5)' },
+  }, ['sorgu']),
   F('site_tara', 'SİTE TARAYICI: kullanıcı bir site/URL verip "tara/incele/analiz et/özetle/ne sitesi bu" derse çağır. Siteyi anahtarsız okuyucuyla tarar: başlık, açıklama, bölüm başlıkları, iç/dış linkler, kelime sayısı; derinlik=2 verilirse iç linklerden 2 alt sayfayı da okur. Raporu BLUF + tabloyla sun (ne sitesi, bölümler, önemli linkler, değerlendirme).', {
     url: { type: 'string', description: 'tam adres, https:// ile' },
     derinlik: { type: 'number', description: '0 = sadece ana sayfa (varsayılan); 2 = ana sayfa + 2 alt sayfa' },
@@ -592,6 +598,37 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async repo_bul({ sorgu, dil, sirala, adet }) {
+    const q = String(sorgu || '').trim();
+    if (!q) return { hata: 'sorgu boş' };
+    const lim = Math.max(1, Math.min(10, Number(adet) || 5));
+    let qs = q;
+    if (dil) qs += ` language:${String(dil).trim()}`;
+    const sort = ['stars', 'updated', 'forks'].includes(String(sirala)) ? String(sirala) : 'stars';
+    const url = 'https://api.github.com/search/repositories?q=' + encodeURIComponent(qs)
+      + `&sort=${sort}&order=desc&per_page=${lim}`;
+    try {
+      const r = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+      if (r.status === 403 || r.status === 429) return { hata: 'GitHub arama limiti dolu (anahtarsız ~10 istek/dk) — 1 dk sonra tekrar dene' };
+      if (!r.ok) return { hata: `GitHub arama yanıt vermedi (${r.status})` };
+      const j = await r.json();
+      const items = (j.items || []).slice(0, lim).map((it) => ({
+        ad: it.full_name,
+        aciklama: String(it.description || '').slice(0, 160),
+        yildiz: it.stargazers_count,
+        dil: it.language || null,
+        lisans: (it.license && it.license.spdx_id) || null,
+        guncelleme: String(it.updated_at || '').slice(0, 10),
+        url: it.html_url,
+      }));
+      if (!items.length) return { ok: true, sorgu: q, sonuc: [], not: 'Sonuç yok — sorguyu daha genel/İngilizce terimlerle tekrar dene.' };
+      return {
+        ok: true, sorgu: q, toplam: j.total_count, sonuc: items,
+        not: 'Tabloyla sun (ad | ⭐ | dil | lisans); en uygun 2-3 repo için 1 cümle gerekçe; GPL gibi bulaşıcı lisanslara dikkat çek.',
+      };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async site_tara({ url, derinlik }) {
     const u = String(url || '').trim();
     if (!/^https?:\/\/[^\s]+$/i.test(u)) return { hata: 'geçersiz adres (https:// ile başlamalı)' };
@@ -907,6 +944,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    repo_bul: (args.sorgu) ? `🐙 Repo ${done ? (bad ? 'bulunamadı' : 'bulundu') : 'aranıyor'}: ${String(args.sorgu).slice(0, 30)}` : `🐙 Açık kaynak ${done ? 'arandı' : 'aranıyor'}`,
     site_tara: (() => { const h = String(args.url || '').replace(/^https?:\/\//, '').split('/')[0]; return done ? (bad ? `🌐 ${h} taranamadı` : `🌐 ${h} tarandı`) : `🌐 ${h} taranıyor`; })(),
     ode_coz: done ? (bad ? '∫ Denklem çözülemedi' : '∫ Denklem çözüldü (RK4/Euler)') : '∫ Diferansiyel denklem çözülüyor',
     ders_calis: done ? `🎓 Ders ${args.ders || ''} hazır`.trim() : `🎓 Ders ${args.ders || 'sıradaki'} getiriliyor`.trim(),

@@ -794,5 +794,42 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 27) AÇIK BULMA: repo_bul (GitHub arama) + persona menüde ================= */
+{
+  let round = 0; const calls = [];
+  const GH = { total_count: 2, items: [
+    { full_name: 'foo/selfai', description: 'Self improving ai agent', stargazers_count: 1200, language: 'TypeScript', license: { spdx_id: 'MIT' }, updated_at: '2026-09-01T00:00:00Z', html_url: 'https://github.com/foo/selfai' },
+    { full_name: 'bar/evol', description: 'Evolving assistant', stargazers_count: 300, language: 'Python', license: { spdx_id: 'GPL-3.0' }, updated_at: '2026-08-20T00:00:00Z', html_url: 'https://github.com/bar/evol' },
+  ] };
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('api.github.com/search')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => GH, text: async () => JSON.stringify(GH) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'repo_bul', args: { sorgu: 'self improving ai agent' } });
+      return fakeRes(body, null, 'İşte açık kaynak repolar.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Bulan'; $(w, '#npCreate').click(); await wait(250);
+  ok('27. Açık Bulma botu menüde', $(w, '#personaList') && $(w, '#personaList').textContent.includes('Açık Bulma'));
+  $(w, '#input').value = 'açık kaynak kendini geliştiren ai repoları bul'; $(w, '#send').click();
+  await wait(2200);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r && Array.isArray(r.sonuc));
+  ok('27. GitHub sonuçları ayrıştırıldı', R?.ok === true && R.sonuc.length === 2 && R.sonuc[0].ad === 'foo/selfai' && R.sonuc[0].yildiz === 1200);
+  ok('27. lisans + link korundu', R?.sonuc[1]?.lisans === 'GPL-3.0' && R.sonuc[1].url.includes('github.com'));
+  ok('27. çip: 🐙 Repo', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🐙')));
+  ok('27. araç listesinde repo_bul var', calls.filter((c) => c?.tools).some((c) => c.tools.some((t) => t.function?.name === 'repo_bul' || t.name === 'repo_bul')));
+  ok('27. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
