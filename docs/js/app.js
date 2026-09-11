@@ -485,7 +485,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'wasm') {
+  if (a.houseKey) {
+    pill.textContent = '⚡ ev anahtarı · herkes için hazır';
+    pill.className = 'pill ok';
+    setBrainBar(null);
+  } else if (a.id === 'wasm') {
     pill.textContent = '🧠 küçük beyin · cihazında';
     pill.className = 'pill ok';
     setBrainBar(null);

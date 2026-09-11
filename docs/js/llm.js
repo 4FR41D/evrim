@@ -11,6 +11,7 @@ import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI }
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 import { houseStatus, probeHouse } from './house.js';
 import { wasmStatus } from './wasm.js';
+import { HOUSE_KEY, HOUSE_PROVIDER } from './housekey.js';
 
 export const PROVIDERS = {
   puter: {
@@ -85,7 +86,8 @@ export function detectProvider(key) {
 /** O an hangi beyin kullanılacak? */
 export function active() {
   const s = getSettings();
-  const key = (s.apiKey || '').trim();
+  const key = (s.apiKey || '').trim() || HOUSE_KEY;   // v27: ev anahtarı = platform anahtarı
+  const houseKey = !(s.apiKey || '').trim() && !!HOUSE_KEY;
   // 0-) Ev bulutu bağlıysa (WebRTC): sıfır giriş, sıfır sunucu, sıfır anahtar
   if (!key && houseStatus().ready) {
     return { id: 'house', key: '', def: { name: 'Ev bulutu', format: 'house', defaultModel: 'ev-beyni' }, model: 'ev bulutu (WebRTC)' };
@@ -107,6 +109,10 @@ export function active() {
     return { id: 'nano', key: '', def: PROVIDERS.nano, model: 'Gemini Nano (Chrome)' };
   }
 
+  // 0z) Ev anahtarı: sağlayıcıyı kendim wire ederim (kullanıcı hiçbir şey seçmez)
+  if (houseKey && PROVIDERS[HOUSE_PROVIDER]) {
+    return { id: HOUSE_PROVIDER, key, def: PROVIDERS[HOUSE_PROVIDER], model: s.model || PROVIDERS[HOUSE_PROVIDER].defaultModel, houseKey: true };
+  }
   // 1) Kullanıcı açıkça bir sağlayıcı seçtiyse
   if (s.provider && s.provider !== 'auto' && s.provider !== 'local') {
     if (key && PROVIDERS[s.provider]) {

@@ -364,5 +364,32 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 11) EV ANAHTARI: yeni kullanıcı, sıfır kurulum, anında GERÇEK cevap ================= */
+{
+  let groqCalls = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; groqCalls++;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [{ id: 'llama-3.1-8b-instant' }] }) };
+      return fakeRes(body, null, 'Kuantum dolanıklık: iki parçacığın ortak kaderi paylaşmasıdır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_evtest123';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'YeniKullanıcı'; $(w, '#npCreate').click(); await wait(250);
+  ok('11. pill: ev anahtarı hazır', ($(w, '#statusPill')?.textContent || '').includes('ev anahtarı'));
+  $(w, '#input').value = 'kuantum dolanıklık nedir'; $(w, '#send').click();
+  await wait(2500);
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('11. yeni kullanıcı: sıfır kurulumla anında gerçek cevap', ms.some((m) => m.role === 'assistant' && String(m.content).includes('Kuantum dolanıklık')));
+  ok('11. kart/popup/indirme YOK', !$$(w, '#msgs .card').length && groqCalls >= 1);
+  ok('11. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
