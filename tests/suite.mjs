@@ -977,5 +977,45 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 31) sinir_agi: XOR %100 + sinüs kayıp düşüşü + ders 26 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'sinir_agi', args: { gorev: 'xor' } });
+      if (round === 2) return fakeRes(body, { name: 'sinir_agi', args: { gorev: 'sinus' } });
+      if (round === 3) return fakeRes(body, { name: 'ders_calis', args: { ders: 26 } });
+      return fakeRes(body, null, 'Eğitim sonuçları burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Ağ'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'xor için sinir ağı eğit'; $(w, '#send').click();
+  await wait(4500);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const xor = R.find((r) => r?.ok && r.gorev === 'xor');
+  const sin = R.find((r) => r?.ok && r.gorev === 'sinus');
+  const d26 = R.find((r) => r?.ok && r.ders === 26);
+  ok('31. XOR %100 öğrenildi', !!xor && xor.dogruluk === '100%' && xor.sonKayip < 0.01);
+  ok('31. XOR tahminleri doğru', !!xor && xor.ornekler?.length === 4 && xor.ornekler.every((o) => Math.abs(o.tahmin - o.beklenen) < 0.1));
+  ok('31. sinüs: kayıp düştü (<0.05)', !!sin && sin.sonKayip < 0.05 && sin.sonKayip < sin.baslangicKaybi);
+  ok('31. kayıp eğrisi tablosu var', !!xor && String(xor.tabloMarkdown).includes('| tur |'));
+  ok('31. ders 26 (Flux bonusu) geldi', !!d26 && String(d26.baslik).includes('Derin Öğrenme'));
+  ok('31. çip: 🧮', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🧮')));
+  ok('31. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

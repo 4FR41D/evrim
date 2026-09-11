@@ -539,6 +539,30 @@
     "dogru": 1,
     "aciklama": "H + CNOT, dolanık Bell durumu üretir: ölçüm yalnız |00> veya |11> verir, asla |01>/|10> değil."
    }
+  },
+  {
+   "no": 26,
+   "baslik": "Bonus: Sıfırdan Derin Öğrenme — Flux.jl ve Geri Yayılım",
+   "ozet": "Flux.jl (Julia, MIT) 'matematiği biz hallederiz' der: model = Chain(Dense(2,8,tanh), Dense(8,1)) gibi katmanlar zinciri; eğitim = kayıp fonksiyonunu gradyan azaltmayla küçültmek. Otomatik türev (Zygote) her parametre için ∂L/∂w hesaplar; geri yayılım bunu zincir kuralıyla katman katman geriye taşır. Adım: w ← w − lr·∂L/∂w. Gizli katman doğrusal olmayan aktivasyonla (tanh/ReLU) ayrılmazsa ağ çöker (yalnız doğrusal kalır). EVRIM'in sinir_agi aracı bu döngüyü (ileri geçiş → kayıp → geri yayılım → SGD) tarayıcıda saf JS ile çalıştırır: XOR, daire sınıflandırma, sinüs regresyonu.",
+   "kavramlar": [
+    "katman (Dense)",
+    "aktivasyon",
+    "kayıp fonksiyonu",
+    "gradyan azaltma",
+    "geri yayılım",
+    "otomatik türev"
+   ],
+   "quiz": {
+    "soru": "Geri yayılım (backpropagation) tam olarak neyi hesaplar?",
+    "secenekler": [
+     "Tahminlerin ortalamasını",
+     "Kaybın her ağırlığa göre gradyanını (∂L/∂w)",
+     "Veri kümesinin boyutunu",
+     "Aktivasyon fonksiyonunun tersini"
+    ],
+    "dogru": 1,
+    "aciklama": "Backprop, zincir kuralıyla kaybın tüm parametrelere göre gradyanlarını üretir; SGD bunlarla ağırlıkları günceller."
+   }
   }
  ]
 }

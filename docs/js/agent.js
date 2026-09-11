@@ -74,6 +74,12 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('sinir_agi', 'SİNİR AĞI EĞİTİCİ (Flux.jl ruhu, tarayıcıda): küçük bir yapay sinir ağını SIFIRDAN eğitir — ileri geçiş, kayıp, geri yayılım, SGD (saf JS). Hazır görevler: "xor" (klasik mantık), "daire" (2B sınıflandırma), "sinus" (regresyon). Kayıp eğrisi + doğruluk + örnek tahminler döner. Kullanıcı sinir ağı/eğitim/derin öğrenme demosu isterse çağır.', {
+    gorev: { type: 'string', description: 'xor | daire | sinus' },
+    turler: { type: 'number', description: 'epoch sayısı (varsayılan göreve göre yeterli)' },
+    ogrenmeOrani: { type: 'number', description: 'learning rate (varsayılan göreve göre)' },
+    gizli: { type: 'number', description: 'gizli katman nöronu 2-16 (varsayılan 4-8)' },
+  }, ['gorev']),
   F('kuantum_devre', 'KUANTUM DEVRE SİMÜLATÖRÜ (PennyLane ruhu, tarayıcıda): 1-3 kübitlik devreyi durum vektörüyle simüle eder. Kapılar: X, Y, Z, H, S, T, RX, RY, RZ (açı radyan), CNOT. Ölçüm olasılıkları + genlik tablosu döner. Kuantum örneği/simülasyonu istenince çağır.', {
     qubit: { type: 'number', description: 'kübit sayısı 1-3 (varsayılan 2)' },
     adimlar: { type: 'string', description: 'JSON dizi: [{"kapi":"H","hedef":0},{"kapi":"CNOT","kontrol":0,"hedef":1},{"kapi":"RX","hedef":0,"aci":1.5708}]' },
@@ -607,6 +613,81 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async sinir_agi({ gorev, turler, ogrenmeOrani, gizli }) {
+    try {
+      const g = String(gorev || '').toLocaleLowerCase('tr');
+      if (!['xor', 'daire', 'sinus'].includes(g)) return { hata: 'görev xor | daire | sinus olmalı' };
+      let seed = 987654321;
+      const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      const X = []; const Y = [];
+      if (g === 'xor') { X.push([0, 0], [0, 1], [1, 0], [1, 1]); Y.push([0], [1], [1], [0]); }
+      else if (g === 'daire') {
+        while (X.length < 120) {
+          const ic = X.length < 60;
+          const r = ic ? 0.25 + rnd() * 0.65 : 1.4 + rnd() * 0.6;
+          const a = rnd() * Math.PI * 2;
+          X.push([+(r * Math.cos(a)).toFixed(4), +(r * Math.sin(a)).toFixed(4)]);
+          Y.push([ic ? 1 : 0]);
+        }
+      } else {
+        for (let i = 0; i < 64; i++) { const x = (i / 63) * 2 * Math.PI; X.push([+(x / Math.PI - 1).toFixed(5)]); Y.push([+Math.sin(x).toFixed(5)]); }
+      }
+      const inN = X[0].length; const outN = 1;
+      const H = Math.max(2, Math.min(16, Number(gizli) || (g === 'xor' ? 4 : 8)));
+      const lr = Number(ogrenmeOrani) > 0 ? Math.min(2, Number(ogrenmeOrani)) : (g === 'xor' ? 0.5 : g === 'daire' ? 0.15 : 0.08);
+      const E = Math.max(200, Math.min(20000, Number(turler) || (g === 'xor' ? 3000 : 2500)));
+      const W1 = []; const b1 = []; const W2 = []; const b2 = [];
+      for (let i = 0; i < H; i++) { W1.push(Array.from({ length: inN }, () => (rnd() * 2 - 1) * 1.5)); b1.push(rnd() * 2 - 1); }
+      for (let k = 0; k < outN; k++) { W2.push(Array.from({ length: H }, () => (rnd() * 2 - 1) / Math.sqrt(H))); b2.push(0); }
+      const fwd = (x) => {
+        const h = W1.map((w, i) => Math.tanh(w.reduce((a, wi, j) => a + wi * x[j], 0) + b1[i]));
+        return W2.map((w) => w.reduce((a, wi, i) => a + wi * h[i], 0) + b2[0]);
+      };
+      let ilkKayip = null; const egris = [];
+      const N = X.length;
+      for (let e = 1; e <= E; e++) {
+        const dW1 = W1.map((w) => w.map(() => 0)); const db1 = b1.map(() => 0);
+        const dW2 = W2.map((w) => w.map(() => 0)); const db2 = [0];
+        let L = 0;
+        for (let s = 0; s < N; s++) {
+          const x = X[s];
+          const hp = W1.map((w, i) => w.reduce((a, wi, j) => a + wi * x[j], 0) + b1[i]);
+          const h = hp.map(Math.tanh);
+          const o = W2[0].reduce((a, wi, i) => a + wi * h[i], 0) + b2[0];
+          const d = o - Y[s][0]; L += d * d;
+          for (let i = 0; i < H; i++) dW2[0][i] += 2 * d * h[i];
+          db2[0] += 2 * d;
+          for (let i = 0; i < H; i++) {
+            const dp = 2 * d * W2[0][i] * (1 - h[i] * h[i]);
+            db1[i] += dp;
+            for (let j = 0; j < inN; j++) dW1[i][j] += dp * x[j];
+          }
+        }
+        L /= N;
+        for (let i = 0; i < H; i++) { for (let j = 0; j < inN; j++) W1[i][j] -= lr * dW1[i][j] / N; b1[i] -= lr * db1[i] / N; }
+        for (let i = 0; i < H; i++) W2[0][i] -= lr * dW2[0][i] / N;
+        b2[0] -= lr * db2[0] / N;
+        if (ilkKayip === null) ilkKayip = L;
+        if (e === 1 || e === Math.floor(E / 4) || e === Math.floor(E / 2) || e === Math.floor(3 * E / 4) || e === E) egris.push([e, +L.toFixed(6)]);
+      }
+      const sonKayip = egris[egris.length - 1][1];
+      const tabloMarkdown = '| tur | kayıp (MSE) |\n|---|---|\n' + egris.map(([e2, l]) => `| ${e2} | ${l} |`).join('\n');
+      const sonuc = { ok: true, gorev: g, turler: E, ogrenmeOrani: lr, gizli: H, baslangicKaybi: +ilkKayip.toFixed(4), sonKayip, tabloMarkdown };
+      if (g !== 'sinus') {
+        let dogru = 0;
+        for (let s = 0; s < N; s++) { const o = fwd(X[s])[0]; if ((o > 0.5 ? 1 : 0) === Y[s][0]) dogru++; }
+        sonuc.dogruluk = Math.round((dogru / N) * 100) + '%';
+      }
+      if (g === 'xor') {
+        sonuc.ornekler = X.map((x, i) => ({ girdi: `${x[0]} XOR ${x[1]}`, beklenen: Y[i][0], tahmin: +fwd(x)[0].toFixed(3) }));
+      } else if (g === 'sinus') {
+        sonuc.ornekler = [0, 15, 31, 47, 63].map((i) => ({ x: (X[i][0]).toFixed(2), beklenen: Y[i][0], tahmin: +fwd(X[i])[0].toFixed(3) }));
+      }
+      sonuc.not = 'Kayıp tablosunu cevabına markdown olarak koy; doğruluk/ornekleri yorumla; 1 cümleyle geri yayılımın ne yaptığını hatırlat.';
+      return sonuc;
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async kuantum_devre({ qubit, adimlar }) {
     try {
       const n = Math.max(1, Math.min(3, Number(qubit) || 2));
@@ -1063,6 +1144,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    sinir_agi: (args.gorev) ? `🧮 Sinir ağı ${done ? (bad ? 'eğitilemedi' : 'eğitildi (' + args.gorev + ')') : 'eğitiliyor (' + args.gorev + ')'}` : `🧮 Sinir ağı ${done ? 'eğitildi' : 'eğitiliyor'}`,
     kuantum_devre: done ? (bad ? '⚛ Kuantum devre çalışmadı' : '⚛ Kuantum devre simüle edildi') : '⚛ Kuantum devre simüle ediliyor',
     linux_komut: done ? (bad ? '🐧 Linux komutu başarısız' : '🐧 Linux komutu çalıştı') : '🐧 Linux komutu çalıştırılıyor',
     repo_bul: (args.sorgu) ? `🐙 Repo ${done ? (bad ? 'bulunamadı' : 'bulundu') : 'aranıyor'}: ${String(args.sorgu).slice(0, 30)}` : `🐙 Açık kaynak ${done ? 'arandı' : 'aranıyor'}`,
