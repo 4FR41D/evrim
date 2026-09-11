@@ -5,7 +5,7 @@
 
    Bütün araçlar TARAYICIDA çalışır: sunucu yok, ek API anahtarı yok.
    Sadece `wikipedia` dışarı çıkar (CORS'u açık, anahtar istemiyor). */
-import { all, insert, getSettings, now, storageSize, gunIsaretle } from './store.js';
+import { all, insert, update, remove, getSettings, now, storageSize, gunIsaretle } from './store.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import { rawChat, active as activeLLM } from './llm.js';
@@ -74,17 +74,41 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
-  F('hatirlatici', 'HATIRLATICI KUR (bildirimli): kullanıcı "X dakika/saat sonra hatırlat" derse çağır. Süre dolunca uygulama içi uyarı + telefon bildirimi gösterilir (sayfa açıkken). liste:true ile kurulu hatırlatıcıları getirir.', {
+  F('hatirlatici', 'HATIRLATICI KUR (bildirimli): kullanıcı "X dakika/saat sonra hatırlat" derse çağır. Süre dolunca uygulama içi uyarı + telefon bildirimi gösterilir (sayfa açıkken). liste:true ile kurulu hatırlatıcıları getirir. takvim:true ile .ics takvim dosyası da indirir (telefon takvimine eklenince sekme kapalıyken de çalar).', {
     mesaj: { type: 'string', description: 'hatırlatılacak şey' },
     dakika: { type: 'number', description: 'kaç dakika sonra (varsayılan 60)' },
     saat: { type: 'string', description: '"HH:MM" — belirli saatte (bugün geçtiyse yarın)' },
     liste: { type: 'boolean', description: 'true = kurulu hatırlatıcıları listele' },
+    takvim: { type: 'boolean', description: 'true = ayrıca .ics takvim dosyası indir' },
   }, []),
   F('gider', 'GİDER/GELİR DEFTERİ: kullanıcı harcama söylerse ("bugün 450 lira yakıt") kaydet; "özet/rapor/ne kadar harcadım" derse ozet:true ile aylık + kategori tablosu çıkar.', {
     tutar: { type: 'number', description: 'tutar (sayı)' },
     kategori: { type: 'string', description: 'yakıt, yemek, kira… (serbest)' },
     aciklama: { type: 'string', description: 'kısa açıklama' },
     ozet: { type: 'boolean', description: 'true = kayıt ekleme, özet rapor üret' },
+  }, []),
+  F('hava_durumu', 'HAVA DURUMU (anahtarsız, canlı): şehir ver; şu anki durum + günlük tahmin tablosu döner. "Yarın yağmur var mı", "hava nasıl" sorularında çağır.', {
+    sehir: { type: 'string', description: 'şehir adı (Türkçe yazılabilir, örn. "Gaziantep")' },
+    gun: { type: 'number', description: 'kaç günlük tahmin 1-7 (varsayılan 3)' },
+  }, ['sehir']),
+  F('doviz', 'DÖVİZ KURU (anahtarsız, ECB resmî günlük kurlar): "dolar kaç TL", "100 euro kaç lira" sorularında çağır. Kripto ve hisse YOKTUR — istenirse olmadığını söyle.', {
+    baz: { type: 'string', description: 'kaynak para kodu (USD, EUR, GBP, JPY, TRY… varsayılan USD)' },
+    hedef: { type: 'string', description: 'hedef para kodu (varsayılan TRY)' },
+    miktar: { type: 'number', description: 'çevrilecek tutar (varsayılan 1)' },
+  }, []),
+  F('ceviri', 'DİL ÇEVİRİSİ (anahtarsız): kısa metinleri çevirir (~1800 karakter altı; anonim günlük kota sınırlı). Kaynak dil verilmezse otomatik sezer (Türkçe karakter varsa tr, yoksa en).', {
+    metin: { type: 'string', description: 'çevrilecek metin' },
+    hedef: { type: 'string', description: 'hedef dil kodu (tr, en, de, fr, ar… verilmezse kaynağın tersi)' },
+    kaynak: { type: 'string', description: 'kaynak dil kodu (verilmezse otomatik)' },
+  }, ['metin']),
+  F('yapilac', 'YAPILACAKLAR LİSTESİ (kalıcı, cihazda): görev ekle/listele/tamamla/sil. "şunu unutma", "listemde ne var", "1. görevi tamamladım" isteklerinde çağır.', {
+    islem: { type: 'string', description: 'ekle | liste | tamamla | sil | temizle (tamamlananları siler)' },
+    baslik: { type: 'string', description: 'görev metni (ekle için)' },
+    no: { type: 'number', description: 'liste sırası (tamamla/sil için)' },
+  }, []),
+  F('aliskanlik', 'ALIŞKANLIK TAKİBİ + SERİ (kalıcı, cihazda): alışkanlık oluştur, "bugün yaptım" işaretle, kaç gün üst üste yaptığını raporla. "su içme alışkanlığı ekle", "bugün koştum", "alışkanlıklarım nasıl" isteklerinde çağır.', {
+    islem: { type: 'string', description: 'ekle | yapildi | durum | sil' },
+    ad: { type: 'string', description: 'alışkanlık adı (örn. "su iç")' },
   }, []),
   F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
   F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
@@ -663,7 +687,7 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
-  async hatirlatici({ mesaj, dakika, saat, liste }) {
+  async hatirlatici({ mesaj, dakika, saat, liste, takvim }) {
     if (liste) {
       const rs = all('reminders').filter((r) => !r.done);
       return { ok: true, adet: rs.length, hatirlaticilar: rs.slice(0, 20).map((r) => ({ mesaj: r.mesaj, zaman: new Date(r.dueAt).toLocaleString('tr-TR') })) };
@@ -682,7 +706,24 @@ const EXEC = {
       dueAt = Date.now() + dk * 60000;
     }
     insert('reminders', { mesaj: m, dueAt, done: false, createdAt: now() });
-    return { ok: true, mesaj: m, zaman: new Date(dueAt).toLocaleString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }), not: 'Kurulumu onayla; bildirimin çalışması için sekmenin açık kalması gerektiğini, izin istenirse bildirimin de geleceğini söyle.' };
+    const sonuc = { ok: true, mesaj: m, zaman: new Date(dueAt).toLocaleString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }), not: 'Kurulumu onayla; bildirimin çalışması için sekmenin açık kalması gerektiğini, izin istenirse bildirimin de geleceğini söyle.' };
+    if (takvim) {
+      const icsT = (d) => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EVRIM//hatirlatici//TR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:${dueAt}-${Date.now()}@evrim.local`, `DTSTAMP:${icsT(Date.now())}`, `DTSTART:${icsT(dueAt)}`, `SUMMARY:${m.replace(/[\r\n,;]/g, ' ').slice(0, 120)}`, 'DESCRIPTION:EVRIM hatirlaticisi', 'BEGIN:VALARM', 'TRIGGER:PT0S', 'ACTION:DISPLAY', 'DESCRIPTION:EVRIM hatirlaticisi', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      sonuc.ics = ics;
+      try {
+        if (typeof URL !== 'undefined' && URL.createObjectURL && typeof Blob !== 'undefined' && typeof document !== 'undefined' && document.createElement) {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+          a.download = 'evrim-hatirlatici.ics';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch {} }, 4000);
+          sonuc.takvim = 'indirildi';
+          sonuc.not = 'Kurulumu onayla; .ics dosyasının indiğini, telefon takvimine eklerse sekme kapalıyken de çalacağını söyle.';
+        } else { sonuc.takvim = 'hazir'; }
+      } catch { sonuc.takvim = 'hazir'; }
+    }
+    return sonuc;
   },
 
   async gider({ tutar, kategori, aciklama, ozet }) {
@@ -705,6 +746,128 @@ const EXEC = {
     if (!isFinite(t) || t === 0) return { hata: 'tutar sayı olmalı' };
     insert('expenses', { tutar: t, kategori: String(kategori || 'diğer').slice(0, 30), aciklama: String(aciklama || '').slice(0, 120), ts: Date.now(), createdAt: now() });
     return { ok: true, kayit: { tutar: t, kategori: kategori || 'diğer' }, not: 'Kaydı tek satırda onayla.' };
+  },
+
+  async hava_durumu({ sehir, gun }) {
+    const s0 = String(sehir || '').trim();
+    if (!s0) return { hata: 'şehir adı gerekli' };
+    const g = Math.min(Math.max(Number(gun) || 3, 1), 7);
+    const WC = { 0: 'Açık', 1: 'Az bulutlu', 2: 'Parçalı bulutlu', 3: 'Kapalı', 45: 'Sisli', 48: 'Kırağılı sis', 51: 'Hafif çisenti', 53: 'Çisenti', 55: 'Yoğun çisenti', 56: 'Donan çisenti', 57: 'Donan çisenti', 61: 'Hafif yağmur', 63: 'Yağmurlu', 65: 'Şiddetli yağmur', 66: 'Donan yağmur', 67: 'Donan yağmur', 71: 'Hafif kar', 73: 'Karlı', 75: 'Yoğun kar', 77: 'Kar taneleri', 80: 'Hafif sağanak', 81: 'Sağanak', 82: 'Şiddetli sağanak', 85: 'Kar sağanağı', 86: 'Yoğun kar sağanağı', 95: 'Gök gürültülü fırtına', 96: 'Dolulu fırtına', 99: 'Şiddetli dolu fırtınası' };
+    const wc = (c) => WC[c] || 'Bilinmiyor';
+    try {
+      const gr = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(s0)}&count=1&language=tr&format=json`);
+      if (!gr.ok) return { hata: 'şehir aranamadı (HTTP ' + gr.status + ')' };
+      const gj = await gr.json();
+      const loc = gj?.results?.[0];
+      if (!loc) return { hata: `"${s0}" bulunamadı — daha bilinen bir ad dene (örn. "Gaziantep").` };
+      const fr = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=${g}`);
+      if (!fr.ok) return { hata: 'hava verisi alınamadı (HTTP ' + fr.status + ')' };
+      const f = await fr.json();
+      const cur = f.current || {};
+      const yer = `${loc.name}${loc.admin1 && loc.admin1 !== loc.name ? ', ' + loc.admin1 : ''}${loc.country ? ' (' + loc.country + ')' : ''}`;
+      let tablo = '';
+      if (f.daily?.time?.length) {
+        tablo = '| gün | durum | en düşük | en yüksek | yağış % |\n|---|---|---|---|---|\n' + f.daily.time.map((d, i) => `| ${d} | ${wc(f.daily.weather_code?.[i])} | ${Math.round(f.daily.temperature_2m_min?.[i] ?? 0)}°C | ${Math.round(f.daily.temperature_2m_max?.[i] ?? 0)}°C | ${f.daily.precipitation_probability_max?.[i] ?? '-'} |`).join('\n');
+      }
+      return { ok: true, yer, simdi: { durum: wc(cur.weather_code), sicaklik: cur.temperature_2m, hissedilen: cur.apparent_temperature, nem: cur.relative_humidity_2m, ruzgar: cur.wind_speed_10m, yagis: cur.precipitation }, gunlukTablo: tablo, not: 'Önce şu anki durumu 1-2 cümleyle söyle, sonra tabloyu sun; yağış olasılığı yüksekse uyar.' };
+    } catch (e) { return { hata: 'hava servisine ulaşılamadı: ' + String(e.message || e).slice(0, 100) }; }
+  },
+
+  async doviz({ baz, hedef, miktar }) {
+    const b = String(baz || 'USD').trim().toUpperCase().slice(0, 3);
+    const h = String(hedef || 'TRY').trim().toUpperCase().slice(0, 3);
+    const m = Number(miktar) > 0 ? Number(miktar) : 1;
+    try {
+      const r = await fetch(`https://api.frankfurter.dev/v1/latest?base=${encodeURIComponent(b)}&symbols=${encodeURIComponent(h)}`);
+      if (!r.ok) return { hata: 'kur alınamadı (HTTP ' + r.status + ') — kod geçerli mi? (USD, EUR, TRY, GBP, JPY… kripto yok)' };
+      const j = await r.json();
+      const kur = j?.rates?.[h];
+      if (typeof kur !== 'number') return { hata: `${b}→${h} kuru yok (ECB ~30 para birimi; kripto/hisse YOK).` };
+      return { ok: true, baz: b, hedef: h, kur, miktar: m, sonuc: +(m * kur).toFixed(2), tarih: j.date, not: 'Tek satırda söyle: miktar, sonuç, kur ve tarih. Resmî ECB günlük kuru; kripto/borsa olmadığını belirt.' };
+    } catch (e) { return { hata: 'döviz servisine ulaşılamadı: ' + String(e.message || e).slice(0, 100) }; }
+  },
+
+  async ceviri({ metin, hedef, kaynak }) {
+    const t = String(metin || '').trim();
+    if (!t) return { hata: 'metin boş' };
+    if (t.length > 1800) return { hata: 'çok uzun — 1800 karakterden kısa parçalar hâlinde çevir.' };
+    const k = String(kaynak || '').trim().toLowerCase().slice(0, 2) || (/[çğıöşü]/i.test(t) ? 'tr' : 'en');
+    const h = String(hedef || '').trim().toLowerCase().slice(0, 2) || (k === 'tr' ? 'en' : 'tr');
+    try {
+      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=${k}|${h}`);
+      if (!r.ok) return { hata: 'çeviri alınamadı (HTTP ' + r.status + ')' };
+      const j = await r.json();
+      const out = j?.responseData?.translatedText;
+      if (!out || j.responseStatus !== 200) return { hata: 'çeviri boş döndü — anonim günlük kota dolmuş olabilir; yarın tekrar dene.' };
+      return { ok: true, kaynak: k, hedef: h, cevir: String(out), not: 'Çeviriyi aynen sun; kaynak dili kısaca belirt.' };
+    } catch (e) { return { hata: 'çeviri servisine ulaşılamadı: ' + String(e.message || e).slice(0, 100) }; }
+  },
+
+  async yapilac({ islem, baslik, no }) {
+    const op = String(islem || 'liste').trim().toLowerCase();
+    const kalan = () => all('todos').filter((x) => !x.done);
+    if (op === 'ekle') {
+      const t = String(baslik || '').trim();
+      if (!t) return { hata: 'başlık boş' };
+      insert('todos', { baslik: t.slice(0, 120), done: false, ts: Date.now(), createdAt: now() });
+      return { ok: true, eklenen: t.slice(0, 120), kalan: kalan().length, not: 'Tek satırda onayla, kalan görev sayısını söyle.' };
+    }
+    if (op === 'temizle') {
+      const dn = all('todos').filter((x) => x.done);
+      for (const x of dn) remove('todos', x.id);
+      return { ok: true, silinen: dn.length, kalan: kalan().length };
+    }
+    if (op === 'liste') {
+      const k = kalan();
+      const md = k.length ? k.map((x, i) => `${i + 1}. ${x.baslik}`).join('\n') : '(liste boş)';
+      return { ok: true, adet: k.length, liste: md, sonTamamlanan: all('todos').filter((x) => x.done).slice(-5).map((x) => x.baslik), not: 'Listeyi numaralı sun; "X tamam" derse tamamla.' };
+    }
+    const aktif = kalan();
+    let row = null;
+    const i = Number(no) - 1;
+    if (Number.isInteger(i) && i >= 0 && i < aktif.length) row = aktif[i];
+    else {
+      const q = String(no || baslik || '').trim().toLowerCase();
+      if (q) row = aktif.find((x) => String(x.baslik).toLowerCase().includes(q)) || null;
+    }
+    if (!row) return { hata: 'görev bulunamadı — önce liste ile numaraları göster.' };
+    if (op === 'sil') { remove('todos', row.id); return { ok: true, silinen: row.baslik, kalan: kalan().length }; }
+    update('todos', row.id, { done: true, doneTs: Date.now() });
+    return { ok: true, tamamlanan: row.baslik, kalan: kalan().length, not: 'Kısa tebrik et; kalanları hatırlat.' };
+  },
+
+  async aliskanlik({ islem, ad }) {
+    const op = String(islem || 'durum').trim().toLowerCase();
+    const svse = (d) => d.toLocaleDateString('sv-SE');
+    const bugun = svse(new Date());
+    const serisi = (h) => {
+      const set = new Set(h?.tarihler || []); let s2 = 0;
+      const d = new Date(); if (!set.has(svse(d))) d.setDate(d.getDate() - 1);
+      while (set.has(svse(d))) { s2++; d.setDate(d.getDate() - 1); }
+      return s2;
+    };
+    const nm = String(ad || '').trim().toLowerCase();
+    let h = nm ? (all('habits').find((x) => String(x.ad).toLowerCase().includes(nm)) || null) : null;
+    if (op === 'ekle' || (op === 'yapildi' && !h)) {
+      const t = String(ad || '').trim();
+      if (!t) return { hata: 'alışkanlık adı gerekli' };
+      if (!h) {
+        insert('habits', { ad: t.slice(0, 60), tarihler: op === 'yapildi' ? [bugun] : [], createdAt: now() });
+        h = all('habits').find((x) => x.ad === t.slice(0, 60));
+      }
+      return { ok: true, ad: h.ad, bugunIsaretli: (h.tarihler || []).includes(bugun), seri: serisi(h), not: op === 'yapildi' ? 'Bugün için işaretlendi — seri sayısını söyle, kısa motive et.' : 'Alışkanlık oluşturuldu — her "bugün yaptım" dediğinde yapildi ile işaretle.' };
+    }
+    if (!h) return { hata: 'alışkanlık bulunamadı — önce "X alışkanlığı ekle" de.' };
+    if (op === 'yapildi') {
+      const tl = Array.isArray(h.tarihler) ? h.tarihler : [];
+      if (!tl.includes(bugun)) { tl.push(bugun); update('habits', h.id, { tarihler: tl }); }
+      return { ok: true, ad: h.ad, seri: serisi(all('habits').find((x) => x.id === h.id)), not: 'Seri sayısını söyle, kısa motive et.' };
+    }
+    if (op === 'sil') { remove('habits', h.id); return { ok: true, silinen: h.ad }; }
+    const hs = all('habits');
+    if (!hs.length) return { ok: true, adet: 0, not: 'Henüz alışkanlık yok — "su iç", "kitap oku", "spor" gibi örnekler öner.' };
+    const tablo = '| alışkanlık | bugün | seri | toplam |\n|---|---|---|---|\n' + hs.map((x) => `| ${x.ad} | ${(x.tarihler || []).includes(bugun) ? '✅' : '—'} | ${serisi(x)} gün | ${(x.tarihler || []).length} |`).join('\n');
+    return { ok: true, adet: hs.length, tablo, not: 'Tabloyu sun; en uzun seriyi 1 cümleyle öne çıkar.' };
   },
 
   async oz_test() {
@@ -1793,6 +1956,11 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
     hatirlatici: done ? (bad ? '⏰ Hatırlatıcı kurulamadı' : (args.liste ? '⏰ Hatırlatıcılar listelendi' : '⏰ Hatırlatıcı kuruldu')) : '⏰ Hatırlatıcı kuruluyor',
     gider: done ? (bad ? '💸 Kayıt başarısız' : (args.ozet ? '💸 Gider özeti hazır' : '💸 Kaydedildi')) : '💸 Deftere işleniyor',
+    hava_durumu: done ? (bad ? '🌤️ Hava durumu alınamadı' : `🌤️ Hava durumu${args.sehir ? ': ' + String(args.sehir).slice(0, 18) : ''}`) : '🌤️ Hava durumuna bakıyor',
+    doviz: done ? (bad ? '💱 Kur alınamadı' : `💱 Kur hesaplandı: ${String(args.baz || 'USD')}→${String(args.hedef || 'TRY')}`) : '💱 Kura bakıyor',
+    ceviri: done ? (bad ? '🗣️ Çeviri başarısız' : `🗣️ Çevrildi${args.hedef ? ' (→' + String(args.hedef).slice(0, 5) + ')' : ''}`) : '🗣️ Çeviriyor',
+    yapilac: done ? (bad ? '🗓️ Görev işlemi başarısız' : `🗓️ Yapılacaklar: ${String(args.islem || 'liste').slice(0, 8)}`) : '🗓️ Görev listesi işleniyor',
+    aliskanlik: done ? (bad ? '💧 Alışkanlık başarısız' : `💧 Alışkanlık: ${String(args.islem || 'durum').slice(0, 8)}`) : '💧 Alışkanlık işleniyor',
     oz_test: done ? (bad ? '🧪 Öz test BAŞARISIZ' : '🧪 Öz test tamam') : '🧪 Öz test çalışıyor (canlı uygulama duman testi)',
     evrak_taslak: done ? (bad ? '📄 Taslak üretilemedi' : `📄 ${args.tip === 'resmi' ? 'Resmî yazı' : 'Dilekçe'} taslağı hazır`) : '📄 Evrak taslağı üretiliyor',
     otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',

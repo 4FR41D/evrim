@@ -32,6 +32,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **Günlük asistan (v56):** 🎙️ sesli mesaj yazdırma (Chrome), 📄 PDF okuma (metni sohbete gönderir),
   📷 fotoğraftan yazı okuma (OCR), ⏰ hatırlatıcı + bildirim, 💸 gider defteri, 📈 sohbet içi SVG grafik
   (` ```grafik ` bloğu), 🔥 günlük kullanım serisi, 🧾 tek dosya HTML yedek (tüm verin tek dosyada).
+- **Günlük asistan 2 (v57):** 🌤️ hava durumu (open-meteo), 💱 döviz kuru (ECB), 🗣️ dil çevirisi,
+  🗓️ yapılacaklar listesi, 💧 alışkanlık takibi + seri, 📅 hatırlatıcı → .ics takvim dosyası
+  (telefon takvimine eklenince sekme kapalıyken de çalar). Hepsi anahtarsız/ücretsiz.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
@@ -134,7 +137,7 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 31 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 36 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_ara: anahtarsız web araması (jina+ddg) → web_oku zinciri

@@ -111,7 +111,7 @@ export function remove(table, id) {
 export function find(table, id) { return rows(table).find((r) => r.id === id) || null; }
 
 // ---------- beyin (sistem promptu) sürüm geçmişi ----------
-export const BASE_PROMPT_VERSION = 11;
+export const BASE_PROMPT_VERSION = 12;
 
 export const BASE_PROMPT = `Sen EVRIM'sin — kullanıcısının işini gerçekten bitiren, onu tanıdıkça keskinleşen bir yapay zekâ asistanı.
 Sürüm: ${BASE_PROMPT_VERSION}
@@ -177,6 +177,7 @@ Uydurmak yerine araç kullan: bilmiyorsan \`wikipedia\`, hesaplayamıyorsan \`ca
 - Güncel/gerçek bilgi (haber, fiyat, sürüm, kişi/kurum) → ÖNCE \`web_ara\`, sonra en iyi sonucu \`web_oku\`; cevaba kaynak linki koy. Bilgin eskiyse tahmin etme, ara.
 - Kullanıcı site/URL verip tarama/inceleme/analiz isterse → \`site_tara\` (derinlik 2); raporu BLUF + tabloyla sun: ne sitesi, bölümler, önemli linkler, kısa değerlendirme.
 - Sayısal dizi/eğilim sunarken (kayıp eğrisi, histogram, yakınsama, gider dağılımı) tabloya EK olarak \`\`\`grafik bloğu üret: 1. satır "tip:cizgi" veya "tip:cubuk", 2. satır "baslik:...", sonraki satırlar "x,y" (en çok 12 nokta). Blok otomatik SVG grafiğe dönüşür.
+- Güncel hava için hava_durumu, döviz kuru için doviz, dil çevirisi için cevir aracını kullan (üçü de anahtarsız). Görev ve alışkanlık isteklerini yapilac/aliskanlik ile kalıcı yönet. Hatırlatıcı kurarken takvim:true ekle ki .ics dosyası telefon takvimine de eklenebilsin (sekme kapalıyken de çalar).
 - SAHİP kendi Linux makinesinde sistem işi isterse (paket kur, dosya, servis, betik çalıştır) → \`linux_komut\`; geri alınamaz işlemlerde (rm -rf, servis durdurma, drop) ÖNCE onay iste. Düğüm yanıt vermezse kurulumu hatırlat (linux-node/README.md). Başkasının sitesine/sistemine izinsiz erişim veya zafiyet taraması YAPMA.
 - Uzun konuşmalarda eski kısmı özet hafızadan takip et; kaldığın yerden devam et.
 - Cevabın sonunda uygunsa TEK satırlık 'sonraki adım' önerisi ver (dayatma değil, öneri).
@@ -240,7 +241,7 @@ export function rollbackPrompt(id) {
 }
 
 // ---------- yedekleme (cihazlar arası taşımak için) ----------
-const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations', 'profiles', 'personas', 'reminders', 'expenses'];
+const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations', 'profiles', 'personas', 'reminders', 'expenses', 'todos', 'habits'];
 
 export function exportData() {
   const out = { app: 'EVRIM-web', version: 1, exportedAt: now() };

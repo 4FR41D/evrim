@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v11 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 11') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v12 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 12') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -1449,6 +1449,87 @@ function makeBroker() {
   $(w, '#btnHtmlYedek').click(); // jsdom'da createObjectURL yok -> zarif yol
   await wait(150);
   ok('43. yedek düğmesi çökmüyor', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 44) hava_durumu + doviz + ceviri (anahtarsız dış API'ler) ================= */
+{
+  let round = 0; const calls = [];
+  const jsonRes = (o) => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => o });
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return jsonRes({ data: [] });
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'hava_durumu', args: { sehir: 'Gaziantep', gun: 3 } });
+      if (round === 2) return fakeRes(body, { name: 'doviz', args: { baz: 'USD', hedef: 'TRY', miktar: 100 } });
+      if (round === 3) return fakeRes(body, { name: 'ceviri', args: { metin: 'hello world', hedef: 'tr' } });
+      return fakeRes(body, null, 'Hava açık, 100 dolar 4860 TL, çeviri: merhaba dünya.');
+    }
+    if (u.includes('geocoding-api.open-meteo.com')) return jsonRes({ results: [{ name: 'Gaziantep', admin1: 'Gaziantep', country: 'Türkiye', latitude: 37.06, longitude: 37.38 }] });
+    if (u.includes('api.open-meteo.com')) return jsonRes({ current: { temperature_2m: 31.2, apparent_temperature: 30, relative_humidity_2m: 22, precipitation: 0, weather_code: 0, wind_speed_10m: 11 }, daily: { time: ['2026-09-12', '2026-09-13', '2026-09-14'], weather_code: [0, 2, 61], temperature_2m_max: [33, 32, 27], temperature_2m_min: [20, 19, 17], precipitation_probability_max: [0, 10, 65] } });
+    if (u.includes('frankfurter')) return jsonRes({ date: '2026-09-11', base: 'USD', rates: { TRY: 48.6 } });
+    if (u.includes('mymemory')) return jsonRes({ responseStatus: 200, responseData: { translatedText: 'merhaba dünya' } });
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Hava'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'Gaziantep hava nasıl, dolar kaç TL, hello world çevir'; $(w, '#send').click();
+  await wait(4200);
+  const toolResults = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool')).map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).filter(Boolean);
+  const hava = toolResults.find((r) => r?.gunlukTablo);
+  const dov = toolResults.find((r) => r?.kur);
+  const cev = toolResults.find((r) => r?.cevir);
+  ok('44. hava: şehir + şu anki durum + tablo', !!hava && hava.ok === true && hava.yer.includes('Gaziantep') && hava.simdi.durum === 'Açık' && hava.gunlukTablo.includes('°C') && hava.gunlukTablo.includes('Hafif yağmur'));
+  ok('44. döviz: 100 USD → 4860 TRY', !!dov && dov.ok === true && dov.kur === 48.6 && dov.sonuc === 4860 && dov.tarih === '2026-09-11');
+  ok('44. çeviri: hello world → merhaba dünya', !!cev && cev.ok === true && cev.cevir === 'merhaba dünya' && cev.kaynak === 'en' && cev.hedef === 'tr');
+  const chips = $$(w, '#msgs .toolstep').map((e) => e.textContent).join(' ');
+  ok('44. çipler: 🌤️ + 💱 + 🗣️', chips.includes('🌤️') && chips.includes('💱') && chips.includes('🗣️'));
+  ok('44. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 45) yapilac + aliskanlik + hatirlatici takvim (.ics) ================= */
+{
+  let round = 0; const calls = [];
+  const jsonRes = (o) => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => o });
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return jsonRes({ data: [] });
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'yapilac', args: { islem: 'ekle', baslik: 'kitap oku' } });
+      if (round === 2) return fakeRes(body, { name: 'aliskanlik', args: { islem: 'yapildi', ad: 'su iç' } });
+      if (round === 3) return fakeRes(body, { name: 'hatirlatici', args: { mesaj: 'doktor', saat: '09:00', takvim: true } });
+      return fakeRes(body, null, 'Görev eklendi, alışkanlık işaretlendi, hatırlatıcı takvime hazır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Plan'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'kitap oku görevi ekle, su içtim işaretle, 9da doktor hatırlat'; $(w, '#send').click();
+  await wait(4200);
+  const todos = JSON.parse(w.localStorage.getItem('evrim:todos') || '[]');
+  const habits = JSON.parse(w.localStorage.getItem('evrim:habits') || '[]');
+  const rems = JSON.parse(w.localStorage.getItem('evrim:reminders') || '[]');
+  ok('45. görev kaydedildi', todos.length === 1 && todos[0].baslik === 'kitap oku' && todos[0].done === false);
+  const bugun = new Date().toLocaleDateString('sv-SE');
+  ok('45. alışkanlık oto-oluştu + bugün işaretli', habits.length === 1 && habits[0].ad === 'su iç' && (habits[0].tarihler || []).includes(bugun));
+  const toolResults = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool')).map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).filter(Boolean);
+  const alk = toolResults.find((r) => r?.seri !== undefined);
+  ok('45. seri = 1 döndü', !!alk && alk.seri === 1 && alk.ok === true);
+  const hat = toolResults.find((r) => r?.ics);
+  ok('45. hatırlatıcı + .ics üretildi', rems.length === 1 && rems[0].mesaj === 'doktor' && !!hat && hat.ics.startsWith('BEGIN:VCALENDAR') && hat.ics.includes('SUMMARY:doktor') && hat.ics.includes('BEGIN:VALARM') && hat.takvim === 'hazir');
+  const chips = $$(w, '#msgs .toolstep').map((e) => e.textContent).join(' ');
+  ok('45. çipler: 🗓️ + 💧 + ⏰', chips.includes('🗓️') && chips.includes('💧') && chips.includes('⏰'));
+  ok('45. hata yok', w.errors.length === 0);
   w.close?.();
 }
 
