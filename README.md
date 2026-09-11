@@ -1,4 +1,8 @@
-# 🧬 EVRIM — kendini sürekli geliştiren AI uygulaması
+# EVRIM
+
+> 🇹 **[turkiye-acik-kaynak-platformu](https://github.com/topics/turkiye-acik-kaynak-platformu)** konusunda listeli — Türkçe açık kaynak yapay zeka topluluğunun parçası.
+> Canlı demo: **https://4fr41d.github.io/evrim/** · anahtarsız · ücretsiz · ajan döngülü
+
 
 Mobil öncelikli bir web uygulaması (PWA). Dört modül tek çatı altında:
 
