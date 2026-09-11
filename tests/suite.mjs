@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v9 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 9') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v10 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 10') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -829,6 +829,69 @@ function makeBroker() {
   ok('27. araç listesinde repo_bul var', calls.filter((c) => c?.tools).some((c) => c.tools.some((t) => t.function?.name === 'repo_bul' || t.name === 'repo_bul')));
   ok('27. hata yok', w.errors.length === 0);
   w.close?.();
+}
+
+
+/* ================= 28) linux_komut: sahip token'ıyla bus üzerinden komut + tokensuz red ================= */
+{
+  const b64 = (o) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64');
+  let round = 0; const calls = []; let busOut = { id: 'seed-0' }; let cmdPut = null;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('evrim-node-bus/contents/cmd.json') && opts?.method === 'PUT') {
+      cmdPut = JSON.parse(Buffer.from(JSON.parse(opts.body).content, 'base64').toString('utf8'));
+      busOut = { id: cmdPut.id, exit: 0, stdout: 'merhaba linux\ntoplam 42', stderr: '', ms: 15, host: 'testmakine', user: 'root' };
+      return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: {} }), text: async () => '{}' };
+    }
+    if (u.includes('evrim-node-bus/contents/cmd.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ sha: 'sc1', content: b64({ id: 'eski' }) }), text: async () => '{}' };
+    if (u.includes('evrim-node-bus/contents/out.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ sha: 'so1', content: b64(busOut) }), text: async () => '{}' };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'linux_komut', args: { komut: 'echo merhaba linux' } });
+      return fakeRes(body, null, 'Komut çalıştı.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ githubToken: 'ghp_test', createdAt: Date.now() }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Sahip'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'linux makinede echo merhaba linux çalıştır'; $(w, '#send').click();
+  await wait(5200);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r && ('stdout' in r || (r.hata && String(r.hata).includes('düğüm'))));
+  ok('28. komut bus’a yazıldı (id+komut)', !!cmdPut && cmdPut.komut === 'echo merhaba linux');
+  ok('28. düğüm çıktısı döndü', R?.ok === true && String(R.stdout).includes('merhaba linux') && R.host === 'testmakine');
+  ok('28. çip: 🐧', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🐧')));
+  w.close?.();
+
+  // tokensuz kullanıcı -> araç kapalı
+  let round2 = 0; const calls2 = [];
+  const w2 = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls2.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round2++;
+      if (round2 === 1) return fakeRes(body, { name: 'linux_komut', args: { komut: 'whoami' } });
+      return fakeRes(body, null, 'Yapamam.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w2.__EVHOUSEKEY = 'gsk_x';
+  try { w2.eval(bundle); } catch (e) { w2.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w2, '#npName').value = 'Misafir'; $(w2, '#npCreate').click(); await wait(250);
+  $(w2, '#input').value = 'linux komutu çalıştır'; $(w2, '#send').click();
+  await wait(2600);
+  const tm2 = calls2.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R2 = tm2.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r && r.hata);
+  ok('28. tokensuz kullanıcı reddedildi', !!R2 && String(R2.hata).includes('SAHİBİN'));
+  ok('28. hata yok (2 pencere)', w.errors.length === 0 && w2.errors.length === 0);
+  w2.close?.();
 }
 
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);

@@ -74,6 +74,11 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('linux_komut', "SAHİBİN LİNUX MAKİNESİ (tam yetki, yalnız sahip token'ıyla): sahibin özel Linux düğümünde bash komutu çalıştırır — paket kurma (apt/pkg), dosya oluştur/sil/taşı, python/node/git, servis başlat/durdur (systemctl), sistem bilgisi. Uzun işleri arka plana at (nohup ... &). GERİ ALINAMAZ komutlarda (rm -rf, drop, format, servis durdurma) ÖNCE kullanıcıdan onay iste. Düğüm çevrimdışıysa kullanıcıya linux-node/README.md kurulumunu hatırlat.", {
+    komut: { type: 'string', description: 'bash komutu (tek satır veya && / ; ile zincir)' },
+    cwd: { type: 'string', description: 'çalışma dizini (opsiyonel, varsayılan ev dizini)' },
+    bekle: { type: 'number', description: 'yanıt bekleme üst sınırı ms (varsayılan 60000, en çok 120000)' },
+  }, ['komut']),
   F('repo_bul', 'AÇIK KAYNAK / GITHUB REPO ARAMA (anahtarsız): açık repo, kütüphane, git projesi, araç ararken çağır. İngilizce sorgu daha iyi sonuç verir (örn. "self improving ai agent"). Sonuçları tabloyla sun: ad, ⭐, dil, lisans, link.', {
     sorgu: { type: 'string', description: 'arama terimleri (İngilizce önerilir)' },
     dil: { type: 'string', description: 'dil filtresi: python, javascript, julia… (isteğe bağlı)' },
@@ -598,6 +603,43 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async linux_komut({ komut, cwd, bekle }) {
+    const s = getSettings();
+    const tok = s.githubToken;
+    if (!tok) return { hata: 'linux_komut yalnız SAHİBİN cihazında çalışır (GitHub token gerekir) — düğüm sahibi değilsen bu araç kapalı.' };
+    const q = String(komut || '').trim();
+    if (!q) return { hata: 'komut boş' };
+    const REPO = s.linuxBus || '4FR41D/evrim-node-bus';
+    const H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
+    const API = `https://api.github.com/repos/${REPO}/contents/`;
+    const b64ToUtf8 = (b) => decodeURIComponent(Array.from(atob(b), (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    const utf8ToB64 = (str) => { const by = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < by.length; i++) bin += String.fromCharCode(by[i]); return btoa(bin); };
+    const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const getFile = async (path) => {
+      const r = await fetch(API + path + '?r=' + Math.random().toString(36).slice(2), { headers: H });
+      if (r.status === 404) return { sha: null, data: null };
+      if (!r.ok) throw new Error(`bus okunamadı (${r.status})`);
+      const j = await r.json();
+      return { sha: j.sha, data: JSON.parse(b64ToUtf8(String(j.content).replace(/\n/g, ''))) };
+    };
+    try {
+      const cur = await getFile('cmd.json');
+      const body = { message: 'evrim cmd ' + id, content: utf8ToB64(JSON.stringify({ id, komut: q.slice(0, 4000), cwd: cwd || null, ts: Date.now() })), branch: 'main' };
+      if (cur.sha) body.sha = cur.sha;
+      const w = await fetch(API + 'cmd.json', { method: 'PUT', headers: H, body: JSON.stringify(body) });
+      if (!w.ok) throw new Error(`komut gönderilemedi (${w.status})`);
+      const maxMs = Math.min(120000, Math.max(8000, Number(bekle) || 60000));
+      const t0 = Date.now();
+      let out = null;
+      while (Date.now() - t0 < maxMs) {
+        await new Promise((r) => setTimeout(r, 2500));
+        try { const g = await getFile('out.json'); if (g.data && g.data.id === id) { out = g.data; break; } } catch {}
+      }
+      if (!out) return { hata: `Linux düğümü ${Math.round(maxMs / 1000)} sn içinde yanıt vermedi — makinede evrim-node çalışıyor mu? (repo: linux-node/README.md)`, komut: q };
+      return { ok: out.exit === 0, exit: out.exit, stdout: out.stdout || '', stderr: out.stderr || '', ms: out.ms, host: out.host, user: out.user, komut: q };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 160) }; }
+  },
+
   async repo_bul({ sorgu, dil, sirala, adet }) {
     const q = String(sorgu || '').trim();
     if (!q) return { hata: 'sorgu boş' };
@@ -944,6 +986,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    linux_komut: done ? (bad ? '🐧 Linux komutu başarısız' : '🐧 Linux komutu çalıştı') : '🐧 Linux komutu çalıştırılıyor',
     repo_bul: (args.sorgu) ? `🐙 Repo ${done ? (bad ? 'bulunamadı' : 'bulundu') : 'aranıyor'}: ${String(args.sorgu).slice(0, 30)}` : `🐙 Açık kaynak ${done ? 'arandı' : 'aranıyor'}`,
     site_tara: (() => { const h = String(args.url || '').replace(/^https?:\/\//, '').split('/')[0]; return done ? (bad ? `🌐 ${h} taranamadı` : `🌐 ${h} tarandı`) : `🌐 ${h} taranıyor`; })(),
     ode_coz: done ? (bad ? '∫ Denklem çözülemedi' : '∫ Denklem çözüldü (RK4/Euler)') : '∫ Diferansiyel denklem çözülüyor',
