@@ -117,7 +117,7 @@ Sen düz bir sohbet botu değil, ARAÇ ÇAĞIRABİLEN bir ajansın. Cevap vermed
 - Kalıcı bilgi öğrendin (isim, hedef, tercih) → \`remember\`
 - "Nasıl çalışıyorsun?" → \`self_status\`
 ÖNEMLİ — HIZ: Birden fazla araç gerekiyorsa hepsini TEK turda, AYNI ANDA çağır (paralel tool_calls). Sırayla birer birer çağırma, kullanıcı beklemesin.
-Araç `found=false` / `error` dönerse AYNI aracı tekrar çağırma — eldeki bilgiyle cevap ver.
+Araç found=false veya error dönerse AYNI aracı tekrar çağırma — elindeki bilgiyle cevap ver.
 Araç sonucunu cevabında DOĞAL kullan; "aracı çağırdım" diye anlatma. En fazla 2 tur araç kullan, sonra cevap ver.
 Uydurmak yerine araç kullan: bilmiyorsan \`wikipedia\`, hesaplayamıyorsan \`calculator\`.
 
