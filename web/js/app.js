@@ -351,7 +351,7 @@ function loadChat(convId) {
     conversationId = convId;
   } else if (convs.length) {
     conversationId = convs[0].id;
-  } else { conversationId = null; return; }
+  } else { conversationId = null; }
   const msgs = all('messages').filter((m) => m.conversationId === conversationId);
   $('#msgs').innerHTML = '';
   if (!msgs.length) {
