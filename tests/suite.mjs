@@ -938,5 +938,44 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 30) kuantum_devre: Bell durumu + RX(pi) çevirme + ders 25 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'kuantum_devre', args: { qubit: 2, adimlar: '[{"kapi":"H","hedef":0},{"kapi":"CNOT","kontrol":0,"hedef":1}]' } });
+      if (round === 2) return fakeRes(body, { name: 'kuantum_devre', args: { qubit: 1, adimlar: '[{"kapi":"RX","hedef":0,"aci":3.14159265}]' } });
+      if (round === 3) return fakeRes(body, { name: 'ders_calis', args: { ders: 25 } });
+      return fakeRes(body, null, 'Kuantum sonuçları burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kuantum'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'bell durumu devresini simüle et'; $(w, '#send').click();
+  await wait(4200);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const bell = R.find((r) => r?.ok && r.qubit === 2);
+  const rx = R.find((r) => r?.ok && r.qubit === 1);
+  const d25 = R.find((r) => r?.ok && r.ders === 25);
+  ok('30. Bell: |00> ve |11> %50', !!bell && bell.tabloMarkdown.includes('|00⟩') && bell.tabloMarkdown.includes('|11⟩') && bell.tabloMarkdown.includes('50.0%'));
+  ok('30. Bell: |01>/|10> yok (dolanıklık)', !bell.tabloMarkdown.includes('|01⟩') && !bell.tabloMarkdown.includes('|10⟩'));
+  ok('30. RX(pi): |1> %100', !!rx && rx.tabloMarkdown.includes('|1⟩') && rx.tabloMarkdown.includes('100.0%'));
+  ok('30. ders 25 (PennyLane bonusu) geldi', !!d25 && String(d25.baslik).includes('Kuantum'));
+  ok('30. çip: ⚛', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('⚛')));
+  ok('30. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

@@ -74,6 +74,10 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('kuantum_devre', 'KUANTUM DEVRE SİMÜLATÖRÜ (PennyLane ruhu, tarayıcıda): 1-3 kübitlik devreyi durum vektörüyle simüle eder. Kapılar: X, Y, Z, H, S, T, RX, RY, RZ (açı radyan), CNOT. Ölçüm olasılıkları + genlik tablosu döner. Kuantum örneği/simülasyonu istenince çağır.', {
+    qubit: { type: 'number', description: 'kübit sayısı 1-3 (varsayılan 2)' },
+    adimlar: { type: 'string', description: 'JSON dizi: [{"kapi":"H","hedef":0},{"kapi":"CNOT","kontrol":0,"hedef":1},{"kapi":"RX","hedef":0,"aci":1.5708}]' },
+  }, ['adimlar']),
   F('linux_komut', "SAHİBİN LİNUX MAKİNESİ (tam yetki, yalnız sahip token'ıyla): sahibin özel Linux düğümünde bash komutu çalıştırır — paket kurma (apt/pkg), dosya oluştur/sil/taşı, python/node/git, servis başlat/durdur (systemctl), sistem bilgisi. Uzun işleri arka plana at (nohup ... &). GERİ ALINAMAZ komutlarda (rm -rf, drop, format, servis durdurma) ÖNCE kullanıcıdan onay iste. Düğüm çevrimdışıysa kullanıcıya linux-node/README.md kurulumunu hatırlat.", {
     komut: { type: 'string', description: 'bash komutu (tek satır veya && / ; ile zincir)' },
     cwd: { type: 'string', description: 'çalışma dizini (opsiyonel, varsayılan ev dizini)' },
@@ -603,6 +607,75 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async kuantum_devre({ qubit, adimlar }) {
+    try {
+      const n = Math.max(1, Math.min(3, Number(qubit) || 2));
+      let steps = adimlar;
+      if (typeof steps === 'string') steps = JSON.parse(steps);
+      if (!Array.isArray(steps) || !steps.length) return { hata: 'adımlar JSON dizi olmalı (örn. [{"kapi":"H","hedef":0}])' };
+      if (steps.length > 40) return { hata: 'en fazla 40 adım' };
+      const dim = 1 << n;
+      let st = []; for (let i = 0; i < dim; i++) st.push(i === 0 ? [1, 0] : [0, 0]);
+      const cmul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+      const cadd = (a, b) => [a[0] + b[0], a[1] + b[1]];
+      const S2 = Math.SQRT1_2;
+      const mat = (k, aci) => {
+        const g = String(k || '').toUpperCase();
+        const t = Number(aci) || 0;
+        const c = Math.cos(t / 2), sn = Math.sin(t / 2);
+        switch (g) {
+          case 'X': return [[[0, 0], [1, 0]], [[1, 0], [0, 0]]];
+          case 'Y': return [[[0, 0], [0, -1]], [[0, 1], [0, 0]]];
+          case 'Z': return [[[1, 0], [0, 0]], [[0, 0], [-1, 0]]];
+          case 'H': return [[[S2, 0], [S2, 0]], [[S2, 0], [-S2, 0]]];
+          case 'S': return [[[1, 0], [0, 0]], [[0, 0], [0, 1]]];
+          case 'T': return [[[1, 0], [0, 0]], [[0, 0], [S2, S2]]];
+          case 'RX': return [[[c, 0], [0, -sn]], [[0, -sn], [c, 0]]];
+          case 'RY': return [[[c, 0], [-sn, 0]], [[sn, 0], [c, 0]]];
+          case 'RZ': return [[[c, -sn], [0, 0]], [[0, 0], [c, sn]]];
+          default: return null;
+        }
+      };
+      const log = [];
+      for (const step of steps) {
+        const g = String(step.kapi || step.gate || '').toUpperCase();
+        const q = Number(step.hedef != null ? step.hedef : step.target || 0);
+        if (!(q >= 0 && q < n)) return { hata: `hedef ${q} aralık dışında (0-${n - 1})` };
+        if (g === 'CNOT' || g === 'CX') {
+          const ctl = Number(step.kontrol != null ? step.kontrol : step.control || 0);
+          if (!(ctl >= 0 && ctl < n) || ctl === q) return { hata: 'CNOT kontrol/hedef geçersiz' };
+          for (let i = 0; i < dim; i++) {
+            if ((i >> ctl) & 1) { const j = i ^ (1 << q); if (i < j) { const tmp = st[i]; st[i] = st[j]; st[j] = tmp; } }
+          }
+          log.push(`CNOT(k=${ctl},h=${q})`);
+          continue;
+        }
+        const m = mat(g, step.aci != null ? step.aci : step.angle);
+        if (!m) return { hata: `bilinmeyen kapı: ${g} (X,Y,Z,H,S,T,RX,RY,RZ,CNOT)` };
+        const nw = st.map((x) => [x[0], x[1]]);
+        for (let i = 0; i < dim; i++) {
+          if ((i >> q) & 1) continue;
+          const j = i | (1 << q);
+          nw[i] = cadd(cmul(m[0][0], st[i]), cmul(m[0][1], st[j]));
+          nw[j] = cadd(cmul(m[1][0], st[i]), cmul(m[1][1], st[j]));
+        }
+        st = nw;
+        log.push(`${g}(h=${q}${step.aci != null ? ',' + (+Number(step.aci).toFixed(3)) : ''})`);
+      }
+      let norm = 0;
+      const probs = st.map((a) => { const p = a[0] * a[0] + a[1] * a[1]; norm += p; return p; });
+      for (let i = 0; i < probs.length; i++) probs[i] /= (norm || 1);
+      const rows = [];
+      for (let i = 0; i < dim; i++) {
+        if (probs[i] > 1e-9) rows.push({ durum: '|' + i.toString(2).padStart(n, '0') + '⟩', olasilik: probs[i], re: +st[i][0].toFixed(4), im: +st[i][1].toFixed(4) });
+      }
+      rows.sort((a, b) => b.olasilik - a.olasilik);
+      const tabloMarkdown = '| durum | olasılık | genlik (re,im) |\n|---|---|---|\n'
+        + rows.map((r) => `| ${r.durum} | ${(r.olasilik * 100).toFixed(1)}% | (${r.re}, ${r.im}) |`).join('\n');
+      return { ok: true, qubit: n, adimlar: log, enOlasilik: rows.length ? rows[0].durum : null, tabloMarkdown, not: 'Tabloyu cevabına markdown olarak koy; 1-2 cümle fiziksel yorum ekle (süperpozisyon/dolanıklık).' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async linux_komut({ komut, cwd, bekle }) {
     const s = getSettings();
     const tok = s.githubToken;
@@ -990,6 +1063,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    kuantum_devre: done ? (bad ? '⚛ Kuantum devre çalışmadı' : '⚛ Kuantum devre simüle edildi') : '⚛ Kuantum devre simüle ediliyor',
     linux_komut: done ? (bad ? '🐧 Linux komutu başarısız' : '🐧 Linux komutu çalıştı') : '🐧 Linux komutu çalıştırılıyor',
     repo_bul: (args.sorgu) ? `🐙 Repo ${done ? (bad ? 'bulunamadı' : 'bulundu') : 'aranıyor'}: ${String(args.sorgu).slice(0, 30)}` : `🐙 Açık kaynak ${done ? 'arandı' : 'aranıyor'}`,
     site_tara: (() => { const h = String(args.url || '').replace(/^https?:\/\//, '').split('/')[0]; return done ? (bad ? `🌐 ${h} taranamadı` : `🌐 ${h} tarandı`) : `🌐 ${h} taranıyor`; })(),

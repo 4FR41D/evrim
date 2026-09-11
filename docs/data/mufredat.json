@@ -514,6 +514,31 @@
     "dogru": 1,
     "aciklama": "Termux kendi pkg yöneticisini kullanır; nodejs-lts paketi Node.js + npm getirir. sudo gerekmez."
    }
+  },
+  {
+   "no": 25,
+   "baslik": "Bonus: Kuantum Hesaplama ve Kuantum Makine Öğrenmesi (PennyLane)",
+   "ozet": "Klasik bit 0 veya 1'dir; kübit (qubit) süperpozisyonda ikisinin karışımı olabilir ve ölçümde olasılıkla çöker. Hadamard (H) kapısı |0>'ı eşit süperpozisyona alır; CNOT iki kübiti dolanık yapar (Bell durumu: yalnız |00> ve |11> ölçülür). PennyLane (Apache 2.0): parametreli kuantum devrelerini klasik ML gibi eğitir — RX/RY/RZ dönüş açıları öğrenilebilir parametrelerdir, kuantum gradyanı (parameter-shift) ile optimize edilir. Uygulamalar: kuantum kimya, optimizasyon, QML. EVRIM'in kuantum_devre aracı aynı matematiği (durum vektörü simülasyonu) tarayıcıda 1-3 kübit için uygular.",
+   "kavramlar": [
+    "kübit",
+    "süperpozisyon",
+    "dolanıklık",
+    "Bell durumu",
+    "H/CNOT",
+    "parametreli devre",
+    "PennyLane"
+   ],
+   "quiz": {
+    "soru": "H kapısı |0> kübitine uygulanıp ardından CNOT(0→1) ile ikinci kübite bağlanırsa ne elde edilir?",
+    "secenekler": [
+     "Her zaman |00>",
+     "Bell durumu: %50 |00>, %50 |11>",
+     "Rastgele 4 durum",
+     "Klasik kopya"
+    ],
+    "dogru": 1,
+    "aciklama": "H + CNOT, dolanık Bell durumu üretir: ölçüm yalnız |00> veya |11> verir, asla |01>/|10> değil."
+   }
   }
  ]
 }
