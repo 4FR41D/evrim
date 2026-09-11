@@ -74,6 +74,14 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('ode_coz', 'DİFERANSİYEL DENKLEM ÇÖZÜCÜ (SciML/DiffEqFlux ruhu, tarayıcıda): dy/dt = f(t,y) başlangıç değer problemini RK4 veya Euler ile sayısal çözer. Fizik/büyüme/salınım modelleri için kullan (örn. lojistik büyüme, basit sarkaç, yay-sönüm). Denklem JS ifadesi: t ve y değişkenleri + Math.* serbest.', {
+    denklem: { type: 'string', description: 'f(t,y) sağ tarafı, örn. "0.5*y*(1-y/10)" veya "-9.81*Math.sin(y)"' },
+    y0: { type: 'number', description: 'başlangıç değeri y(t0)' },
+    t0: { type: 'number', description: 'başlangıç zamanı (varsayılan 0)' },
+    tBitis: { type: 'number', description: 'bitiş zamanı (varsayılan t0+10)' },
+    adim: { type: 'number', description: 'zaman adımı h (varsayılan 0.05)' },
+    yontem: { type: 'string', description: '"rk4" (varsayılan) veya "euler"' },
+  }, ['denklem', 'y0']),
   F('ders_calis', 'GENAI DERSİ (Microsoft Generative AI for Beginners müfredatı, MIT): kullanıcı ders/öğrenme/kurs/quiz isterse VEYA sıradaki dersini sorarsa çağır. Ders içeriği+quiz döner: önce 2-4 cümleyle öğret, kavramları maddele, sonra quiz sorusunu seçenekleriyle yaz; kullanıcının cevabını değerlendir ve ders_bitir çağır.', {
     ders: { type: 'number', description: 'Ders no (1-21); verilmezse sıradaki tamamlanmamış ders' },
   }, []),
@@ -580,6 +588,43 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async ode_coz({ denklem, y0, t0, tBitis, adim, yontem }) {
+    try {
+      const src = String(denklem);
+      if (/[;{}]|=>|\bfunction\b|\breturn\b|import|require|fetch|eval|globalThis|window|document|localStorage/.test(src)) return { hata: 'denklem yalnızca matematik ifadesi olmalı (t, y, Math.*)' };
+      const f = new Function('t', 'y', 'Math', '"use strict"; return (' + src + ');');
+      f(0, Number(y0) || 0, Math); // deneme çağrısı
+      let t = Number(t0) || 0, y = Number(y0);
+      if (!isFinite(y)) return { hata: 'y0 sayı olmalı' };
+      let te = Number(tBitis); if (!isFinite(te)) te = t + 10;
+      if (te <= t) return { hata: 'tBitis > t0 olmalı' };
+      let h = Number(adim) || 0.05; if (!(h > 0)) h = 0.05;
+      const steps = Math.min(20000, Math.max(1, Math.ceil((te - t) / h)));
+      h = (te - t) / steps;
+      const method = String(yontem || 'rk4').toLowerCase() === 'euler' ? 'euler' : 'rk4';
+      const pts = [[t, y]];
+      for (let i = 0; i < steps; i++) {
+        if (method === 'euler') { y = y + h * f(t, y, Math); }
+        else {
+          const k1 = f(t, y, Math);
+          const k2 = f(t + h / 2, y + h * k1 / 2, Math);
+          const k3 = f(t + h / 2, y + h * k2 / 2, Math);
+          const k4 = f(t + h, y + h * k3, Math);
+          y = y + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
+        }
+        t += h;
+        if (!isFinite(y) || Math.abs(y) > 1e12) return { hata: 'çözüm ıraksadı — adımı küçült veya aralığı daralt' };
+        pts.push([t, y]);
+      }
+      const stride = Math.max(1, Math.floor(pts.length / 12));
+      const rows = [];
+      for (let i = 0; i < pts.length && rows.length < 12; i += stride) rows.push(pts[i]);
+      if (rows[rows.length - 1] !== pts[pts.length - 1]) rows.push(pts[pts.length - 1]);
+      const tabloMarkdown = '| t | y(t) |\n|---|---|\n' + rows.map(([a, b]) => '| ' + (+a.toFixed(4)) + ' | ' + (+b.toFixed(6)) + ' |').join('\n');
+      return { ok: true, yontem: method, adimSayisi: steps, h: +h.toFixed(6), baslangic: [+pts[0][0].toFixed(6), +pts[0][1].toFixed(6)], sonuc: [+t.toFixed(6), +y.toFixed(6)], tabloMarkdown, not: 'Tabloyu cevabına aynen markdown tablo olarak koy; sonucu 1-2 cümleyle fiziksel/matematiksel yorumla.' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async ders_calis({ ders }) {
     try {
       const m = await mufredat();
@@ -805,6 +850,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    ode_coz: done ? (bad ? '∫ Denklem çözülemedi' : '∫ Denklem çözüldü (RK4/Euler)') : '∫ Diferansiyel denklem çözülüyor',
     ders_calis: done ? `🎓 Ders ${args.ders || ''} hazır`.trim() : `🎓 Ders ${args.ders || 'sıradaki'} getiriliyor`.trim(),
     ders_bitir: done ? (bad ? `🎓 Ders ${args.ders}: yanlış kaydedildi 📇` : `🎓 Ders ${args.ders} tamamlandı ✅`) : `🎓 Ders ${args.ders} kaydediliyor`,
     web_ara: (args.sorgu) ? `🔍 Web'de ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu).slice(0, 40)}"` : `🔍 Web araması ${done ? 'yaptı' : 'yapıyor'}`,

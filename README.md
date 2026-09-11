@@ -131,14 +131,14 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 15 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 18 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_ara: anahtarsız web araması (jina+ddg) → web_oku zinciri
 │     │                 #   + web_oku: herhangi bir web sayfasını okur (r.jina.ai, anahtarsız)
 │     │                 #   + kod_calistir: JS sandbox (benim bash'imin karşılığı)
 │     │                 #   + gorsel_uret: girişsiz/anahtarsız görsel (pollinations, CORS *)
-│     ├─ data/mufredat.json # 🎓 KURS MODU: Microsoft GenAI-for-Beginners 21 ders (MIT), TR
+│     ├─ data/mufredat.json # 🎓 KURS MODU: GenAI 21 ders (MIT, Microsoft) + SciML bonusu, TR
 │     ├─ reflex.js      # REFLEKS KATMANI: beyinsiz bile anında cevap (selam, saat, matematik)
 │     ├─ wasm.js        # CİHAZ İÇİ KÜÇÜK BEYİN: transformers.js WASM (SmolLM2-135M) —
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez

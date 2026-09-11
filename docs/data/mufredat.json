@@ -1,27 +1,472 @@
 {
-  "kaynak": "microsoft/generative-ai-for-beginners (MIT) — 21 ders, Türkçe uyarlaması EVRIM tarafından",
-  "url": "https://github.com/microsoft/generative-ai-for-beginners",
-  "dersler": [
-    { "no": 1, "baslik": "Üretken Yapay Zekaya ve LLM'lere Giriş", "ozet": "Üretken AI (genAI) yeni içerik üretir; LLM'ler metni token token tahmin eden dev sinir ağlarıdır. Transformer mimarisi dikkat (attention) ile uzun bağlamı yakalar.", "kavramlar": ["genAI", "LLM", "transformer", "token"], "quiz": { "soru": "LLM'ler metni nasıl üretir?", "secenekler": ["Kurallara göre veritabanından çeker", "Token token olasılık tahminiyle", "İnsan yanıtlarını kopyalar", "Rastgele kelime dizir"], "dogru": 1, "aciklama": "LLM'ler sıradaki token'ın olasılığını tahmin ederek ardışık üretim yapar." } },
-    { "no": 2, "baslik": "Farklı LLM'leri Keşfetme ve Karşılaştırma", "ozet": "Modeller boyut, eğitimi ve lisansla ayrışır; kullanım durumuna göre seçim yapılır (kalite vs maliyet vs hız). Kapalı ve açık model trade-off'u vardır.", "kavramlar": ["model seçimi", "açık/kapalı model", "trade-off"], "quiz": { "soru": "Model seçiminde en doğru yaklaşım?", "secenekler": ["Her zaman en büyük model", "Kullanım durumuna göre kalite/maliyet/hız dengesi", "Her zaman en yenisi", "Fark etmez"], "dogru": 1, "aciklama": "Doğru model, işin gereğine göre dengeleyen modeldir." } },
-    { "no": 3, "baslik": "Üretken AI'ı Sorumlu Kullanma", "ozet": "Yanlılık, halüsinasyon, güvenlik ve gizlilik riskleri bilinçli yönetilmelidir; insan denetimi ve şeffaflık esastır.", "kavramlar": ["yanlılık", "halüsinasyon", "sorumlu AI"], "quiz": { "soru": "Halüsinasyon nedir?", "secenekler": ["Modelin hızlı cevap vermesi", "Uydurulmuş içeriğin gerçek gibi sunulması", "Modelin susması", "Görsel üretimi"], "dogru": 1, "aciklama": "Halüsinasyon: gerçek olmayan bilginin akıcı ve emin biçimde üretilmesi." } },
-    { "no": 4, "baslik": "Prompt Mühendisliği Temelleri", "ozet": "Net talimat, bağlam, örnek ve çıktı biçimi vermek cevabı belirgin iyileştirir; prompt iteratif geliştirilir.", "kavramlar": ["talimat", "bağlam", "few-shot", "çıktı biçimi"], "quiz": { "soru": "İyi bir promptun temel öğeleri?", "secenekler": ["Sadece tek kelime", "Net talimat + bağlam + örnek + biçim", "Bol emoji", "Uzun giriş cümleleri"], "dogru": 1, "aciklama": "Talimat, bağlam, örnek ve biçim promptun dört direğidir." } },
-    { "no": 5, "baslik": "İleri Prompt Teknikleri", "ozet": "Zincir-düşünce (CoT), rol verme, öz-tutarlılık ve yapılandırılmış çıktı gibi teknikler karmaşık görevlerde kaliteyi artırır.", "kavramlar": ["chain-of-thought", "rol verme", "öz-tutarlılık"], "quiz": { "soru": "Zincir-düşünce (CoT) ne yapar?", "secenekler": ["Cevabı kısaltır", "Adım adım akıl yürütmeyi teşvik eder", "Token sayısını sıfırlar", "Görsel üretir"], "dogru": 1, "aciklama": "CoT, modeli ara adımlar üretmeye yönlendirerek doğruluğu artırır." } },
-    { "no": 6, "baslik": "Metin Üretimi Uygulamaları", "ozet": "API ile metin üretimi: sistem mesajı, sıcaklık ve max token kontrolü; özet/üretim/sınıflandırma kalıpları.", "kavramlar": ["sistem mesajı", "temperature", "max_tokens"], "quiz": { "soru": "Temperature artınca ne olur?", "secenekler": ["Çıktı daha deterministik olur", "Çeşitlilik/rastgelelik artar", "Hız artar", "Maliyet düşer"], "dogru": 1, "aciklama": "Yüksek sıcaklık dağılımı düzleştirir → daha çeşitli çıktılar." } },
-    { "no": 7, "baslik": "Sohbet Uygulamaları", "ozet": "Chatbot: mesaj geçmişi yönetimi, rol (system/user/assistant) disiplini ve bağlam penceresi limiti; persona tasarımı.", "kavramlar": ["rol", "bağlam penceresi", "geçmiş yönetimi"], "quiz": { "soru": "Sohbet bağlamı nasıl taşınır?", "secenekler": ["Model kendiliğinden hatırlar", "Mesaj geçmişi her istekte gönderilir", "Veritabanı zorunludur", "Gerekmez"], "dogru": 1, "aciklama": "LLM durumsuzdur; geçmiş her çağrıda iletilir (pencere limiti içinde)." } },
-    { "no": 8, "baslik": "Arama Uygulamaları ve Vektör Veritabanları", "ozet": "Embedding'ler anlamı sayıya çevirir; benzerlik araması (cosine) ile semantik arama kurulur.", "kavramlar": ["embedding", "cosine benzerlik", "semantik arama"], "quiz": { "soru": "Embedding neyi temsil eder?", "secenekler": ["Kelime sayısını", "Anlamı sayısal vektörde", "Dosya boyutunu", "Renkleri"], "dogru": 1, "aciklama": "Embedding, metnin anlamını yoğun vektör olarak kodlar." } },
-    { "no": 9, "baslik": "Görsel Üretim Uygulamaları", "ozet": "Diffusion modeller gürültüden görsel üretir; prompt kalitesi ve boyut/seed parametreleri sonucu belirler.", "kavramlar": ["diffusion", "prompt→görsel", "seed"], "quiz": { "soru": "Diffusion modeli nasıl üretir?", "secenekler": ["Fotoğraf kopyalar", "Gürültüyü adım adım anlamlandırarak", "Vektör çizimiyle", "Raster taramayla"], "dogru": 1, "aciklama": "Diffusion: gürültüden başlayıp adım adım görseli netleştirir." } },
-    { "no": 10, "baslik": "Low-Code AI Uygulamaları", "ozet": "Low-code platformlar (ör. Copilot Studio) ile kod yazmadan AI akışları kurulur; prototipleme hızlanır.", "kavramlar": ["low-code", "prototip", "otomasyon"], "quiz": { "soru": "Low-code'un ana faydası?", "secenekler": ["Daha hızlı prototipleme", "Daha ucuz GPU", "Daha küçük model", "Daha az veri"], "dogru": 0, "aciklama": "Low-code, görsel araçlarla hızlı kurulum sağlar." } },
-    { "no": 11, "baslik": "Function Calling ile Entegrasyon", "ozet": "Model, araç şeması görür ve gerektiğinde fonksiyon çağrısı üretir; uygulama çağrıyı çalıştırıp sonucu geri verir — ajan döngüsünün temeli.", "kavramlar": ["function calling", "araç şeması", "ajan döngüsü"], "quiz": { "soru": "Function calling'de kodu kim çalıştırır?", "secenekler": ["Model", "Uygulama (istemci/sunucu)", "Tarayıcı otomatik", "Veritabanı"], "dogru": 1, "aciklama": "Model yalnızca çağrı kararı+parametre üretir; yürütme uygulamadadır." } },
-    { "no": 12, "baslik": "AI Uygulamalarında UX Tasarımı", "ozet": "Belirsizliği dürüst göster, bekleme hissini yönet (streaming/progress), hata ve geri alma yolları sun; güven tasarımı.", "kavramlar": ["şeffaflık", "streaming", "geri alma"], "quiz": { "soru": "AI UX'te en kritik ilke?", "secenekler": ["Her şeyi otomatik yap", "Belirsizliği dürüstçe göster + kontrol ver", "Uyarı gösterme", "Tek düğme"], "dogru": 1, "aciklama": "Güven: şeffaflık + kullanıcı kontrolüyle kurulur." } },
-    { "no": 13, "baslik": "AI Uygulamalarını Güvenli Hale Getirme", "ozet": "Prompt injection, veri sızıntısı ve tedarik zinciri riskleri; giriş/çıkış filtreleri, en az yetki ve izleme.", "kavramlar": ["prompt injection", "en az yetki", "filtreleme"], "quiz": { "soru": "Prompt injection nedir?", "secenekler": ["Hızlı prompt", "Kötü niyetli girdinin modeli yönlendirmesi", "Token artırma", "Önbellek"], "dogru": 1, "aciklama": "Zararlı girdi, modelin talimatlarını ele geçirmeye çalışır." } },
-    { "no": 14, "baslik": "Üretken AI Uygulama Yaşam Döngüsü", "ozet": "LLMOps: değerlendirme (eval), izleme, sürümleme ve geri bildirim döngüsüyle sürekli iyileştirme.", "kavramlar": ["LLMOps", "eval", "izleme"], "quiz": { "soru": "LLMOps'un çekirdeği nedir?", "secenekler": ["Tek seferlik eğitim", "Eval + izleme + geri bildirim döngüsü", "Sadece deploy", "Donanım alımı"], "dogru": 1, "aciklama": "Yaşam döngüsü: ölç, izle, iyileştir — sürekli." } },
-    { "no": 15, "baslik": "RAG ve Vektör Veritabanları", "ozet": "Retrieval-Augmented Generation: kendi belgelerinden parça getirip modele bağlam olarak verir; halüsinasyonu azaltır, güncel tutar.", "kavramlar": ["RAG", "chunk", "retrieve→generate"], "quiz": { "soru": "RAG neden halüsinasyonu azaltır?", "secenekler": ["Modeli büyütür", "Cevabı gerçek belge parçalarına dayandırır", "Sıcaklığı sıfırlar", "Geçmişi siler"], "dogru": 1, "aciklama": "Cevap, getirilen kanıt bağlamına dayanır." } },
-    { "no": 16, "baslik": "Açık Kaynak Modeller ve Hugging Face", "ozet": "HF Hub: model/dataset ekosistemi; transformers kütüphanesi ve pipeline'lar ile açık modelleri çalıştırma; lisans okuma alışkanlığı.", "kavramlar": ["Hugging Face", "transformers", "lisans"], "quiz": { "soru": "Hugging Face Hub ne sunar?", "secenekler": ["Yalnızca GPU", "Model+dataset+araç ekosistemi", "Sadece ücretli API", "E-posta"], "dogru": 1, "aciklama": "Hub, açık ekosistemin merkezidir." } },
-    { "no": 17, "baslik": "AI Ajanları", "ozet": "Ajan: hedef alır, araçlarla (arama, kod, API) çevreyi etkiler, gözlemleyip iterasyonla hedefe gider; bellek ve planlama bileşenleri vardır.", "kavramlar": ["ajan döngüsü", "araçlar", "bellek"], "quiz": { "soru": "Ajanı sıradan sohbet botundan ayıran?", "secenekler": ["Daha uzun cevap", "Araç kullanıp çok adımlı hedef kovalaması", "Daha fazla emoji", "Daha büyük model"], "dogru": 1, "aciklama": "Ajan: düşün→araç→gözlemle döngüsüyle iş bitirir." } },
-    { "no": 18, "baslik": "LLM'leri Fine-Tune Etme", "ozet": "Fine-tuning: özel veriyle modeli uyarlar; ne zaman gerekli (biçim/alan bilgisi), maliyet ve LoRA gibi verimli yöntemler.", "kavramlar": ["fine-tuning", "LoRA", "özel veri"], "quiz": { "soru": "Fine-tuning ne zaman mantıklı?", "secenekler": ["Her işte", "Prompt/RAG yetmeyince (biçim/alan uzmanlığı)", "Asla", "Sadece görsel için"], "dogru": 1, "aciklama": "Önce prompt/RAG; yetmezse fine-tune." } },
-    { "no": 19, "baslik": "Küçük Dil Modelleri (SLM)", "ozet": "SLM'ler cihaz üstü/çevrimdışı ve ucuzdur; dar görevlerde büyük modellere yaklaşır (örn. Phi, SmolLM).", "kavramlar": ["SLM", "cihaz üstü", "çevrimdışı"], "quiz": { "soru": "SLM'nin en büyük avantajı?", "secenekler": ["Her görevde en iyi", "Cihazda/çevrimdışı çalışabilme", "Sınırsız bağlam", "Ücretsiz GPU"], "dogru": 1, "aciklama": "SLM: yerel, hızlı, gizli — dar alanda etkili." } },
-    { "no": 20, "baslik": "Mistral Modelleriyle Çalışma", "ozet": "Mistral ailesi (Flash/ Large/ Mixtral MoE): hız-kalite yelpazesi ve MoE mimarisinin verimliliği.", "kavramlar": ["Mistral", "MoE", "hız/kalite"], "quiz": { "soru": "Mixtral'in mimari özelliği?", "secenekler": ["Tek uzman", "Mixture-of-Experts (MoE)", "CNN", "RNN"], "dogru": 1, "aciklama": "MoE: token başına seçili uzmanlar → verimlilik." } },
-    { "no": 21, "baslik": "Meta Modelleriyle Çalışma", "ozet": "Llama ailesi: açık ağırlıklı büyük modeller; topluluk ekosistemi ve ince ayar kültürü.", "kavramlar": ["Llama", "açık ağırlık", "ekosistem"], "quiz": { "soru": "Llama ailesinin ayırt edici yanı?", "secenekler": ["Kapalı kaynak", "Açık ağırlıklı yayın + geniş ekosistem", "Yalnızca görsel", "Sadece mobil"], "dogru": 1, "aciklama": "Meta, Llama ağırlıklarını açık yayınlar; ekosistem büyütür." } }
-  ]
+ "kaynak": "microsoft/generative-ai-for-beginners (MIT) — 21 ders, Türkçe uyarlaması EVRIM tarafından",
+ "url": "https://github.com/microsoft/generative-ai-for-beginners",
+ "dersler": [
+  {
+   "no": 1,
+   "baslik": "Üretken Yapay Zekaya ve LLM'lere Giriş",
+   "ozet": "Üretken AI (genAI) yeni içerik üretir; LLM'ler metni token token tahmin eden dev sinir ağlarıdır. Transformer mimarisi dikkat (attention) ile uzun bağlamı yakalar.",
+   "kavramlar": [
+    "genAI",
+    "LLM",
+    "transformer",
+    "token"
+   ],
+   "quiz": {
+    "soru": "LLM'ler metni nasıl üretir?",
+    "secenekler": [
+     "Kurallara göre veritabanından çeker",
+     "Token token olasılık tahminiyle",
+     "İnsan yanıtlarını kopyalar",
+     "Rastgele kelime dizir"
+    ],
+    "dogru": 1,
+    "aciklama": "LLM'ler sıradaki token'ın olasılığını tahmin ederek ardışık üretim yapar."
+   }
+  },
+  {
+   "no": 2,
+   "baslik": "Farklı LLM'leri Keşfetme ve Karşılaştırma",
+   "ozet": "Modeller boyut, eğitimi ve lisansla ayrışır; kullanım durumuna göre seçim yapılır (kalite vs maliyet vs hız). Kapalı ve açık model trade-off'u vardır.",
+   "kavramlar": [
+    "model seçimi",
+    "açık/kapalı model",
+    "trade-off"
+   ],
+   "quiz": {
+    "soru": "Model seçiminde en doğru yaklaşım?",
+    "secenekler": [
+     "Her zaman en büyük model",
+     "Kullanım durumuna göre kalite/maliyet/hız dengesi",
+     "Her zaman en yenisi",
+     "Fark etmez"
+    ],
+    "dogru": 1,
+    "aciklama": "Doğru model, işin gereğine göre dengeleyen modeldir."
+   }
+  },
+  {
+   "no": 3,
+   "baslik": "Üretken AI'ı Sorumlu Kullanma",
+   "ozet": "Yanlılık, halüsinasyon, güvenlik ve gizlilik riskleri bilinçli yönetilmelidir; insan denetimi ve şeffaflık esastır.",
+   "kavramlar": [
+    "yanlılık",
+    "halüsinasyon",
+    "sorumlu AI"
+   ],
+   "quiz": {
+    "soru": "Halüsinasyon nedir?",
+    "secenekler": [
+     "Modelin hızlı cevap vermesi",
+     "Uydurulmuş içeriğin gerçek gibi sunulması",
+     "Modelin susması",
+     "Görsel üretimi"
+    ],
+    "dogru": 1,
+    "aciklama": "Halüsinasyon: gerçek olmayan bilginin akıcı ve emin biçimde üretilmesi."
+   }
+  },
+  {
+   "no": 4,
+   "baslik": "Prompt Mühendisliği Temelleri",
+   "ozet": "Net talimat, bağlam, örnek ve çıktı biçimi vermek cevabı belirgin iyileştirir; prompt iteratif geliştirilir.",
+   "kavramlar": [
+    "talimat",
+    "bağlam",
+    "few-shot",
+    "çıktı biçimi"
+   ],
+   "quiz": {
+    "soru": "İyi bir promptun temel öğeleri?",
+    "secenekler": [
+     "Sadece tek kelime",
+     "Net talimat + bağlam + örnek + biçim",
+     "Bol emoji",
+     "Uzun giriş cümleleri"
+    ],
+    "dogru": 1,
+    "aciklama": "Talimat, bağlam, örnek ve biçim promptun dört direğidir."
+   }
+  },
+  {
+   "no": 5,
+   "baslik": "İleri Prompt Teknikleri",
+   "ozet": "Zincir-düşünce (CoT), rol verme, öz-tutarlılık ve yapılandırılmış çıktı gibi teknikler karmaşık görevlerde kaliteyi artırır.",
+   "kavramlar": [
+    "chain-of-thought",
+    "rol verme",
+    "öz-tutarlılık"
+   ],
+   "quiz": {
+    "soru": "Zincir-düşünce (CoT) ne yapar?",
+    "secenekler": [
+     "Cevabı kısaltır",
+     "Adım adım akıl yürütmeyi teşvik eder",
+     "Token sayısını sıfırlar",
+     "Görsel üretir"
+    ],
+    "dogru": 1,
+    "aciklama": "CoT, modeli ara adımlar üretmeye yönlendirerek doğruluğu artırır."
+   }
+  },
+  {
+   "no": 6,
+   "baslik": "Metin Üretimi Uygulamaları",
+   "ozet": "API ile metin üretimi: sistem mesajı, sıcaklık ve max token kontrolü; özet/üretim/sınıflandırma kalıpları.",
+   "kavramlar": [
+    "sistem mesajı",
+    "temperature",
+    "max_tokens"
+   ],
+   "quiz": {
+    "soru": "Temperature artınca ne olur?",
+    "secenekler": [
+     "Çıktı daha deterministik olur",
+     "Çeşitlilik/rastgelelik artar",
+     "Hız artar",
+     "Maliyet düşer"
+    ],
+    "dogru": 1,
+    "aciklama": "Yüksek sıcaklık dağılımı düzleştirir → daha çeşitli çıktılar."
+   }
+  },
+  {
+   "no": 7,
+   "baslik": "Sohbet Uygulamaları",
+   "ozet": "Chatbot: mesaj geçmişi yönetimi, rol (system/user/assistant) disiplini ve bağlam penceresi limiti; persona tasarımı.",
+   "kavramlar": [
+    "rol",
+    "bağlam penceresi",
+    "geçmiş yönetimi"
+   ],
+   "quiz": {
+    "soru": "Sohbet bağlamı nasıl taşınır?",
+    "secenekler": [
+     "Model kendiliğinden hatırlar",
+     "Mesaj geçmişi her istekte gönderilir",
+     "Veritabanı zorunludur",
+     "Gerekmez"
+    ],
+    "dogru": 1,
+    "aciklama": "LLM durumsuzdur; geçmiş her çağrıda iletilir (pencere limiti içinde)."
+   }
+  },
+  {
+   "no": 8,
+   "baslik": "Arama Uygulamaları ve Vektör Veritabanları",
+   "ozet": "Embedding'ler anlamı sayıya çevirir; benzerlik araması (cosine) ile semantik arama kurulur.",
+   "kavramlar": [
+    "embedding",
+    "cosine benzerlik",
+    "semantik arama"
+   ],
+   "quiz": {
+    "soru": "Embedding neyi temsil eder?",
+    "secenekler": [
+     "Kelime sayısını",
+     "Anlamı sayısal vektörde",
+     "Dosya boyutunu",
+     "Renkleri"
+    ],
+    "dogru": 1,
+    "aciklama": "Embedding, metnin anlamını yoğun vektör olarak kodlar."
+   }
+  },
+  {
+   "no": 9,
+   "baslik": "Görsel Üretim Uygulamaları",
+   "ozet": "Diffusion modeller gürültüden görsel üretir; prompt kalitesi ve boyut/seed parametreleri sonucu belirler.",
+   "kavramlar": [
+    "diffusion",
+    "prompt→görsel",
+    "seed"
+   ],
+   "quiz": {
+    "soru": "Diffusion modeli nasıl üretir?",
+    "secenekler": [
+     "Fotoğraf kopyalar",
+     "Gürültüyü adım adım anlamlandırarak",
+     "Vektör çizimiyle",
+     "Raster taramayla"
+    ],
+    "dogru": 1,
+    "aciklama": "Diffusion: gürültüden başlayıp adım adım görseli netleştirir."
+   }
+  },
+  {
+   "no": 10,
+   "baslik": "Low-Code AI Uygulamaları",
+   "ozet": "Low-code platformlar (ör. Copilot Studio) ile kod yazmadan AI akışları kurulur; prototipleme hızlanır.",
+   "kavramlar": [
+    "low-code",
+    "prototip",
+    "otomasyon"
+   ],
+   "quiz": {
+    "soru": "Low-code'un ana faydası?",
+    "secenekler": [
+     "Daha hızlı prototipleme",
+     "Daha ucuz GPU",
+     "Daha küçük model",
+     "Daha az veri"
+    ],
+    "dogru": 0,
+    "aciklama": "Low-code, görsel araçlarla hızlı kurulum sağlar."
+   }
+  },
+  {
+   "no": 11,
+   "baslik": "Function Calling ile Entegrasyon",
+   "ozet": "Model, araç şeması görür ve gerektiğinde fonksiyon çağrısı üretir; uygulama çağrıyı çalıştırıp sonucu geri verir — ajan döngüsünün temeli.",
+   "kavramlar": [
+    "function calling",
+    "araç şeması",
+    "ajan döngüsü"
+   ],
+   "quiz": {
+    "soru": "Function calling'de kodu kim çalıştırır?",
+    "secenekler": [
+     "Model",
+     "Uygulama (istemci/sunucu)",
+     "Tarayıcı otomatik",
+     "Veritabanı"
+    ],
+    "dogru": 1,
+    "aciklama": "Model yalnızca çağrı kararı+parametre üretir; yürütme uygulamadadır."
+   }
+  },
+  {
+   "no": 12,
+   "baslik": "AI Uygulamalarında UX Tasarımı",
+   "ozet": "Belirsizliği dürüst göster, bekleme hissini yönet (streaming/progress), hata ve geri alma yolları sun; güven tasarımı.",
+   "kavramlar": [
+    "şeffaflık",
+    "streaming",
+    "geri alma"
+   ],
+   "quiz": {
+    "soru": "AI UX'te en kritik ilke?",
+    "secenekler": [
+     "Her şeyi otomatik yap",
+     "Belirsizliği dürüstçe göster + kontrol ver",
+     "Uyarı gösterme",
+     "Tek düğme"
+    ],
+    "dogru": 1,
+    "aciklama": "Güven: şeffaflık + kullanıcı kontrolüyle kurulur."
+   }
+  },
+  {
+   "no": 13,
+   "baslik": "AI Uygulamalarını Güvenli Hale Getirme",
+   "ozet": "Prompt injection, veri sızıntısı ve tedarik zinciri riskleri; giriş/çıkış filtreleri, en az yetki ve izleme.",
+   "kavramlar": [
+    "prompt injection",
+    "en az yetki",
+    "filtreleme"
+   ],
+   "quiz": {
+    "soru": "Prompt injection nedir?",
+    "secenekler": [
+     "Hızlı prompt",
+     "Kötü niyetli girdinin modeli yönlendirmesi",
+     "Token artırma",
+     "Önbellek"
+    ],
+    "dogru": 1,
+    "aciklama": "Zararlı girdi, modelin talimatlarını ele geçirmeye çalışır."
+   }
+  },
+  {
+   "no": 14,
+   "baslik": "Üretken AI Uygulama Yaşam Döngüsü",
+   "ozet": "LLMOps: değerlendirme (eval), izleme, sürümleme ve geri bildirim döngüsüyle sürekli iyileştirme.",
+   "kavramlar": [
+    "LLMOps",
+    "eval",
+    "izleme"
+   ],
+   "quiz": {
+    "soru": "LLMOps'un çekirdeği nedir?",
+    "secenekler": [
+     "Tek seferlik eğitim",
+     "Eval + izleme + geri bildirim döngüsü",
+     "Sadece deploy",
+     "Donanım alımı"
+    ],
+    "dogru": 1,
+    "aciklama": "Yaşam döngüsü: ölç, izle, iyileştir — sürekli."
+   }
+  },
+  {
+   "no": 15,
+   "baslik": "RAG ve Vektör Veritabanları",
+   "ozet": "Retrieval-Augmented Generation: kendi belgelerinden parça getirip modele bağlam olarak verir; halüsinasyonu azaltır, güncel tutar.",
+   "kavramlar": [
+    "RAG",
+    "chunk",
+    "retrieve→generate"
+   ],
+   "quiz": {
+    "soru": "RAG neden halüsinasyonu azaltır?",
+    "secenekler": [
+     "Modeli büyütür",
+     "Cevabı gerçek belge parçalarına dayandırır",
+     "Sıcaklığı sıfırlar",
+     "Geçmişi siler"
+    ],
+    "dogru": 1,
+    "aciklama": "Cevap, getirilen kanıt bağlamına dayanır."
+   }
+  },
+  {
+   "no": 16,
+   "baslik": "Açık Kaynak Modeller ve Hugging Face",
+   "ozet": "HF Hub: model/dataset ekosistemi; transformers kütüphanesi ve pipeline'lar ile açık modelleri çalıştırma; lisans okuma alışkanlığı.",
+   "kavramlar": [
+    "Hugging Face",
+    "transformers",
+    "lisans"
+   ],
+   "quiz": {
+    "soru": "Hugging Face Hub ne sunar?",
+    "secenekler": [
+     "Yalnızca GPU",
+     "Model+dataset+araç ekosistemi",
+     "Sadece ücretli API",
+     "E-posta"
+    ],
+    "dogru": 1,
+    "aciklama": "Hub, açık ekosistemin merkezidir."
+   }
+  },
+  {
+   "no": 17,
+   "baslik": "AI Ajanları",
+   "ozet": "Ajan: hedef alır, araçlarla (arama, kod, API) çevreyi etkiler, gözlemleyip iterasyonla hedefe gider; bellek ve planlama bileşenleri vardır.",
+   "kavramlar": [
+    "ajan döngüsü",
+    "araçlar",
+    "bellek"
+   ],
+   "quiz": {
+    "soru": "Ajanı sıradan sohbet botundan ayıran?",
+    "secenekler": [
+     "Daha uzun cevap",
+     "Araç kullanıp çok adımlı hedef kovalaması",
+     "Daha fazla emoji",
+     "Daha büyük model"
+    ],
+    "dogru": 1,
+    "aciklama": "Ajan: düşün→araç→gözlemle döngüsüyle iş bitirir."
+   }
+  },
+  {
+   "no": 18,
+   "baslik": "LLM'leri Fine-Tune Etme",
+   "ozet": "Fine-tuning: özel veriyle modeli uyarlar; ne zaman gerekli (biçim/alan bilgisi), maliyet ve LoRA gibi verimli yöntemler.",
+   "kavramlar": [
+    "fine-tuning",
+    "LoRA",
+    "özel veri"
+   ],
+   "quiz": {
+    "soru": "Fine-tuning ne zaman mantıklı?",
+    "secenekler": [
+     "Her işte",
+     "Prompt/RAG yetmeyince (biçim/alan uzmanlığı)",
+     "Asla",
+     "Sadece görsel için"
+    ],
+    "dogru": 1,
+    "aciklama": "Önce prompt/RAG; yetmezse fine-tune."
+   }
+  },
+  {
+   "no": 19,
+   "baslik": "Küçük Dil Modelleri (SLM)",
+   "ozet": "SLM'ler cihaz üstü/çevrimdışı ve ucuzdur; dar görevlerde büyük modellere yaklaşır (örn. Phi, SmolLM).",
+   "kavramlar": [
+    "SLM",
+    "cihaz üstü",
+    "çevrimdışı"
+   ],
+   "quiz": {
+    "soru": "SLM'nin en büyük avantajı?",
+    "secenekler": [
+     "Her görevde en iyi",
+     "Cihazda/çevrimdışı çalışabilme",
+     "Sınırsız bağlam",
+     "Ücretsiz GPU"
+    ],
+    "dogru": 1,
+    "aciklama": "SLM: yerel, hızlı, gizli — dar alanda etkili."
+   }
+  },
+  {
+   "no": 20,
+   "baslik": "Mistral Modelleriyle Çalışma",
+   "ozet": "Mistral ailesi (Flash/ Large/ Mixtral MoE): hız-kalite yelpazesi ve MoE mimarisinin verimliliği.",
+   "kavramlar": [
+    "Mistral",
+    "MoE",
+    "hız/kalite"
+   ],
+   "quiz": {
+    "soru": "Mixtral'in mimari özelliği?",
+    "secenekler": [
+     "Tek uzman",
+     "Mixture-of-Experts (MoE)",
+     "CNN",
+     "RNN"
+    ],
+    "dogru": 1,
+    "aciklama": "MoE: token başına seçili uzmanlar → verimlilik."
+   }
+  },
+  {
+   "no": 21,
+   "baslik": "Meta Modelleriyle Çalışma",
+   "ozet": "Llama ailesi: açık ağırlıklı büyük modeller; topluluk ekosistemi ve ince ayar kültürü.",
+   "kavramlar": [
+    "Llama",
+    "açık ağırlık",
+    "ekosistem"
+   ],
+   "quiz": {
+    "soru": "Llama ailesinin ayırt edici yanı?",
+    "secenekler": [
+     "Kapalı kaynak",
+     "Açık ağırlıklı yayın + geniş ekosistem",
+     "Yalnızca görsel",
+     "Sadece mobil"
+    ],
+    "dogru": 1,
+    "aciklama": "Meta, Llama ağırlıklarını açık yayınlar; ekosistem büyütür."
+   }
+  },
+  {
+   "no": 22,
+   "baslik": "Bonus: Bilimsel Makine Öğrenmesi ve Nöral Diferansiyel Denklemler",
+   "ozet": "SciML/DiffEqFlux.jl yaklaşımı: fizik denklemlerini (ODE/PDE/SDE) sinir ağlarıyla birleştirir. Nöral ODE'de türevi ağ üretir (dy/dt = NN(y,t)); çözüm sayısal entegratörle (RK4 vb.) alınır, geri yayılım entegratörden geçer (adjoint). EVRIM'de ode_coz aracı aynı ruhu tarayıcıda RK4 ile uygular.",
+   "kavramlar": [
+    "nöral ODE",
+    "diferansiyel denklem",
+    "RK4",
+    "adjoint",
+    "SciML"
+   ],
+   "quiz": {
+    "soru": "Nöral ODE'de sinir ağı neyi modeller?",
+    "secenekler": [
+     "Çözümün kendisini",
+     "Durumun türevini (dy/dt)",
+     "Veri etiketlerini",
+     "Öğrenme hızını"
+    ],
+    "dogru": 1,
+    "aciklama": "Nöral ODE: ağ türev alanını öğrenir; yörünge sayısal entegrasyonla (ör. RK4) üretilir."
+   }
+  }
+ ]
 }

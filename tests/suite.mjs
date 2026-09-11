@@ -678,5 +678,43 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 24) ode_coz: RK4 lojistik + sinüs integrali + güvenlik + ders 22 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'ode_coz', args: { denklem: '0.5*y*(1-y/10)', y0: 1, t0: 0, tBitis: 20, adim: 0.1 } });
+      if (round === 2) return fakeRes(body, { name: 'ode_coz', args: { denklem: 'Math.sin(t)', y0: 0, t0: 0, tBitis: 3.14159265, adim: 0.01 } });
+      if (round === 3) return fakeRes(body, { name: 'ode_coz', args: { denklem: 'window.alert(1)', y0: 0 } });
+      if (round === 4) return fakeRes(body, { name: 'ders_calis', args: { ders: 22 } });
+      return fakeRes(body, null, 'Çözüm tablosu ve yorum burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Bilim'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'lojistik büyüme denklemini çöz'; $(w, '#send').click();
+  await wait(4200);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  ok('24. RK4 lojistik -> y(20) ≈ 10', R.some((r) => r?.ok && r.adimSayisi === 200 && Math.abs(r.sonuc[1] - 10) < 0.2));
+  ok('24. RK4 sin integrali ≈ 2', R.some((r) => r?.ok && Math.abs(r.sonuc[1] - 2) < 0.01 && Math.abs(r.sonuc[0] - Math.PI) < 0.001));
+  ok('24. güvenlik: window ifadesi reddedildi', R.some((r) => r && !r.ok && r.hata));
+  ok('24. ders 22 (SciML bonusu) geldi', R.some((r) => r?.ok && r.ders === 22 && String(r.baslik).includes('Bilimsel')));
+  ok('24. tablo markdown üretildi', R.some((r) => String(r?.tabloMarkdown || '').includes('| t | y(t) |')));
+  ok('24. çip: ∫', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('∫')));
+  ok('24. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
