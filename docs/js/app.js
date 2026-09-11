@@ -9,7 +9,7 @@ import {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
-import { MODEL_TIERS, unloadLocal } from './local.js';
+import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import * as gh from './github.js';
@@ -692,6 +692,29 @@ async function startLocal() {
   refreshStatus();
 }
 
+async function runDiag() {
+  const out = $('#diagOut'); const btn = $('#btnDiag');
+  if (!out) return;
+  btn.disabled = true; out.style.display = 'block'; out.textContent = '🩺 denetleniyor… (10-20 sn)';
+  try {
+    const d = await diagnose();
+    const L = [];
+    L.push(`Çevrimiçi        : ${d.online ? 'evet' : 'HAYIR'}`);
+    L.push(`WebGPU           : ${d.gpu ? 'VAR ✅' : 'YOK ❌ (Chrome 113+/Safari 26+ gerekir)'}`);
+    L.push(`shader-f16       : ${d.f16 ? 'var ✅' : 'yok (f32 modeller kullanılır)'}`);
+    L.push(`GPU              : ${d.adapter || '-'}`);
+    L.push(`Cihaz belleği    : ${d.deviceMemoryGB ? d.deviceMemoryGB + ' GB' : 'bilinmiyor'}`);
+    L.push(`huggingface.co   : ${d.net.hf ? 'ERİŞİLİYOR ✅' : 'ERİŞİLEMİYOR ❌  <-- indirme hatasının sebebi bu'}`);
+    L.push(`github (wasm)    : ${d.net.gh ? 'erişiliyor ✅' : 'erişilemiyor ❌'}`);
+    L.push(`WebLLM kütüphanesi: ${d.lib ? `yüklendi ✅ (${d.models} model)` : 'YÜKLENEMEDİ ❌ (CDN kapalı)'}`);
+    L.push(`Depolama         : ${d.quota ? `${d.quota.usedMB} MB kullanımda / ${d.quota.totalMB} MB kota` : '-'}`);
+    L.push(`Seçili boyut     : ${d.tier}`);
+    if (d.catalog?.length) L.push(`Uygun modeller   : ${d.catalog.map((c) => `${shortName(c.id)} ~${c.mb}MB`).join(', ')}`);
+    out.textContent = L.join('\n');
+  } catch (e) { out.textContent = 'Tanılama hatası: ' + e.message; }
+  btn.disabled = false;
+}
+
 async function tryFreeNow(full = false) {
   const out = $('#freeOut') || $('#capBox');
   const btn = $('#btnTestFree'); const b2 = $('#btnTryFree');
@@ -729,6 +752,11 @@ function refreshStatusLight() {
 document.addEventListener('click', (e) => {
   if (e.target.id === 'btnStartLocal' || e.target.id === 'btnLoadLocal') { e.preventDefault(); startLocal(); }
   if (e.target.id === 'btnTryFree') { e.preventDefault(); tryFreeNow(); }
+  if (e.target.id === 'btnDiag') { e.preventDefault(); runDiag(); }
+  if (e.target.id === 'btnClearCache') {
+    e.preventDefault();
+    clearModelCache().then((d) => toast(d.length ? `Temizlendi: ${d.join(', ')}` : 'Temizlenecek model önbelleği yok', 'ok'));
+  }
   if (e.target.id === 'btnTestFree') { e.preventDefault(); tryFreeNow(true); }
   if (e.target.id === 'btnUnloadLocal') {
     unloadLocal().then(() => { toast('Model bellekten çıkarıldı'); renderLocalBoxes(); refreshStatus(); });

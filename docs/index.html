@@ -33,7 +33,8 @@
       </div>
       <div class="item" style="padding:10px;margin-bottom:8px">
         <div class="t">📥 2 · Cihazında çalıştır <span class="chip">~200 MB, bir kez</span></div>
-        <div class="s">Açık kaynak model iner, <b>sınırsız + çevrimdışı</b> çalışır. Veriler cihazından çıkmaz.</div>
+        <div class="s">Açık kaynak model iner, <b>sınırsız + çevrimdışı</b> çalışır. Veriler cihazından çıkmaz.
+          İndirme yarıda kesilirse otomatik yeniden dener; olmazsa daha küçük modele geçer.</div>
         <div class="a"><button class="btn sm" id="btnStartLocal">Modeli indir ve başlat</button></div>
       </div>
       <div class="item" style="padding:10px">
@@ -192,6 +193,11 @@
           <button class="btn" id="btnLoadLocal">⬇️ İndir ve başlat</button>
           <button class="btn ghost" id="btnUnloadLocal">Durdur</button>
         </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn ghost" id="btnDiag">🩺 Tanıla</button>
+          <button class="btn ghost" id="btnClearCache">🧹 Model önbelleğini temizle</button>
+        </div>
+        <pre id="diagOut" class="muted" style="display:none;white-space:pre-wrap;font-size:11.5px;margin-top:8px;max-height:220px;overflow:auto"></pre>
         <div id="localProgress2" style="display:none;margin-top:10px">
           <div class="muted" style="font-size:12px" id="localProgressText2">hazırlanıyor…</div>
           <div class="bar"><i id="localProgressBar2" style="width:0%"></i></div>
