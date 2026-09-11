@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v7 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 7') && sys.includes('AJAN ÇALIŞMA BİÇİMİM') && sys.includes('web_ara'));
+  ok('1. beyin v8 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 8') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -588,6 +588,56 @@ function makeBroker() {
   ok('19. ikinci sonuç da listede', (tr?.sonuc || []).some((x) => x.url === 'https://example.org/iki'));
   ok('19. çip: Web araması', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Web')));
   ok('19. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 20) PROFESYONEL SUNUM: markdown tablo gerçek tablo ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'pr1', name: 'T', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'pr1');
+  w.localStorage.setItem('evrim:conversations', JSON.stringify([{ id: 'c1', title: 't', profileId: 'pr1', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:messages', JSON.stringify([{ id: 'm1', conversationId: 'c1', role: 'assistant', content: 'Karşılaştırma:\n\n| Model | Hız | Kota |\n|---|---|---|\n| gpt-oss-120b | çok hızlı | ücretsiz |\n| qwen3.8 | hızlı | ücretsiz |', createdAt: new Date().toISOString() }]));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(500);
+  const tbl = $(w, '#msgs table.tbl');
+  ok('20. tablo render edildi (th+td)', !!tbl && tbl.querySelectorAll('th').length === 3 && tbl.querySelectorAll('tbody tr').length === 2);
+  ok('20. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 21+22) PROFESYONEL MOD: taslak->kritik->final + arka plan tercih öğrenme ================= */
+{
+  const bodies = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) {
+        const sys0 = String(body.messages?.[0]?.content || '');
+        if (sys0.includes('KALICI tercih')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: JSON.stringify({ facts: ["Kullanıcı Beyoğlu'nda nakliyat işi yapıyor"] }) } }] }), text: async () => '{}' };
+        return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: 'TASLAK: adım adım taşıma planı maddeleri burada.' } }] }), text: async () => '{}' };
+      }
+      return fakeRes(body, null, 'FINAL: Taşıma planınız hazır — 1) keşif 2) paketleme 3) sigorta 4) teslim. Somut süre: aynı gün keşif, 48 saat içinde teslim. Kaynak ve sonraki adım: fiyat teklifi istemeniz. ' + 'Detay '.repeat(60));
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Prof'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'Beyoğlu nakliyat için detaylı taşıma planı ve risk analizi yap'; $(w, '#send').click();
+  await wait(3500);
+  const finalCall = bodies.filter((b) => b?.stream).pop();
+  ok('21. profesyonel mod: kritik turu sistem mesajı eklendi', (finalCall?.messages || []).some((m) => m.role === 'system' && String(m.content).includes('PROFESYONEL SON TUR')));
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('21. final cevap kaydedildi', ms.some((m) => m.role === 'assistant' && String(m.content).startsWith('FINAL:')));
+  await wait(900);
+  const mems = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('22. arka plan tercih öğrenme: fact hafızada', mems.some((m) => String(m.content).includes('nakliyat işi')));
+  ok('21+22. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

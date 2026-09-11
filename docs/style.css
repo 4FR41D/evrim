@@ -332,3 +332,10 @@ nav.tabs{display:none !important}
 
 /* üretilen görseller */
 .msg img.gen{max-width:100%;max-height:420px;border-radius:12px;border:1px solid var(--line);display:block;margin:6px 0;background:#000}
+
+/* v33 profesyonel sunum: markdown tabloları */
+.tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.5px;overflow:hidden;border-radius:10px}
+.tbl th,.tbl td{border:1px solid rgba(255,255,255,.12);padding:6px 8px;text-align:left;vertical-align:top}
+.tbl th{background:rgba(124,92,255,.18);font-weight:600}
+.tbl tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+.msg.bot pre{white-space:pre-wrap;word-break:break-word}

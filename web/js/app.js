@@ -59,6 +59,17 @@ function md(src) {
   s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   s = s.replace(/(^|\n)###?\s?(.*)/g, (_, a, b) => `${a}<b>${b}</b>`);
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // markdown tablo -> gerçek tablo (profesyonel sunum)
+  s = s.replace(/(?:^\|.*\|\s*\n?)+/gm, (block) => {
+    const lines = block.trim().split('\n').map((l) => l.trim()).filter((l) => l);
+    const isSep = (l) => /^\|?[\s:|-]+\|?$/.test(l) && l.includes('-');
+    const body = lines.filter((l) => !isSep(l));
+    if (!body.length) return block;
+    const cells = (l) => l.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    const head = cells(body[0]);
+    const rows = body.slice(1).map((l) => '<tr>' + cells(l).map((c) => `<td>${c}</td>`).join('') + '</tr>').join('');
+    return `<table class="tbl"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  });
   s = s.replace(/(^|\n)[-*]\s+/g, '$1• ');
   return s;
 }
@@ -360,6 +371,17 @@ async function send(text) {
       }
     }
 
+    // v33 PROFESYONEL MOD: kompleks isteğe taslak -> öz-eleştiri -> final turu
+    const complex = content.length > 120 || /(plan|analiz|rapor|strateji|karşılaştır|karsilastir|tasar|öneri|oneri|değerlendir|degerlendir|müfredat|program)/i.test(content);
+    if (complex) {
+      try {
+        liveStat.textContent = '🤔 Profesyonel mod: taslak çıkarıp eleştiriyorum…';
+        beat();
+        const draft = await agentChat(messages, { temperature: 0.6, maxTokens: 700 });
+        messages.push({ role: 'system', content: `PROFESYONEL SON TUR: şu taslağı eleştirip SON cevabı yaz: ilk cümlede net cevap (BLUF), göreve uygun yapı (plan→numaralı, karşılaştırma→tablo, analiz→başlık+madde), somut örnek/sayı, gerekirse kaynak linki, sonda TEK satır sonraki adım önerisi. Taslak:\n${String(draft.content || '').slice(0, 3000)}` });
+      } catch { /* taslak opsiyonel */ }
+    }
+
     let res;
     let selfChecked = false;
     for (let attempt = 0; ; attempt++) {
@@ -424,6 +446,21 @@ async function send(text) {
       model: res.model || null, steps: (res.steps || []).map((s) => ({ tool: s.tool, ms: s.ms })),
     });
     const node = addMsg(botMsg);
+    // v33: arka planda tercih/bilgi çıkarımı — her uzun cevaptan sonra sessizce öğren
+    if (String(reply).length > 300) {
+      const nAssist = all('messages').filter((m) => m.conversationId === conversationId && m.role === 'assistant').length;
+      if (nAssist % 2 === 1) {
+        rawChat([
+          { role: 'system', content: 'Kullanıcı hakkında KALICI tercih/bilgi çıkar (iş, şehir, biçim tercihi, hedef). YALNIZCA JSON: {"facts":["..."]} — yoksa {"facts":[]}' },
+          { role: 'user', content: content + '\n---\n' + String(reply).slice(0, 1500) },
+        ], { json: true, maxTokens: 200, model: 'openai/gpt-oss-20b' })
+          .then((r) => {
+            const f = (JSON.parse(r.content) || {}).facts || [];
+            f.slice(0, 2).forEach((x) => evo.addMemory({ content: String(x).slice(0, 140), kind: 'fact', source: 'auto', strength: 0.7 }));
+          })
+          .catch(() => {});
+      }
+    }
     // Araç adımları kaybolmasın: canlı baloncuktan kalıcı mesaja taşı
     if (toolBox && toolBox.children.length && node) {
       const ts = document.createElement('div');
