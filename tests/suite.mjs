@@ -668,6 +668,7 @@ function makeBroker() {
   const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
   const t1 = toolMsgs[0] ? JSON.parse(toolMsgs[0].content) : null;
   ok('23. ders 1 içeriği + quiz döndü', t1?.ok === true && t1?.ders === 1 && !!t1?.quiz?.soru);
+  ok('23. kaynak linki + ham metin bağlantısı', String(t1?.kaynakLink || '').includes('01-introduction-to-genai') && String(t1?.hamMetin || '').endsWith('README.md'));
   const skills = JSON.parse(w.localStorage.getItem('evrim:skills') || '[]');
   ok('23. yanlış quiz -> seviye 2 kaydı', skills.some((x) => x.topic === 'genai-1' && x.level === 2));
   const cards = JSON.parse(w.localStorage.getItem('evrim:cards') || '[]');

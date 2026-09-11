@@ -1442,7 +1442,8 @@ ${kapanis}
       return {
         ok: true, ders: d.no, toplam: m.dersler.length, tamamlanan: tamam,
         baslik: d.baslik, ozet: d.ozet, kavramlar: d.kavramlar, quiz: d.quiz, kaynak: m.url,
-        not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır.',
+        kaynakLink: d.link || m.url, hamMetin: d.ham || null,
+        not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır. Cevabın sonuna kaynakLink ekle; kullanıcı derinlemesine isterse web_oku ile hamMetin (İngilizce orijinal ders) okunup Türkçe özetlenebilir.',
       };
     } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
   },

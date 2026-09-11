@@ -22,7 +22,9 @@
     ],
     "dogru": 1,
     "aciklama": "LLM'ler sıradaki token'ın olasılığını tahmin ederek ardışık üretim yapar."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/01-introduction-to-genai",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/01-introduction-to-genai/README.md"
   },
   {
    "no": 2,
@@ -43,7 +45,9 @@
     ],
     "dogru": 1,
     "aciklama": "Doğru model, işin gereğine göre dengeleyen modeldir."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/02-exploring-and-comparing-different-llms",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/02-exploring-and-comparing-different-llms/README.md"
   },
   {
    "no": 3,
@@ -64,7 +68,9 @@
     ],
     "dogru": 1,
     "aciklama": "Halüsinasyon: gerçek olmayan bilginin akıcı ve emin biçimde üretilmesi."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/03-using-generative-ai-responsibly",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/03-using-generative-ai-responsibly/README.md"
   },
   {
    "no": 4,
@@ -86,7 +92,9 @@
     ],
     "dogru": 1,
     "aciklama": "Talimat, bağlam, örnek ve biçim promptun dört direğidir."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/04-prompt-engineering-fundamentals",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/04-prompt-engineering-fundamentals/README.md"
   },
   {
    "no": 5,
@@ -107,7 +115,9 @@
     ],
     "dogru": 1,
     "aciklama": "CoT, modeli ara adımlar üretmeye yönlendirerek doğruluğu artırır."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/05-advanced-prompts",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/05-advanced-prompts/README.md"
   },
   {
    "no": 6,
@@ -128,7 +138,9 @@
     ],
     "dogru": 1,
     "aciklama": "Yüksek sıcaklık dağılımı düzleştirir → daha çeşitli çıktılar."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/06-text-generation-apps",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/06-text-generation-apps/README.md"
   },
   {
    "no": 7,
@@ -149,7 +161,9 @@
     ],
     "dogru": 1,
     "aciklama": "LLM durumsuzdur; geçmiş her çağrıda iletilir (pencere limiti içinde)."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/07-building-chat-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/07-building-chat-applications/README.md"
   },
   {
    "no": 8,
@@ -170,7 +184,9 @@
     ],
     "dogru": 1,
     "aciklama": "Embedding, metnin anlamını yoğun vektör olarak kodlar."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/08-building-search-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/08-building-search-applications/README.md"
   },
   {
    "no": 9,
@@ -191,7 +207,9 @@
     ],
     "dogru": 1,
     "aciklama": "Diffusion: gürültüden başlayıp adım adım görseli netleştirir."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/09-building-image-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/09-building-image-applications/README.md"
   },
   {
    "no": 10,
@@ -212,7 +230,9 @@
     ],
     "dogru": 0,
     "aciklama": "Low-code, görsel araçlarla hızlı kurulum sağlar."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/10-building-low-code-ai-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/10-building-low-code-ai-applications/README.md"
   },
   {
    "no": 11,
@@ -233,7 +253,9 @@
     ],
     "dogru": 1,
     "aciklama": "Model yalnızca çağrı kararı+parametre üretir; yürütme uygulamadadır."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/11-integrating-with-function-calling",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/11-integrating-with-function-calling/README.md"
   },
   {
    "no": 12,
@@ -254,7 +276,9 @@
     ],
     "dogru": 1,
     "aciklama": "Güven: şeffaflık + kullanıcı kontrolüyle kurulur."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/12-designing-ux-for-ai-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/12-designing-ux-for-ai-applications/README.md"
   },
   {
    "no": 13,
@@ -275,7 +299,9 @@
     ],
     "dogru": 1,
     "aciklama": "Zararlı girdi, modelin talimatlarını ele geçirmeye çalışır."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/13-securing-ai-applications",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/13-securing-ai-applications/README.md"
   },
   {
    "no": 14,
@@ -296,7 +322,9 @@
     ],
     "dogru": 1,
     "aciklama": "Yaşam döngüsü: ölç, izle, iyileştir — sürekli."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/14-the-generative-ai-application-lifecycle",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/14-the-generative-ai-application-lifecycle/README.md"
   },
   {
    "no": 15,
@@ -317,7 +345,9 @@
     ],
     "dogru": 1,
     "aciklama": "Cevap, getirilen kanıt bağlamına dayanır."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/15-rag-and-vector-databases",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/15-rag-and-vector-databases/README.md"
   },
   {
    "no": 16,
@@ -338,7 +368,9 @@
     ],
     "dogru": 1,
     "aciklama": "Hub, açık ekosistemin merkezidir."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/16-open-source-models",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/16-open-source-models/README.md"
   },
   {
    "no": 17,
@@ -359,7 +391,9 @@
     ],
     "dogru": 1,
     "aciklama": "Ajan: düşün→araç→gözlemle döngüsüyle iş bitirir."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/17-ai-agents",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/17-ai-agents/README.md"
   },
   {
    "no": 18,
@@ -380,7 +414,9 @@
     ],
     "dogru": 1,
     "aciklama": "Önce prompt/RAG; yetmezse fine-tune."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/18-fine-tuning",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/18-fine-tuning/README.md"
   },
   {
    "no": 19,
@@ -401,7 +437,9 @@
     ],
     "dogru": 1,
     "aciklama": "SLM: yerel, hızlı, gizli — dar alanda etkili."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/19-slm",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/19-slm/README.md"
   },
   {
    "no": 20,
@@ -422,7 +460,9 @@
     ],
     "dogru": 1,
     "aciklama": "MoE: token başına seçili uzmanlar → verimlilik."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/20-mistral",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/20-mistral/README.md"
   },
   {
    "no": 21,
@@ -443,7 +483,9 @@
     ],
     "dogru": 1,
     "aciklama": "Meta, Llama ağırlıklarını açık yayınlar; ekosistem büyütür."
-   }
+   },
+   "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/21-meta",
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/21-meta/README.md"
   },
   {
    "no": 22,
@@ -466,7 +508,8 @@
     ],
     "dogru": 1,
     "aciklama": "Nöral ODE: ağ türev alanını öğrenir; yörünge sayısal entegrasyonla (ör. RK4) üretilir."
-   }
+   },
+   "link": "https://github.com/SciML/DiffEqFlux.jl"
   },
   {
    "no": 23,
@@ -490,7 +533,8 @@
     ],
     "dogru": 1,
     "aciklama": "Parametreli sorgu, girdiyi koddan ayırır — enjeksiyonun köklü çözümü budur; kara liste/escape güvenilmez."
-   }
+   },
+   "link": "https://owasp.org/www-project-top-ten/"
   },
   {
    "no": 24,
@@ -513,7 +557,8 @@
     ],
     "dogru": 1,
     "aciklama": "Termux kendi pkg yöneticisini kullanır; nodejs-lts paketi Node.js + npm getirir. sudo gerekmez."
-   }
+   },
+   "link": "https://github.com/termux/termux-app"
   },
   {
    "no": 25,
@@ -538,7 +583,8 @@
     ],
     "dogru": 1,
     "aciklama": "H + CNOT, dolanık Bell durumu üretir: ölçüm yalnız |00> veya |11> verir, asla |01>/|10> değil."
-   }
+   },
+   "link": "https://github.com/PennyLaneAI/pennylane"
   },
   {
    "no": 26,
@@ -562,7 +608,8 @@
     ],
     "dogru": 1,
     "aciklama": "Backprop, zincir kuralıyla kaybın tüm parametrelere göre gradyanlarını üretir; SGD bunlarla ağırlıkları günceller."
-   }
+   },
+   "link": "https://github.com/FluxML/Flux.jl"
   },
   {
    "no": 27,
@@ -586,7 +633,8 @@
     ],
     "dogru": 1,
     "aciklama": "MCMC, karmaşık posterior'lardan rastgele yürüyüşle örneklem çeker; örneklemden ortalama/aralık gibi çıkarımlar yapılır."
-   }
+   },
+   "link": "https://github.com/tensorflow/probability"
   },
   {
    "no": 28,
@@ -610,7 +658,8 @@
     ],
     "dogru": 1,
     "aciklama": "Federe öğrenmede veri cihazda kalır; sunucu yalnız ağırlık güncellemelerini toplayıp ortalar (FedAvg)."
-   }
+   },
+   "link": "https://github.com/OpenMined/PySyft"
   },
   {
    "no": 29,
@@ -634,7 +683,8 @@
     ],
     "dogru": 1,
     "aciklama": "Eğitim verisinde herkes iyi puan alır; asıl marifet görülmemiş veride — val bölmesi bunu ölçer."
-   }
+   },
+   "link": "https://github.com/keras-team/autokeras"
   },
   {
    "no": 30,
@@ -658,7 +708,8 @@
     ],
     "dogru": 1,
     "aciklama": "Fail-closed: şüphe/arıza durumunda güvenli tarafa geç — aramayı sürdürme, dur."
-   }
+   },
+   "link": "https://github.com/sidinsearch/AgentCall"
   },
   {
    "no": 31,
@@ -682,7 +733,8 @@
     ],
     "dogru": 1,
     "aciklama": "Milyonlarca parametre × 1 kayıp: ters mod, maliyeti ileri geçişin ~2 katında tutar (backprop'un ta kendisi)."
-   }
+   },
+   "link": "https://github.com/google/jax"
   },
   {
    "no": 32,
@@ -706,7 +758,8 @@
     ],
     "dogru": 1,
     "aciklama": "Resmî işlem hataları geri alınamaz; ajan taslar/önerir, insan onaylar — sorumluluk zinciri korunur."
-   }
+   },
+   "link": "https://github.com/chyp3r/KACHOW-Teknofest-2026"
   }
  ]
 }
