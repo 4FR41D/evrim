@@ -273,7 +273,7 @@ async function send(text) {
       beat();
       const found = await Promise.race([
         probeKeyless({ onProgress: (t) => { liveStat.textContent = t; beat(); } }),
-        new Promise((r) => setTimeout(() => r(null), 6000)),
+        new Promise((r) => setTimeout(() => r(null), 4000)),
       ]).catch(() => null);
       if (!found) {
         clearInterval(watchdog);
@@ -419,7 +419,10 @@ function newChat() {
 
 /* ---------------- durum ---------------- */
 function setBrainBar(text) {
+  // v21: sohbet ekranı her cihazda "hazır" görünür — uyarı bandı yok.
   const bar = $('#brainBar');
+  if (bar) bar.style.display = 'none';
+  return;
   if (!bar) return;
   if (!text) { bar.style.display = 'none'; return; }
   const sub = $('#brainBarSub'); if (sub) sub.textContent = text;
@@ -453,11 +456,11 @@ function refreshStatus() {
     } else if (loc.supported) {
       pill.textContent = loc.loading ? `indiriliyor %${loc.progress}` : '🧠 modeli başlat';
       pill.className = loc.loading ? 'pill demo' : 'pill ok';
-      setBrainBar('Cihazında açık kaynak model çalışabilir — bir kez ~200 MB iner, sonra sınırsız ve çevrimdışı.');
+      setBrainBar(null);
     } else {
-      pill.textContent = '⚠️ WebGPU yok';
-      pill.className = 'pill demo';
-      setBrainBar('Bu tarayıcıda yerel model çalışmıyor. Anahtarsız bulut modeli veya ücretsiz OpenRouter anahtarı ile devam edebilirsin.');
+      pill.textContent = '🆓 ücretsiz mod · anahtar yok';
+      pill.className = 'pill ok';
+      setBrainBar(null);
     }
   } else {
     pill.textContent = `${a.def.name} · ${String(a.model).split('/').pop()}`;
@@ -1100,24 +1103,22 @@ function askBrain(pendingText) {
   const div = document.createElement('div');
   div.className = 'msg bot pick';
   div.innerHTML = `
-    <b>⚡ Cevap verebilmem için ücretsiz bulut modeline bağlanmam lazım</b>
+    <b>👋 Beyin bu cihazda ilk kez uyanıyor — cevabın hazır bekliyor</b>
     <div class="muted" style="font-size:12.5px;margin:6px 0 10px">
-      <b>API anahtarı YOK, ücret YOK, kart YOK.</b> Tek dokunuşla ücretsiz Puter oturumu
-      açılır (e-posta veya GitHub ile ~10 sn). Bir kez yaparsın, bu cihazda aylarca kalır.
+      Tek dokunuşla ücretsiz buluta bağlanırım (<b>anahtar yok, ücret yok</b>);
+      sorunu ben otomatik yeniden sorarım. Bu cihazda bir kez yapman yeterli.
     </div>
     <div class="item" style="border-color:rgba(124,92,255,.5)">
       <div class="t">☁️ Ücretsiz bulut modeli <span class="chip acc">0 MB · ~2 sn · ANAHTAR YOK</span></div>
       <div class="s">Giriş penceresi açılır → ücretsiz girersin → sorunu ben otomatik yeniden sorarım.</div>
-      <div class="a"><button class="btn sm cconn" style="flex:1">☁️ Ücretsiz bağlan ve sorumu sor</button></div>
+      <div class="a"><button class="btn sm cconn" style="flex:1">☁️ Bağlan ve cevapla</button></div>
     </div>
     <div class="item">
       <div class="t">📥 Cihazımda çalıştır <span class="chip">~194 MB · bir kez · sınırsız</span></div>
       <div class="s">Açık kaynak model telefonuna iner; cevaplar yavaştır (10-40 sn) ama veri tamamen sende kalır.</div>
       <div class="a"><button class="btn sm ghost clocal">📥 İndir ve başlat</button></div>
     </div>
-    <div class="muted" style="font-size:11.5px;margin-top:8px">
-      İleri düzey (zorunlu değil): kendi bulut anahtarın varsa Ayarlar → 🔑 bölümünden ekleyebilirsin.
-    </div>`;
+`;
   $('#msgs').appendChild(div);
   requestAnimationFrame(scrollBottom);
 

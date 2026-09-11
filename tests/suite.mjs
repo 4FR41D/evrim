@@ -132,8 +132,10 @@ function fakeRes(body, toolCall, finalText) {
   try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
   await wait(400);
   $(w, '#npName').value = 'Yeni'; $(w, '#npCreate').click(); await wait(200);
+  ok('3. açılış: uyarı bandı YOK (beyin hazır görünür)', ($(w, '#brainBar')?.style.display || 'none') === 'none');
+  ok('3. açılış: pill korkutucu değil', !($(w, '#statusPill')?.textContent || '').includes('WebGPU') && ($(w, '#statusPill')?.textContent || '').includes('ücretsiz mod'));
   $(w, '#input').value = 'merhaba'; $(w, '#send').click();
-  await wait(8000); // probeKeyless 6sn kap
+  await wait(8000); // probeKeyless 4sn kap
   ok('3. kart: anahtar alanı YOK', !$$(w, '#msgs .ckey').length);
   ok('3. kart: ücretsiz bağlan düğmesi var', !!$(w, '#msgs .cconn'));
   const conn = $(w, '#msgs .cconn');
