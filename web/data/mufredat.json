@@ -587,6 +587,30 @@
     "dogru": 1,
     "aciklama": "MCMC, karmaşık posterior'lardan rastgele yürüyüşle örneklem çeker; örneklemden ortalama/aralık gibi çıkarımlar yapılır."
    }
+  },
+  {
+   "no": 28,
+   "baslik": "Bonus: Gizlilik Koruyan Makine Öğrenmesi (PySyft)",
+   "ozet": "Klasik ML'de veri merkeze toplanır; gizlilik koruyan ML'de veri yerinde kalır. PySyft/OpenMined (Apache 2.0) üç sütun: (1) Federe öğrenme — her cihaz modeli kendi verisiyle yerel eğitir, merkeze yalnız AĞIRLIK GÜNCELLEMELERİ gider, FedAvg ile ortalanır; ham veri asla cihazdan çıkmaz. (2) Diferansiyel gizlilik — sonuçlara ε (epsilon) bütçeli Laplace/Gauss gürültüsü eklenir; küçük ε = güçlü gizlilik + çok gürültü, büyük ε = zayıf gizlilik + isabet. (3) Güvenli toplama/çok taraflı hesap — sunucu tek tek güncellemeleri göremez. Gerçek kullanım: klavye tahmini (Gboard), hastane verileri, finans. EVRIM'in gizli_ogren aracı federe FedAvg simülasyonunu ve ε'lu gürültülü istatistiği tarayıcıda çalıştırır.",
+   "kavramlar": [
+    "federe öğrenme",
+    "FedAvg",
+    "diferansiyel gizlilik",
+    "epsilon",
+    "Laplace gürültüsü",
+    "güvenli toplama"
+   ],
+   "quiz": {
+    "soru": "Federe öğrenmede merkezi sunucuya ne gönderilir?",
+    "secenekler": [
+     "Ham veri kümesi",
+     "Model ağırlık güncellemeleri",
+     "Verinin şifrelenmiş kopyası",
+     "Kullanıcı kimlikleri"
+    ],
+    "dogru": 1,
+    "aciklama": "Federe öğrenmede veri cihazda kalır; sunucu yalnız ağırlık güncellemelerini toplayıp ortalar (FedAvg)."
+   }
   }
  ]
 }

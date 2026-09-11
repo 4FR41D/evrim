@@ -74,6 +74,13 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('gizli_ogren', 'GİZLİLİK KORUYAN ÖĞRENME (PySyft ruhu, tarayıcıda): "federe" — FedAvg simülasyonu: 2-5 istemci veriyi PAYLAŞMADAN yerel eğitir, ağırlıklar merkezde ortalanır (tur tur kayıp/doğruluk tablosu); "farkli_gizlilik" — ε bütçeli Laplace gürültülü istatistik: gerçek vs gürültülü ortalama, gizlilik-kullanışlılık dengesi tablosu. Federated learning/diferansiyel gizlilik/gizli veri analizi isteklerinde çağır.', {
+    gorev: { type: 'string', description: 'federe | farkli_gizlilik' },
+    istemci: { type: 'number', description: 'federe: istemci sayısı 2-5 (varsayılan 3)' },
+    turlar: { type: 'number', description: 'federe: federasyon turu 1-20 (varsayılan 8)' },
+    epsilon: { type: 'number', description: 'farkli_gizlilik: gizlilik bütçesi ε (varsayılan 1)' },
+    veri: { type: 'string', description: 'farkli_gizlilik: JSON sayı dizisi (opsiyonel; verilmezse örnek maaş verisi üretilir)' },
+  }, ['gorev']),
   F('olasilik', 'OLASILIK/İSTATİSTİK LABORATUVARI (TensorFlow Probability ruhu, tarayıcıda): 3 görev — "dagilim": dağılım tablosu + ortalama/varyans (normal, binom, poisson, ustel, duzgu); "monte_carlo": π veya integral tahmini (ifade + aralik ver); "mcmc": Metropolis-Hastings ile hedef yoğunluktan posterior örneklemi (Bayesçi çıkarım). Olasılık/istatistik/Bayes/Monte Carlo isteklerinde çağır.', {
     gorev: { type: 'string', description: 'dagilim | monte_carlo | mcmc' },
     dagilimAdi: { type: 'string', description: 'dagilim görevi için: normal | binom | poisson | ustel | duzgu' },
@@ -619,6 +626,102 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async gizli_ogren({ gorev, istemci, turlar, epsilon, veri }) {
+    try {
+      let seed = 135792468;
+      const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      const g = String(gorev || '').toLocaleLowerCase('tr');
+
+      if (g === 'federe') {
+        const K = Math.max(2, Math.min(5, Math.round(Number(istemci) || 3)));
+        const R = Math.max(1, Math.min(20, Math.round(Number(turlar) || 8)));
+        const X = []; const Y = [];
+        while (X.length < 120) {
+          const ic = X.length < 60;
+          const r = ic ? 0.25 + rnd() * 0.65 : 1.4 + rnd() * 0.6;
+          const a = rnd() * Math.PI * 2;
+          X.push([+(r * Math.cos(a)).toFixed(4), +(r * Math.sin(a)).toFixed(4)]);
+          Y.push([ic ? 1 : 0]);
+        }
+        for (let i = X.length - 1; i > 0; i--) { const j2 = Math.floor(rnd() * (i + 1)); [X[i], X[j2]] = [X[j2], X[i]]; [Y[i], Y[j2]] = [Y[j2], Y[i]]; }
+        const shards = Array.from({ length: K }, () => []);
+        X.forEach((x, i) => shards[i % K].push(i));
+        const H = 6; const lr = 0.15; const localE = 25;
+        let W1 = []; const b1 = []; let W2 = [[]]; let b2 = [0];
+        for (let i = 0; i < H; i++) { W1.push([(rnd() * 2 - 1) * 1.5, (rnd() * 2 - 1) * 1.5]); b1.push(rnd() * 2 - 1); }
+        for (let i = 0; i < H; i++) W2[0].push((rnd() * 2 - 1) / Math.sqrt(H));
+        const evaluate = () => {
+          let L = 0; let dogru = 0;
+          for (let s = 0; s < X.length; s++) {
+            const h = W1.map((w, i) => Math.tanh(w[0] * X[s][0] + w[1] * X[s][1] + b1[i]));
+            const o = W2[0].reduce((a, wi, i) => a + wi * h[i], 0) + b2[0];
+            L += (o - Y[s][0]) ** 2;
+            if ((o > 0.5 ? 1 : 0) === Y[s][0]) dogru++;
+          }
+          return { kayip: +(L / X.length).toFixed(5), dogruluk: Math.round((dogru / X.length) * 100) };
+        };
+        const log = [];
+        for (let r2 = 1; r2 <= R; r2++) {
+          const acc = { W1: W1.map((w) => [0, 0]), b1: b1.map(() => 0), W2: W2[0].map(() => 0), b2: 0 };
+          for (let c = 0; c < K; c++) {
+            let cW1 = W1.map((w) => [w[0], w[1]]); let cb1 = b1.slice(); let cW2 = W2[0].slice(); let cb2 = b2[0];
+            const idx = shards[c]; const N = idx.length;
+            for (let e = 0; e < localE; e++) {
+              const dW1 = cW1.map(() => [0, 0]); const db1 = cb1.map(() => 0); const dW2 = cW2.map(() => 0); let db2 = 0;
+              for (const s of idx) {
+                const hpre = cW1.map((w, i) => w[0] * X[s][0] + w[1] * X[s][1] + cb1[i]);
+                const h = hpre.map(Math.tanh);
+                const o = cW2.reduce((a, wi, i) => a + wi * h[i], 0) + cb2;
+                const d = o - Y[s][0];
+                for (let i = 0; i < H; i++) dW2[i] += 2 * d * h[i];
+                db2 += 2 * d;
+                for (let i = 0; i < H; i++) {
+                  const dp = 2 * d * cW2[i] * (1 - h[i] * h[i]);
+                  db1[i] += dp; dW1[i][0] += dp * X[s][0]; dW1[i][1] += dp * X[s][1];
+                }
+              }
+              for (let i = 0; i < H; i++) { cW1[i][0] -= lr * dW1[i][0] / N; cW1[i][1] -= lr * dW1[i][1] / N; cb1[i] -= lr * db1[i] / N; cW2[i] -= lr * dW2[i] / N; }
+              cb2 -= lr * db2 / N;
+            }
+            for (let i = 0; i < H; i++) { acc.W1[i][0] += cW1[i][0] / K; acc.W1[i][1] += cW1[i][1] / K; acc.b1[i] += cb1[i] / K; acc.W2[i] += cW2[i] / K; }
+            acc.b2 += cb2 / K;
+          }
+          W1 = acc.W1; W2 = [acc.W2]; b2 = [acc.b2];
+          for (let i = 0; i < H; i++) b1[i] = acc.b1[i];
+          const ev = evaluate();
+          log.push([r2, ev.kayip, ev.dogruluk]);
+        }
+        const son = log[log.length - 1];
+        const tabloMarkdown = '| tur | küresel kayıp | doğruluk |\n|---|---|---|\n' + log.map(([r3, l, a]) => `| ${r3} | ${l} | ${a}% |`).join('\n');
+        return { ok: true, gorev: 'federe (FedAvg)', istemciSayisi: K, federasyonTuru: R, veriPuani: X.length, sonKayip: son[1], dogruluk: son[2] + '%', tabloMarkdown, not: 'Tabloyu koy; vurgula: ham veri istemcilerden ÇIKMADI, yalnız ağırlıklar ortalandı (FedAvg).' };
+      }
+
+      if (g === 'farkli_gizlilik') {
+        let V;
+        try { V = typeof veri === 'string' && veri.trim() ? JSON.parse(veri) : null; } catch { V = null; }
+        if (!Array.isArray(V) || V.length < 5) {
+          V = []; for (let i = 0; i < 200; i++) V.push(Math.round(30000 + rnd() * rnd() * 60000));
+          V._ornek = true;
+        }
+        V = V.slice(0, 1000).map(Number).filter((x) => isFinite(x));
+        if (V.length < 5) return { hata: 'en az 5 sayı gerekli' };
+        const n = V.length; const mn = Math.min(...V); const mx = Math.max(...V);
+        const gercek = V.reduce((a, b) => a + b, 0) / n;
+        const sens = (mx - mn) / n;
+        const lap = (scale) => { const u = rnd() - 0.5; return -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u)); };
+        const epsList = [0.1, 0.5, 1, 2];
+        const userEps = Number(epsilon) > 0 ? Number(epsilon) : 1;
+        if (!epsList.includes(userEps)) epsList.push(userEps);
+        epsList.sort((a, b) => a - b);
+        const rows = epsList.map((e) => { const gurultulu = gercek + lap(sens / e); return [e, Math.round(gurultulu), Math.round(Math.abs(gurultulu - gercek))]; });
+        const tabloMarkdown = '| ε | gürültülü ortalama | mutlak hata |\n|---|---|---|\n' + rows.map(([e, v, h2]) => `| ${e} | ${v} | ${h2} |`).join('\n');
+        return { ok: true, gorev: 'farkli_gizlilik (Laplace)', sorgu: 'ortalama', adet: n, gercekOrtalama: Math.round(gercek), aralik: [mn, mx], duyarlilik: +sens.toFixed(4), tabloMarkdown, ornekVeri: !!V._ornek, not: 'Tabloyu koy; yorum: küçük ε = güçlü gizlilik + büyük hata, büyük ε = zayıf gizlilik + isabet. Gerçek ortalama "sır" olarak kalmalı — yayınlanan yalnız gürültülü değer.' };
+      }
+
+      return { hata: 'görev federe | farkli_gizlilik olmalı' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
   },
 
   async olasilik({ gorev, dagilimAdi, parametreler, ifade, aralik, ornek }) {
@@ -1271,6 +1374,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    gizli_ogren: (args.gorev) ? `🔐 Gizli öğrenme ${done ? (bad ? 'başarısız' : 'çalıştı') : 'çalışıyor'}: ${String(args.gorev).slice(0, 16)}` : `🔐 Gizli öğrenme ${done ? 'çalıştı' : 'çalışıyor'}`,
     olasilik: (args.gorev) ? `🎲 Olasılık ${done ? (bad ? 'hesaplanamadı' : 'hesaplandı') : 'hesaplanıyor'}: ${String(args.gorev).slice(0, 14)}` : `🎲 Olasılık ${done ? 'hesaplandı' : 'hesaplanıyor'}`,
     sinir_agi: (args.gorev) ? `🧮 Sinir ağı ${done ? (bad ? 'eğitilemedi' : 'eğitildi (' + args.gorev + ')') : 'eğitiliyor (' + args.gorev + ')'}` : `🧮 Sinir ağı ${done ? 'eğitildi' : 'eğitiliyor'}`,
     kuantum_devre: done ? (bad ? '⚛ Kuantum devre çalışmadı' : '⚛ Kuantum devre simüle edildi') : '⚛ Kuantum devre simüle ediliyor',

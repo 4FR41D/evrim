@@ -1057,5 +1057,43 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 33) gizli_ogren: FedAvg yakınsama + diferansiyel gizlilik tablosu + ders 28 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'gizli_ogren', args: { gorev: 'federe', istemci: 3, turlar: 8 } });
+      if (round === 2) return fakeRes(body, { name: 'gizli_ogren', args: { gorev: 'farkli_gizlilik', epsilon: 1, veri: '[10,12,11,13,12,14,11,13]' } });
+      return fakeRes(body, null, 'Gizli öğrenme sonuçları burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Gizli'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'federe öğrenme simülasyonu çalıştır'; $(w, '#send').click();
+  await wait(4500);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const fed = R.find((r) => r?.ok && String(r.gorev).includes('federe'));
+  const dg = R.find((r) => r?.ok && String(r.gorev).includes('farkli'));
+  ok('33. FedAvg: 3 istemci, 8 tur, doğruluk ≥ %85', !!fed && fed.istemciSayisi === 3 && parseInt(fed.dogruluk) >= 85);
+  ok('33. FedAvg: tur tablosu + kayıp düştü', !!fed && fed.tabloMarkdown.includes('| tur |') && fed.sonKayip < 0.1);
+  ok('33. DG: özel veri ortalaması 12±1', !!dg && Math.abs(dg.gercekOrtalama - 12) <= 1 && dg.ornekVeri === false);
+  ok('33. DG: ε tablosu (0.1 → 2)', !!dg && dg.tabloMarkdown.includes('| 0.1 |') && dg.tabloMarkdown.includes('| 2 |'));
+  ok('33. ders 28 (PySyft bonusu) müfredatta', MUF.dersler.some((d) => d.no === 28 && String(d.baslik).includes('Gizlilik')));
+  ok('33. çip: 🔐', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🔐')));
+  ok('33. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
