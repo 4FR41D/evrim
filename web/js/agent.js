@@ -74,6 +74,14 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('olasilik', 'OLASILIK/İSTATİSTİK LABORATUVARI (TensorFlow Probability ruhu, tarayıcıda): 3 görev — "dagilim": dağılım tablosu + ortalama/varyans (normal, binom, poisson, ustel, duzgu); "monte_carlo": π veya integral tahmini (ifade + aralik ver); "mcmc": Metropolis-Hastings ile hedef yoğunluktan posterior örneklemi (Bayesçi çıkarım). Olasılık/istatistik/Bayes/Monte Carlo isteklerinde çağır.', {
+    gorev: { type: 'string', description: 'dagilim | monte_carlo | mcmc' },
+    dagilimAdi: { type: 'string', description: 'dagilim görevi için: normal | binom | poisson | ustel | duzgu' },
+    parametreler: { type: 'string', description: 'JSON: {"mu":0,"sigma":1} / {"n":10,"p":0.5} / {"lambda":3} / {"a":0,"b":1}' },
+    ifade: { type: 'string', description: 'monte_carlo integral için f(x) veya mcmc hedef yoğunluk (JS ifadesi, x + Math.*), örn. "Math.exp(-x*x/2)"' },
+    aralik: { type: 'string', description: 'JSON [a,b] — integral/mcmc sınırları' },
+    ornek: { type: 'number', description: 'örnek/iterasyon sayısı (varsayılan 20000/8000)' },
+  }, ['gorev']),
   F('sinir_agi', 'SİNİR AĞI EĞİTİCİ (Flux.jl ruhu, tarayıcıda): küçük bir yapay sinir ağını SIFIRDAN eğitir — ileri geçiş, kayıp, geri yayılım, SGD (saf JS). Hazır görevler: "xor" (klasik mantık), "daire" (2B sınıflandırma), "sinus" (regresyon). Kayıp eğrisi + doğruluk + örnek tahminler döner. Kullanıcı sinir ağı/eğitim/derin öğrenme demosu isterse çağır.', {
     gorev: { type: 'string', description: 'xor | daire | sinus' },
     turler: { type: 'number', description: 'epoch sayısı (varsayılan göreve göre yeterli)' },
@@ -613,6 +621,125 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async olasilik({ gorev, dagilimAdi, parametreler, ifade, aralik, ornek }) {
+    try {
+      let seed = 246813579;
+      const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      const g = String(gorev || '').toLocaleLowerCase('tr');
+      const P = typeof parametreler === 'string' ? (parametreler.trim() ? JSON.parse(parametreler) : {}) : (parametreler || {});
+      const A = typeof aralik === 'string' ? (aralik.trim() ? JSON.parse(aralik) : null) : (aralik || null);
+      const GUARD = /[;{}]|=>|\bfunction\b|\breturn\b|import|require|fetch|eval|globalThis|window|document|localStorage/;
+
+      if (g === 'dagilim') {
+        const ad = String(dagilimAdi || P.ad || 'normal').toLocaleLowerCase('tr');
+        const rows = [];
+        let mean = 0; let variance = 0; let tip = 'sürekli';
+        if (ad === 'normal' || ad === 'gauss') {
+          const mu = Number(P.mu ?? 0), sigma = Number(P.sigma ?? 1);
+          if (!(sigma > 0)) return { hata: 'sigma > 0 olmalı' };
+          mean = mu; variance = sigma * sigma;
+          for (let i = 0; i <= 12; i++) { const x = mu - 3 * sigma + (i * 6 * sigma) / 12; rows.push([+x.toFixed(3), +(Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI))).toFixed(4)]); }
+        } else if (ad === 'binom' || ad === 'binomial') {
+          const n = Math.max(1, Math.min(60, Math.round(Number(P.n ?? 10))));
+          const p = Math.min(1, Math.max(0, Number(P.p ?? 0.5)));
+          tip = 'ayrık'; mean = n * p; variance = n * p * (1 - p);
+          const lnf = (k) => { let t = 0; for (let i = 2; i <= k; i++) t += Math.log(i); return t; };
+          for (let k = 0; k <= Math.min(20, n); k++) {
+            const lp = lnf(n) - lnf(k) - lnf(n - k) + k * Math.log(p || 1e-12) + (n - k) * Math.log(1 - p || 1e-12);
+            rows.push([k, +Math.exp(lp).toFixed(4)]);
+          }
+        } else if (ad === 'poisson') {
+          const lam = Number(P.lambda ?? 3);
+          if (!(lam > 0)) return { hata: 'lambda > 0 olmalı' };
+          tip = 'ayrık'; mean = lam; variance = lam;
+          let lf = 0;
+          const kmax = Math.min(25, Math.ceil(lam + 4 * Math.sqrt(lam) + 3));
+          for (let k = 0; k <= kmax; k++) { if (k > 0) lf += Math.log(k); rows.push([k, +Math.exp(-lam + k * Math.log(lam) - lf).toFixed(4)]); }
+        } else if (ad === 'ustel' || ad === 'exponential') {
+          const lam = Number(P.lambda ?? 1);
+          if (!(lam > 0)) return { hata: 'lambda > 0 olmalı' };
+          mean = 1 / lam; variance = 1 / (lam * lam);
+          for (let i = 0; i <= 12; i++) { const x = (i * 4) / (12 * lam); rows.push([+x.toFixed(3), +(lam * Math.exp(-lam * x)).toFixed(4)]); }
+        } else if (ad === 'duzgu' || ad === 'uniform') {
+          const a = Number(P.a ?? 0), b = Number(P.b ?? 1);
+          if (!(b > a)) return { hata: 'b > a olmalı' };
+          mean = (a + b) / 2; variance = ((b - a) ** 2) / 12;
+          for (let i = 0; i <= 10; i++) { const x = a + (i * (b - a)) / 10; rows.push([+x.toFixed(3), +(1 / (b - a)).toFixed(4)]); }
+        } else return { hata: 'bilinmeyen dağılım (normal|binom|poisson|ustel|duzgu)' };
+        const tabloMarkdown = `| ${tip === 'ayrık' ? 'k' : 'x'} | ${tip === 'ayrık' ? 'P(X=k)' : 'pdf(x)'} |\n|---|---|\n` + rows.map(([x, y]) => `| ${x} | ${y} |`).join('\n');
+        return { ok: true, gorev: 'dagilim', dagilim: ad, tip, ortalama: +mean.toFixed(4), varyans: +variance.toFixed(4), stdSapma: +Math.sqrt(variance).toFixed(4), tabloMarkdown, not: 'Tabloyu cevabına koy; ortalama/varyansı 1-2 cümleyle yorumla.' };
+      }
+
+      if (g === 'monte_carlo') {
+        const N = Math.max(1000, Math.min(200000, Number(ornek) || 20000));
+        const expr = String(ifade || '').trim();
+        if (expr) {
+          if (GUARD.test(expr)) return { hata: 'ifade yalnızca matematik olmalı (x, Math.*)' };
+          const f = new Function('x', 'Math', '"use strict"; return (' + expr + ');');
+          const lo = Array.isArray(A) ? Number(A[0]) : 0;
+          const hi = Array.isArray(A) ? Number(A[1]) : 1;
+          if (!(hi > lo)) return { hata: 'aralik [a,b] ve b>a olmalı' };
+          const est = (M) => {
+            let s1 = 0; let s2 = 0;
+            for (let i = 0; i < M; i++) { const x = lo + rnd() * (hi - lo); const v = f(x, Math); if (!isFinite(v)) throw new Error('ifade sonlu değer vermedi'); s1 += v; s2 += v * v; }
+            const m = s1 / M; const varM = Math.max(0, s2 / M - m * m);
+            return { tahmin: m * (hi - lo), stdHata: Math.sqrt(varM / M) * (hi - lo) };
+          };
+          const full = est(N);
+          const conv = [Math.floor(N / 4), Math.floor(N / 2), N].map((M) => [M, +est(M).tahmin.toFixed(5)]);
+          const tabloMarkdown = '| örnek | tahmin |\n|---|---|\n' + conv.map(([m, v]) => `| ${m} | ${v} |`).join('\n');
+          return { ok: true, gorev: 'monte_carlo: integral', ifade: expr, aralik: [lo, hi], ornek: N, tahmin: +full.tahmin.toFixed(5), stdHata: +full.stdHata.toFixed(5), tabloMarkdown, not: 'Tahmini ± 2·stdHata yakınsama tablosuyla sun.' };
+        }
+        const est = (M) => { let ic = 0; for (let i = 0; i < M; i++) { const x = rnd(); const y = rnd(); if (x * x + y * y <= 1) ic++; } return (4 * ic) / M; };
+        const full = est(N);
+        const conv = [Math.floor(N / 4), Math.floor(N / 2), N].map((M) => [M, +est(M).toFixed(5)]);
+        const tabloMarkdown = '| örnek | π tahmini |\n|---|---|\n' + conv.map(([m, v]) => `| ${m} | ${v} |`).join('\n');
+        return { ok: true, gorev: 'monte_carlo: pi', ornek: N, tahmin: +full.toFixed(5), hata: +Math.abs(full - Math.PI).toFixed(5), tabloMarkdown, not: 'π tahminini yakınsama tablosuyla sun.' };
+      }
+
+      if (g === 'mcmc') {
+        const expr = String(ifade || '').trim();
+        if (!expr) return { hata: 'mcmc için hedef yoğunluk ifadesi gerekli (örn. "Math.exp(-x*x/2)")' };
+        if (GUARD.test(expr)) return { hata: 'ifade yalnızca matematik olmalı (x, Math.*)' };
+        const f = new Function('x', 'Math', '"use strict"; return (' + expr + ');');
+        const it = Math.max(500, Math.min(50000, Number(ornek) || 8000));
+        const lo = Array.isArray(A) ? Number(A[0]) : -6;
+        const hi = Array.isArray(A) ? Number(A[1]) : 6;
+        if (!(hi > lo)) return { hata: 'aralik [a,b] ve b>a olmalı' };
+        const step = (hi - lo) / 20;
+        let x = (lo + hi) / 2;
+        let fx = f(x, Math);
+        if (!isFinite(fx) || fx <= 0) {
+          let found = false;
+          for (let i = 0; i < 60 && !found; i++) { const xt = lo + rnd() * (hi - lo); const ft = f(xt, Math); if (isFinite(ft) && ft > 0) { x = xt; fx = ft; found = true; } }
+          if (!found) return { hata: 'hedef yoğunluk bu aralıkta pozitif/sonlu değil' };
+        }
+        const burn = Math.floor(it * 0.2);
+        const samples = [];
+        let kabul = 0;
+        for (let i = 0; i < it; i++) {
+          const u1 = Math.max(1e-12, rnd()); const u2 = rnd();
+          const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          const xp = x + z * step;
+          const fp = f(xp, Math);
+          if (isFinite(fp) && fp > 0 && (fp >= fx || rnd() < fp / fx)) { x = xp; fx = fp; kabul++; }
+          if (i >= burn) samples.push(x);
+        }
+        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const std = Math.sqrt(samples.reduce((a, b) => a + (b - mean) ** 2, 0) / samples.length);
+        const sorted = samples.slice().sort((a, b) => a - b);
+        const q = (pr) => +sorted[Math.min(sorted.length - 1, Math.floor(pr * sorted.length))].toFixed(4);
+        const bins = 10; const bmin = sorted[0]; const bmax = sorted[sorted.length - 1];
+        const hist = new Array(bins).fill(0);
+        for (const v of samples) { let bi = Math.floor(((v - bmin) / ((bmax - bmin) || 1)) * bins); if (bi >= bins) bi = bins - 1; hist[bi]++; }
+        const tabloMarkdown = '| aralık | örnek |\n|---|---|\n' + hist.map((c, i) => `| ${(+((bmin + (i * (bmax - bmin)) / bins)).toFixed(2))} – ${(+((bmin + ((i + 1) * (bmax - bmin)) / bins)).toFixed(2))} | ${c} |`).join('\n');
+        return { ok: true, gorev: 'mcmc (Metropolis-Hastings)', ifade: expr, orneklem: samples.length, kabulOrani: Math.round((kabul / it) * 100) + '%', ortalama: +mean.toFixed(4), stdSapma: +std.toFixed(4), q025: q(0.25), medyan: q(0.5), q975: q(0.975), tabloMarkdown, not: 'Posterior özetini sun: ortalama ± std, %95 aralık [q025,q975], histogram tablosu; kabul oranı %20-50 ideal.' };
+      }
+
+      return { hata: 'görev dagilim | monte_carlo | mcmc olmalı' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async sinir_agi({ gorev, turler, ogrenmeOrani, gizli }) {
     try {
       const g = String(gorev || '').toLocaleLowerCase('tr');
@@ -1144,6 +1271,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    olasilik: (args.gorev) ? `🎲 Olasılık ${done ? (bad ? 'hesaplanamadı' : 'hesaplandı') : 'hesaplanıyor'}: ${String(args.gorev).slice(0, 14)}` : `🎲 Olasılık ${done ? 'hesaplandı' : 'hesaplanıyor'}`,
     sinir_agi: (args.gorev) ? `🧮 Sinir ağı ${done ? (bad ? 'eğitilemedi' : 'eğitildi (' + args.gorev + ')') : 'eğitiliyor (' + args.gorev + ')'}` : `🧮 Sinir ağı ${done ? 'eğitildi' : 'eğitiliyor'}`,
     kuantum_devre: done ? (bad ? '⚛ Kuantum devre çalışmadı' : '⚛ Kuantum devre simüle edildi') : '⚛ Kuantum devre simüle ediliyor',
     linux_komut: done ? (bad ? '🐧 Linux komutu başarısız' : '🐧 Linux komutu çalıştı') : '🐧 Linux komutu çalıştırılıyor',

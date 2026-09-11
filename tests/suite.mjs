@@ -1017,5 +1017,45 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 32) olasilik: binom tablosu + Monte Carlo π + MCMC posterior + ders 27 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'olasilik', args: { gorev: 'dagilim', dagilimAdi: 'binom', parametreler: '{"n":10,"p":0.5}' } });
+      if (round === 2) return fakeRes(body, { name: 'olasilik', args: { gorev: 'monte_carlo' } });
+      if (round === 3) return fakeRes(body, { name: 'olasilik', args: { gorev: 'mcmc', ifade: 'Math.exp(-x*x/2)' } });
+      return fakeRes(body, null, 'Olasılık sonuçları burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Olası'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'olasılık laboratuvarını çalıştır'; $(w, '#send').click();
+  await wait(4500);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const bin = R.find((r) => r?.ok && r.gorev === 'dagilim');
+  const pi = R.find((r) => r?.ok && String(r.gorev).includes('pi'));
+  const mc = R.find((r) => r?.ok && String(r.gorev).includes('mcmc'));
+  ok('32. binom: ortalama 5, P(5)=0.2461', !!bin && bin.ortalama === 5 && bin.tabloMarkdown.includes('| 5 | 0.2461 |'));
+  ok('32. Monte Carlo π ≈ 3.14 (±0.15)', !!pi && Math.abs(pi.tahmin - Math.PI) < 0.15);
+  ok('32. MCMC posterior: ort≈0, std≈1', !!mc && Math.abs(mc.ortalama) < 0.25 && mc.stdSapma > 0.75 && mc.stdSapma < 1.3);
+  ok('32. MCMC %95 aralık + histogram tablosu', !!mc && mc.q025 < mc.q975 && mc.tabloMarkdown.includes('| aralık |'));
+  ok('32. ders 27 (TFP bonusu) müfredatta', MUF.dersler.some((d) => d.no === 27 && String(d.baslik).includes('Bayesçi')));
+  ok('32. çip: 🎲', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🎲')));
+  ok('32. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

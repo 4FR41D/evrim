@@ -563,6 +563,30 @@
     "dogru": 1,
     "aciklama": "Backprop, zincir kuralıyla kaybın tüm parametrelere göre gradyanlarını üretir; SGD bunlarla ağırlıkları günceller."
    }
+  },
+  {
+   "no": 27,
+   "baslik": "Bonus: Olasılıksal Programlama ve Bayesçi Çıkarım (TensorFlow Probability)",
+   "ozet": "Klasik ML tek bir 'en iyi' model verir; olasılıksal yaklaşım belirsizliği de modeller. TensorFlow Probability (Apache 2.0): dağılımlar (Normal, Binom, Poisson…), Bayesçi çıkarım ve MCMC araçları sunar. Bayes teoremi: posterior ∝ olasılık × prior. Posterior analitik çözülemeyince MCMC (örn. Metropolis-Hastings) devreye girer: hedef yoğunluktan rastgele yürüyüşle örneklem üretir, kabul oranı ~%20-50 idealdir. Monte Carlo ise beklenen değerleri örneklemeyle tahmin eder (π, integral). EVRIM'in olasilik aracı üçünü de tarayıcıda yapar: dagilim / monte_carlo / mcmc.",
+   "kavramlar": [
+    "dağılım",
+    "prior/posterior",
+    "Bayes teoremi",
+    "MCMC",
+    "Metropolis-Hastings",
+    "Monte Carlo"
+   ],
+   "quiz": {
+    "soru": "MCMC (örn. Metropolis-Hastings) ne için kullanılır?",
+    "secenekler": [
+     "Veriyi sıralamak için",
+     "Analitik çözülemeyen posterior dağılımından örneklem üretmek için",
+     "Modeli derlemek için",
+     "Veri tabanı sorgusu için"
+    ],
+    "dogru": 1,
+    "aciklama": "MCMC, karmaşık posterior'lardan rastgele yürüyüşle örneklem çeker; örneklemden ortalama/aralık gibi çıkarımlar yapılır."
+   }
   }
  ]
 }
