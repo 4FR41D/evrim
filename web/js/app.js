@@ -15,7 +15,7 @@ import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
 import { wasmStatus, loadWasm, unloadWasm } from './wasm.js';
 import { reflexAnswer } from './reflex.js';
-import { agentChat, toolLabel, TOOLS, mediaGet } from './agent.js';
+import { agentChat, toolLabel, TOOLS, mediaGet, webSearch } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
 import { activeProfile, renameProfile, isLoggedIn } from './profile.js';
@@ -86,14 +86,43 @@ function go(v) {
   const tm = $('#chatTitleMain');
   const sb = $('#subBrand');
   if (tm) tm.textContent = v === 'chat' ? `${pe.emoji} ${pe.name}`
-    : ({ learn: '🎓 Öğrenme koçu', gh: '🐙 GitHub', evo: '🧬 Evrim', set: '⚙️ Ayarlar' }[v] || 'EVRIM');
+    : ({ search: '🔎 Web arama', learn: '🎓 Öğrenme koçu', gh: '🐙 GitHub', evo: '🧬 Evrim', set: '⚙️ Ayarlar' }[v] || 'EVRIM');
   if (sb && v === 'chat') sb.textContent = pe.tag || 'yeni sohbet';
   closeDrawer();
   if (v === 'learn') renderLearn();
   if (v === 'gh') { $('#ghRepoInput').value = getSettings().githubRepo || $('#ghRepoInput').value; }
   if (v === 'evo') renderEvo();
   if (v === 'set') renderSettings();
+  if (v === 'search') setTimeout(() => $('#wsInput')?.focus(), 50);
 }
+
+/* ---------------- v36: açık web arama bölümü ---------------- */
+async function wsRun() {
+  const q = $('#wsInput')?.value.trim();
+  const out = $('#wsOut');
+  if (!q || !out) return;
+  out.innerHTML = '<div class="muted" style="font-size:13px">🔎 Aranıyor…</div>';
+  const n = Number($('#wsCount')?.value) || 5;
+  const r = await webSearch(q, n);
+  if (!r?.ok) { out.innerHTML = `<div class="muted" style="font-size:13px">⚠️ ${esc(r?.hata || 'arama yapılamadı')}</div>`; return; }
+  if (!r.sonuc?.length) { out.innerHTML = '<div class="muted" style="font-size:13px">Sonuç bulunamadı — farklı bir sorgu dene.</div>'; return; }
+  out.innerHTML = r.sonuc.map((it, i) => `
+    <div class="item" style="padding:10px;margin-bottom:8px">
+      <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">${i + 1}. ${esc(it.baslik)}</div>
+      <div class="muted" style="font-size:11.5px;word-break:break-all;margin-bottom:8px">${esc(it.url)}</div>
+      <div class="row">
+        <a class="btn sm ghost" href="${esc(it.url)}" target="_blank" rel="noopener">🔗 Aç</a>
+        <button class="btn sm ghost" data-ws-ask="${esc(it.url)}">💬 Özetle</button>
+      </div>
+    </div>`).join('');
+  out.querySelectorAll('[data-ws-ask]').forEach((b) => b.addEventListener('click', () => {
+    const u = b.getAttribute('data-ws-ask');
+    go('chat');
+    send(`Şu sayfayı oku ve özetleyip kaynak linkiyle ver: ${u} (arama sorgum: ${q})`);
+  }));
+}
+$('#wsBtn')?.addEventListener('click', wsRun);
+$('#wsInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') wsRun(); });
 $('#gotoSettings')?.addEventListener('click', () => go('set'));
 
 /* ---------------- sohbet ---------------- */

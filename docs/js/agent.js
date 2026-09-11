@@ -671,10 +671,11 @@ const EXEC = {
       if (!res.ok) return { hata: res.status === 429 ? 'arama limiti dolu (20/dk) — birazdan tekrar dene' : 'arama servisi yanıt vermedi (' + res.status + ')' };
       const md = await res.text();
       const items = [];
-      const re = /\[([^\]\n]{6,140})\]\((https?:[^)\s]+)\)/g;
+      const re = /\[([^\]\n]{6,140})\]\(((?:https?:)?\/\/[^)\s]+)\)/g;
       let m;
       while ((m = re.exec(md)) && items.length < lim) {
         let u = m[2];
+        if (u.startsWith('//')) u = 'https:' + u;
         const dd = /uddg=([^&]+)/.exec(u);
         if (dd) {
           try { u = atob(dd[1].replace(/-/g, '+').replace(/_/g, '/')); }
@@ -861,3 +862,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
   };
   return map[name] || `🔧 ${name}`;
 }
+
+// v36: Arama bölümü (UI) ajanın web_ara/web_oku araçlarını doğrudan kullanır — ayrı kod yolu yok.
+export async function webSearch(sorgu, adet) { return EXEC.web_ara({ sorgu, adet }); }
+export async function webRead(url, odak) { return EXEC.web_oku({ url, odak }); }

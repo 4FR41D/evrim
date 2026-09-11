@@ -716,5 +716,45 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 25) ARAMA BÖLÜMÜ: nav -> v-search -> webSearch -> sonuçlar -> 💬 Özetle -> sohbete aktarım ================= */
+{
+  const calls = [];
+  const TWO = Buffer.from('https://example.com/two').toString('base64');
+  const JINA_MD = `[Sonuç Bir](https://example.com/one)\nbirinci snippet\n[Reklam](https://duckduckgo.com/y.js)\n[Sonuç İki](//duckduckgo.com/l/?uddg=${TWO})\nikinci snippet`;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('r.jina.ai')) return { ok: true, status: 200, headers: { get: () => 'text/plain' }, json: async () => ({}), text: async () => JINA_MD };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      return fakeRes(body, null, 'Sayfa özeti burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Arama'; $(w, '#npCreate').click(); await wait(250);
+  ok('25. nav düğmesi var', !!w.document.querySelector('[data-v="search"]'));
+  w.document.querySelector('[data-v="search"]').click(); await wait(150);
+  ok('25. v-search görünür oldu', $(w, '#v-search').classList.contains('on'));
+  $(w, '#wsInput').value = 'yapay zeka haberleri';
+  $(w, '#wsBtn').click();
+  await wait(600);
+  const out = $(w, '#wsOut');
+  ok('25. sonuçlar listelendi', out.innerHTML.includes('Sonuç Bir'));
+  ok('25. uddg BASE64 çözüldü', out.innerHTML.includes('https://example.com/two'));
+  ok('25. ddg/reklam linkleri elendi', !out.innerHTML.includes('y.js'));
+  ok('25. Özetle düğmesi var', !!out.querySelector('[data-ws-ask]'));
+  out.querySelector('[data-ws-ask]').click();
+  await wait(900);
+  ok('25. sohbete döndü', $(w, '#v-chat').classList.contains('on'));
+  const lastUser = calls.filter((c) => c?.messages).flatMap((c) => c.messages.filter((m) => m.role === 'user')).map((m) => String(m.content)).pop() || '';
+  ok('25. bot isteği sayfa URL’siyle gönderildi', lastUser.includes('example.com') && lastUser.includes('özetle'));
+  ok('25. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
