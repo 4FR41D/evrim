@@ -1250,5 +1250,37 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 38) HTTP 413: araçsız + kısa geçmişle otomatik inceltme ================= */
+{
+  let round = 0; const bodies = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      bodies.push(body);
+      round++;
+      if (round === 1) return { ok: false, status: 413, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'Request too large for model qwen/qwen3.8-27b on input tokens per minute (ITPM): Limit 7000, Requested 7971' } }), text: async () => '{}' };
+      return fakeRes(body, null, 'İnceltilmiş yanıt geldi.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Uzun'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'bu bir test mesajı'; $(w, '#send').click();
+  await wait(2600);
+  const b1 = bodies[0]; const b2 = bodies.find((b) => b && !b.tools);
+  ok('38. ilk istek araçlı gönderildi', !!b1 && Array.isArray(b1.tools) && b1.tools.length > 20);
+  ok('38. 413 sonrası araçsız tekrar denendi', !!b2 && (b2.tools === null || b2.tools === undefined));
+  ok('38. inceltmede tool izi yok', !!b2 && b2.messages.every((m) => m.role !== 'tool' && !m.tool_calls));
+  ok('38. sistem mesajı kısaltıldı (≤2600)', !!b2 && b2.messages.filter((m) => m.role === 'system').every((m) => m.content.length <= 2600));
+  ok('38. yanıt kullanıcıya ulaştı', $$(w, '#msgs .msg.bot').some((e) => e.textContent.includes('İnceltilmiş yanıt')));
+  ok('38. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

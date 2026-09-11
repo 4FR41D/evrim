@@ -355,6 +355,18 @@ export async function rawChat(messages, opts = {}) {
           const data = await res.json().catch(() => ({}));
           const msg = errText(res.status, data, a.id);
           if (a.id === 'openrouter') perfRecord(mid, false, 0);
+          if (res.status === 413) {
+            // v51: istek modelin token limitini (ITPM) aştı → araçsız + kısa geçmişle zayıflatılmış tekrar
+            if (!opts._slimRetry) {
+              opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()}: istek çok büyük → inceltiliyor (araçsız + kısa geçmiş)…`);
+              return rawChat(trimMessages(messages), { ...opts, _slimRetry: true, tools: null, _queue: queue.slice(qi) });
+            }
+            if (qi < queue.length - 1) {
+              lastErr = new Error(msg);
+              opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} limiti yetmedi → sıradaki model…`);
+              continue;
+            }
+          }
           if (ROTATABLE.test(`${res.status} ${msg}`) && qi < queue.length - 1) {
             lastErr = new Error(msg);
             opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model…`);
@@ -485,10 +497,25 @@ export function stripReasoning(text) {
   return t.trim();
 }
 
+/** v51 (413 inceltme): araç izlerini düşür, uzun mesajları kısalt, ilk sistem + son 8 mesajı tut */
+function trimMessages(messages) {
+  const out = [];
+  for (const m of messages || []) {
+    if (!m || typeof m !== 'object') continue;
+    if (m.role === 'system') { out.push({ role: 'system', content: String(m.content || '').slice(0, 2600) }); continue; }
+    if (m.role === 'tool' || m.tool_calls) continue;
+    out.push({ role: m.role, content: String(m.content || '').slice(0, 1600) });
+  }
+  const sys = out.filter((m) => m.role === 'system').slice(0, 2);
+  const rest = out.filter((m) => m.role !== 'system').slice(-8);
+  return [...sys, ...rest];
+}
+
 function errText(status, data, id) {
   const msg = data?.error?.message || data?.error?.error?.message || JSON.stringify(data || {}).slice(0, 200);
   if (status === 401) return `Anahtar geçersiz (${id}). Ayarlar’dan kontrol et.`;
   if (status === 402) return `${id}: ücretsiz kota/bakiye tükendi.`;
+  if (status === 413) return `${id}: istek çok büyük — modelin dakikalık token limiti aşıldı (konuşma kısaltılınca tekrar dene).`;
   if (status === 429) return id === 'groq'
     ? 'groq: paylaşımlı ücretsiz kota bu dakika dolu — diğer modeller sırayla deneniyor'
     : `${id}: hız limiti/kota dolu — birazdan tekrar dene`;
