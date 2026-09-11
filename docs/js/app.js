@@ -12,6 +12,7 @@ import {
   probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
+import { agentChat, toolLabel, TOOLS } from './agent.js';
 import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache, deviceProfile, vramCap, previewModels } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
@@ -65,11 +66,27 @@ $('#gotoSettings')?.addEventListener('click', () => go('set'));
 let conversationId = null;
 let sending = false;
 
+function addCodeCopyButtons(root) {
+  root.querySelectorAll('pre').forEach((pre) => {
+    if (pre.querySelector('.copybtn')) return;
+    const b = document.createElement('button');
+    b.className = 'copybtn'; b.textContent = 'kopyala';
+    b.addEventListener('click', async () => {
+      const code = pre.querySelector('code')?.innerText || pre.innerText;
+      try { await navigator.clipboard.writeText(code.replace(/\nkopyala$/, '')); b.textContent = '✓ kopyalandı'; }
+      catch { b.textContent = 'olmadı'; }
+      setTimeout(() => { b.textContent = 'kopyala'; }, 1600);
+    });
+    pre.appendChild(b);
+  });
+}
+
 function addMsg(m) {
   $('#chatEmpty').style.display = 'none';
   const div = document.createElement('div');
   div.className = `msg ${m.role === 'user' ? 'user' : 'bot'}${m.error ? ' err' : ''}`;
   div.innerHTML = md(m.content);
+  addCodeCopyButtons(div);
   if (m.role === 'assistant' && m.id && !m.error) {
     const meta = document.createElement('div');
     meta.className = 'meta';
@@ -139,11 +156,37 @@ async function send(text) {
   // Canlı yanıt balonu: model indirilirken/yazarken kullanıcı boş ekran görmesin
   const live = document.createElement('div');
   live.className = 'msg bot';
-  live.innerHTML = '<div class="livebody"><span class="typing"><i></i><i></i><i></i></span></div>'
+  live.innerHTML = '<div class="toolsteps"></div>'
+    + '<div class="livebody"><span class="typing"><i></i><i></i><i></i></span></div>'
     + '<div class="livestatus muted" style="font-size:12px;margin-top:6px"></div>';
   $('#msgs').appendChild(live);
   const liveBody = live.querySelector('.livebody');
   const liveStat = live.querySelector('.livestatus');
+  const toolBox = live.querySelector('.toolsteps');
+  const toolRows = new Map();
+
+  // AJAN: modelin araç çağrıları burada görünür (tıpkı bir ajanın "ne yaptığı" gibi)
+  const onTool = (name, phase, detail, ms) => {
+    if (phase === 'running') {
+      const row = document.createElement('div');
+      row.className = 'toolstep run';
+      row.innerHTML = `<span class="spin"></span>${esc(toolLabel(name, detail || {}))}`;
+      toolBox.appendChild(row);
+      toolRows.set(name + toolBox.children.length, row);
+      live.dataset.cur = name + toolBox.children.length;
+      scroll();
+    } else {
+      const key = live.dataset.cur;
+      const row = toolRows.get(key);
+      if (row) {
+        const bad = detail && detail.error;
+        row.className = 'toolstep ' + (bad ? 'bad' : 'ok');
+        row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, {}))}`
+          + `<span class="tms">${ms || 0} ms</span>`;
+      }
+      scroll();
+    }
+  };
   const scroll = () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   scroll();
 
@@ -152,6 +195,7 @@ async function send(text) {
     if (!streamed) { liveBody.innerHTML = ''; }
     streamed = full || (streamed + delta);
     liveBody.innerHTML = md(streamed) + '<span class="cursor">▌</span>';
+    addCodeCopyButtons(liveBody);
     scroll();
   };
 
@@ -189,10 +233,11 @@ async function send(text) {
       return;
     }
 
-    const reply = await chat(messages, {
+    const res = await agentChat(messages, {
       temperature: 0.7,
       maxTokens: 1200,
       onChunk,
+      onTool,
       onProgress: (pct, t) => {
         beat();
         if (pct > 0 && pct < 100) {
@@ -203,13 +248,25 @@ async function send(text) {
         }
       },
     });
+    const reply = res.content;
     beat();
     clearInterval(watchdog);
     live.remove();
     typing(false);
 
-    const botMsg = insert('messages', { conversationId, role: 'assistant', content: reply });
-    addMsg(botMsg);
+    const botMsg = insert('messages', {
+      conversationId, role: 'assistant', content: reply,
+      model: res.model || null, steps: (res.steps || []).map((s) => ({ tool: s.tool, ms: s.ms })),
+    });
+    const node = addMsg(botMsg);
+    // hangi model + kaç araç adımı -> şeffaflık
+    if (node && (res.model || res.steps?.length)) {
+      const info = document.createElement('div');
+      info.className = 'agentinfo';
+      info.innerHTML = `${res.steps?.length ? `<span title="${esc(res.steps.map((s) => s.tool).join(' → '))}">🔧 ${res.steps.length} araç</span>` : ''}`
+        + `${res.model ? `<span>${esc(String(res.model).replace(':free', '').split('/').pop())}</span>` : ''}`;
+      node.appendChild(info);
+    }
 
     evo.evolveAfterTurn({ conversationId, userText: content, assistantText: reply, messageId: botMsg.id })
       .then(() => refreshStatus())

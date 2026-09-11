@@ -253,7 +253,83 @@ export async function rankedFreeModels() {
 const ROTATABLE = /429|502|503|403|overloaded|rate.?limit|temporarily/i;
 
 /* --- AKIŞ (streaming): yanıt kelime kelime gelir, "cevap yok" hissi biter --- */
-async function streamOpenAI(res, onChunk, model) {
+/**
+ * TEK tur istek (döngü yok). Araç çağrılarını da döndürür.
+ * @returns {Promise<{content:string, toolCalls:Array|null, model:string}>}
+ */
+export async function rawChat(messages, opts = {}) {
+  const a = active();
+  const useStream = !!opts.onChunk && !opts.json;
+  let model = opts.model || a.model;
+  if (a.id === 'openrouter' && (!model || model === 'auto' || !model.endsWith(':free'))) model = await bestFreeModel();
+
+  // Araç çağrısı yalnızca OpenAI-biçimli sağlayıcılarda destekleniyor
+  const supportsTools = (a.def.format === 'openai') && !opts.json && !!opts.tools?.length;
+
+  if (a.def.format === 'openai') {
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
+    if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
+    const queue = a.id === 'openrouter' ? (opts._queue || await rankedFreeModels()).slice(0, 5) : [model];
+    let lastErr = null;
+    for (let qi = 0; qi < queue.length; qi++) {
+      const mid = queue[qi];
+      const body = {
+        model: mid, messages, temperature: opts.temperature ?? 0.7,
+        max_tokens: opts.maxTokens ?? 900,
+        ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
+        ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
+        ...(supportsTools ? { tools: opts.tools, tool_choice: 'auto' } : {}),
+        ...(useStream ? { stream: true } : {}),
+      };
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const msg = errText(res.status, data, a.id);
+          if (ROTATABLE.test(`${res.status} ${msg}`) && qi < queue.length - 1) {
+            lastErr = new Error(msg);
+            opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model…`);
+            continue;
+          }
+          throw new Error(msg);
+        }
+        if (useStream) {
+          const r = await streamOpenAI(res, opts.onChunk, mid, supportsTools);
+          return { content: stripReasoning(r.content), toolCalls: r.toolCalls, model: mid };
+        }
+        const data = await res.json().catch(() => ({}));
+        const m = data.choices?.[0]?.message || {};
+        const text = (m.content || '').trim();
+        const calls = (m.tool_calls || []).map((t) => ({
+          id: t.id, name: t.function?.name, arguments: t.function?.arguments || '{}',
+        }));
+        if (!text && !calls.length) {
+          if (qi < queue.length - 1) { lastErr = new Error('boş yanıt'); continue; }
+          throw new Error('Model boş yanıt döndürdü');
+        }
+        return { content: stripReasoning(text), toolCalls: calls.length ? calls : null, model: mid };
+      } catch (e) {
+        lastErr = e;
+        const rotatable = ROTATABLE.test(`${e.status || ''} ${e.message || ''}`);
+        if (rotatable && !opts._retriedSame && (e.status === 502 || /overloaded|empty|boş/i.test(e.message || ''))) {
+          opts.onProgress?.(0, `🔁 ${mid.split('/').pop()} meşgul, 2 sn sonra tekrar…`);
+          await new Promise((r) => setTimeout(r, 2000));
+          return rawChat(messages, { ...opts, _retriedSame: true, _queue: queue.slice(qi) });
+        }
+        if (rotatable && qi < queue.length - 1) { opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} yanıt vermedi → sıradaki…`); continue; }
+        throw e;
+      }
+    }
+    throw lastErr || new Error('Hiçbir ücretsiz model yanıt vermedi (günlük kota dolmuş olabilir)');
+  }
+
+  // Araç desteklemeyen sağlayıcılar (Gemini/Puter/Nano/yerel) -> düz metin
+  const text = await chat(messages, { ...opts, tools: undefined });
+  return { content: text, toolCalls: null, model };
+}
+
+async function streamOpenAI(res, onChunk, model, wantTools = false) {
   /* DİKKAT: OpenRouter bazen HTTP 200 döner ama AKIŞIN İÇİNE hata koyar:
        data: {"choices":[],"error":{"code":502,"message":"...overloaded"}}
      Bunu yakalamazsak boş cevap "başarılı" sanılır. (2026-09-11'de ölçüldü) */
@@ -269,6 +345,7 @@ async function streamOpenAI(res, onChunk, model) {
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '', out = '', streamErr = null;
+  const toolAcc = new Map();   // index -> {id, name, args}
   try {
     for (;;) {
       const { value, done } = await reader.read();
@@ -283,12 +360,22 @@ async function streamOpenAI(res, onChunk, model) {
         if (!payload || payload === '[DONE]') continue;
         try {
           const j = JSON.parse(payload);
-          // Akış içi hata -> anında durdur, rotasyon devreye girsin
           if (j.error) { streamErr = { code: j.error.code || 502, msg: j.error.message || 'akış hatası' }; break; }
           const ch = j.choices?.[0];
-          const delta = ch?.delta?.content ?? '';
-          if (delta) { out += delta; onChunk?.(delta, out, model); }
-          if (ch?.finish_reason && ch.finish_reason !== 'stop' && !out) {
+          if (!ch) continue;
+          const delta = ch.delta || {};
+          // Araç çağrıları parça parça gelir -> index'e göre birleştir
+          for (const tc of delta.tool_calls || []) {
+            const i = tc.index ?? 0;
+            const cur = toolAcc.get(i) || { id: '', name: '', args: '' };
+            if (tc.id) cur.id = tc.id;
+            if (tc.function?.name) cur.name = tc.function.name;
+            if (tc.function?.arguments) cur.args += tc.function.arguments;
+            toolAcc.set(i, cur);
+          }
+          const d = delta.content ?? '';
+          if (d) { out += d; onChunk?.(d, out, model); }
+          if (ch.finish_reason && ch.finish_reason !== 'stop' && !out && !toolAcc.size) {
             streamErr = { code: 502, msg: `finish_reason=${ch.finish_reason}` };
           }
         } catch {}
@@ -298,13 +385,12 @@ async function streamOpenAI(res, onChunk, model) {
   } finally {
     try { reader.releaseLock(); } catch {}
   }
-  if (streamErr) {
-    // Kısmi çıktı geldiyse çöpe atma; hiç gelmediyse hata fırlat
-    if (!out.trim()) fail(streamErr.code, streamErr.msg);
-    console.warn('[llm] akış yarıda kesildi, kısmi yanıt kullanılıyor:', streamErr.msg);
-  }
-  if (!out.trim()) fail(502, 'model boş akış döndürdü');
-  return out.trim();
+  const toolCalls = wantTools && toolAcc.size
+    ? [...toolAcc.values()].filter((t) => t.name).map((t) => ({ id: t.id, name: t.name, arguments: t.args || '{}' }))
+    : null;
+  if (streamErr && !out.trim() && !toolCalls) fail(streamErr.code, streamErr.msg);
+  if (!out.trim() && !toolCalls) fail(502, 'model boş akış döndürdü');
+  return { content: out.trim(), toolCalls };
 }
 
 /** "Düşünce" metni cevaba sızarsa temizle (reasoning:exclude çalışmazsa yedek) */
@@ -407,62 +493,8 @@ export async function chat(messages, opts = {}) {
   }
 
   if (a.def.format === 'openai') {
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
-    if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
-
-    // OpenRouter'da model sırayla denenir: 429/502/403 -> sıradakine geç
-    const queue = a.id === 'openrouter' ? (opts._queue || await rankedFreeModels()).slice(0, 5) : [model];
-    let lastErr = null;
-
-    for (let qi = 0; qi < queue.length; qi++) {
-      const mid = queue[qi];
-      const body = {
-        model: mid, messages, temperature,
-        max_tokens: opts.maxTokens ?? 900,
-        // DÜŞÜNCE METNİNİ GİZLE — yoksa "Okay, the user is asking..." diye sızıyor
-        ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
-        ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
-        ...(useStream ? { stream: true } : {}),
-      };
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          const msg = errText(res.status, data, a.id);
-          // Bu model dolu/erişilemez -> sıradakini dene
-          if (ROTATABLE.test(`${res.status} ${msg}`) && qi < queue.length - 1) {
-            lastErr = new Error(msg);
-            opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model deneniyor…`);
-            continue;
-          }
-          throw new Error(msg);
-        }
-        if (useStream) return stripReasoning(await streamOpenAI(res, opts.onChunk, mid));
-        const data = await res.json().catch(() => ({}));
-        const text = (data.choices?.[0]?.message?.content || '').trim();
-        if (!text) {
-          if (qi < queue.length - 1) { lastErr = new Error('boş yanıt'); continue; }
-          throw new Error('Model boş yanıt döndürdü');
-        }
-        return stripReasoning(text);
-      } catch (e) {
-        lastErr = e;
-        const rotatable = ROTATABLE.test(`${e.status || ''} ${e.message || ''}`);
-        // 502 "overloaded" geçicidir: aynı modeli bir kez daha dene
-        if (rotatable && !opts._retriedSame && (e.status === 502 || /overloaded|empty|boş/i.test(e.message || ''))) {
-          opts.onProgress?.(0, `🔁 ${mid.split('/').pop()} meşgul, 2 sn sonra tekrar…`);
-          await new Promise((r) => setTimeout(r, 2000));
-          return chat(messages, { ...opts, _retriedSame: true, _queue: queue.slice(qi) });
-        }
-        if (rotatable && qi < queue.length - 1) {
-          opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} yanıt vermedi → sıradaki model deneniyor…`);
-          continue;
-        }
-        throw e;
-      }
-    }
-    throw lastErr || new Error('Hiçbir ücretsiz model yanıt vermedi (günlük kota dolmuş olabilir)');
+    const r = await rawChat(messages, opts);
+    return r.content;
   }
 
   // Gemini
