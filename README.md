@@ -127,7 +127,8 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 11 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 12 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     ├─ data/katalog.json  # kataloğun YEREL YEDEĞİ (upstream silinse bile çalışır)
 │     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu

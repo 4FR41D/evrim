@@ -12,7 +12,7 @@ import {
   probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
-import { agentChat, toolLabel, TOOLS } from './agent.js';
+import { agentChat, toolLabel, TOOLS, mediaGet } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
 import { activeProfile, renameProfile, isLoggedIn } from './profile.js';
@@ -44,6 +44,13 @@ function busy(btn, on, label) {
 }
 function md(src) {
   let s = esc(src);
+  // üretilen görseller: ![alt](evrimimg:id) -> <img> (data-URL depodan gelir)
+  s = s.replace(/!\[([^\]]*)\]\(evrimimg:([A-Za-z0-9_-]+)\)/g, (_, alt, id) => {
+    const src2 = mediaGet(id);
+    return src2
+      ? `<img class="gen" alt="${alt}" src="${src2}">`
+      : `<span class="muted">[görsel bu cihazda/oturumda yok: ${id}]</span>`;
+  });
   s = s.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c}</code></pre>`);
   s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
@@ -195,7 +202,7 @@ async function send(text) {
       if (row) {
         const bad = detail && (detail.error || detail.hata);
         row.className = 'toolstep ' + (bad ? 'bad' : 'ok');
-        row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, args || {}, true))}`
+        row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, args || {}, true, bad))}`
           + `<span class="tms">${ms || 0} ms</span>`;
       }
       scroll();

@@ -172,6 +172,36 @@ export async function puterChat(messages, opts = {}) {
   return text;
 }
 
+/** ANAHTARSIZ görsel üretim (Puter 'kullanıcı öder' modeli; ücretsiz katman).
+    @returns {Promise<string>} data-URL */
+export async function puterTxt2Img(prompt, opts = {}) {
+  const puter = await loadPuter();
+  if (!puter?.ai?.txt2img) throw new Error('Puter SDK bu sürümde görsel üretimi desteklemiyor');
+  const img = await puter.ai.txt2img(prompt, { quality: 'low', ...opts });
+  const src = typeof img === 'string' ? img : img?.src;
+  if (!src || !String(src).startsWith('data:')) throw new Error('Görsel beklenirken boş yanıt döndü');
+  return String(src);
+}
+
+/** data-URL'i küçült (localStorage kotasını patlatmasın); başarısızsa orijinali ver */
+export async function shrinkDataUrl(dataUrl, maxPx = 768, quality = 0.8) {
+  try {
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode?.();
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return dataUrl;
+    const k = Math.min(1, maxPx / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    const ctx = c.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    const out = c.toDataURL('image/webp', quality);
+    return out.length < dataUrl.length ? out : dataUrl;
+  } catch { return dataUrl; }
+}
+
 export function puterModels() { return state.models || []; }
 
 /** Sağlayıcı başarısız oldu -> hazır işaretini düşür (bir dahaki açılışta tekrar denenir) */

@@ -329,3 +329,6 @@ nav.tabs{display:none !important}
 /* beyin seçim kartı: metin akışı normal (şablon boşlukları balonu şişirmesin) */
 .msg.pick{white-space:normal;max-width:min(100%,760px)}
 .msg.pick .s{white-space:pre-wrap}
+
+/* üretilen görseller */
+.msg img.gen{max-width:100%;max-height:420px;border-radius:12px;border:1px solid var(--line);display:block;margin:6px 0;background:#000}

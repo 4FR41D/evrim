@@ -60,6 +60,11 @@ export const TOOLS = [
     reason: { type: 'string', description: 'Bu kuralın nedeni' },
   }, ['rule']),
 
+  F('gorsel_uret', 'GÖRSEL ÜRET (anahtarsız + ücretsiz, Puter üzerinden): kullanıcı fotoğraf, çizim, logo, afiş, duvar kağıdı, ikon gibi bir GÖRSEL istediğinde kullan. Araç bir İŞARET döndürür (![görsel](evrimimg:...)) — o işareti yanıtına AYNEN koy ki görsel görünsün.', {
+    istem: { type: 'string', description: 'Detaylı görsel promptu (İngilizce önerilir: konu, stil, ışık, kompozisyon)' },
+    model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
+  }, ['istem']),
+
   F('api_katalog', 'AÇIK API KATALOĞU (660+ üretici medya modeli + üçüncü taraf araçlar): kullanıcı görsel/video/ses/3D üretim modeli, arka plan kaldırma, upscale, SEO, scraping, veri zenginleştirme gibi DIŞ API/model araçları sorarsa burada ara. Kendin model adı UYDURMA — katalogdan getir ve ücret/anahtar gereksinimini mutlaka söyle.', {
     sorgu: { type: 'string', description: 'Aranacak yetenek (İngilizce terim daha iyi eşleşir): "text to image", "video upscale", "background removal", "text to speech"...' },
     adet: { type: 'integer', description: 'Kaç sonuç istensin (1-5, varsayılan 3)' },
@@ -359,6 +364,30 @@ async function katalogAra(sorgu, adet) {
   }
 }
 
+/* --- üretilen görseller: mesaj geçmişinde data-URL taşıma, id taşı --- */
+const MEDIA_KEY = 'evrim:media';
+const MEDIA_CAP = 4;
+const mediaMem = new Map();
+function mediaKaydet(id, dataUrl) {
+  mediaMem.set(id, dataUrl);
+  try {
+    const all = JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}');
+    all[id] = dataUrl;
+    const keys = Object.keys(all);
+    while (keys.length > MEDIA_CAP) delete all[keys.shift()];
+    try { localStorage.setItem(MEDIA_KEY, JSON.stringify(all)); }
+    catch { localStorage.removeItem(MEDIA_KEY); }   // kota: sadece oturumda kalsın
+  } catch { /* gizli mod vb. */ }
+}
+export function mediaGet(id) {
+  if (mediaMem.has(id)) return mediaMem.get(id);
+  try {
+    const all = JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}');
+    if (all[id]) { mediaMem.set(id, all[id]); return all[id]; }
+  } catch { /* yok */ }
+  return null;
+}
+
 const EXEC = {
   memory_search({ query }) {
     const mems = all('memories').filter((m) => !m.archived);
@@ -441,6 +470,30 @@ const EXEC = {
       calismaSekli: 'ajan döngüsü (araç çağırabilen)',
       kullaniciAdi: s.userName || null,
     };
+  },
+
+  async gorsel_uret({ istem, model }) {
+    const prompt = String(istem || '').trim();
+    if (!prompt) return { hata: 'istem boş' };
+    try {
+      const { puterTxt2Img, shrinkDataUrl } = await import('./puter.js');
+      const raw = await puterTxt2Img(prompt, model ? { model } : {});
+      const small = await shrinkDataUrl(raw);
+      const id = 'g' + Date.now().toString(36);
+      mediaKaydet(id, small);
+      const isaret = `![görsel](evrimimg:${id})`;
+      return {
+        ok: true, id,
+        boyut: Math.round(small.length / 1024) + ' KB',
+        not: `Görsel üretildi. Yanıtına bu işareti AYNEN ekle (kopyala-yapıştır): ${isaret}`,
+      };
+    } catch (e) {
+      const m = String(e.message || e);
+      if (/insufficient_funds|402|sign|auth|denied|GIRIS/i.test(m)) {
+        return { hata: 'Puter oturumu/kredisi gerekiyor: Ayarlar → "☁️ Puter" kutusundan ücretsiz giriş yap, sonra tekrar iste.' };
+      }
+      return { hata: m.slice(0, 160) };
+    }
   },
 
   async api_katalog({ sorgu, adet }) {
@@ -555,7 +608,7 @@ export async function agentChat(messages, opts = {}) {
 }
 
 /** Araç adını Türkçe eylem metnine çevir (UI için) */
-export function toolLabel(name, args = {}, done = false) {
+export function toolLabel(name, args = {}, done = false, bad = false) {
   const q = args.query || '';
   const map = {
     memory_search: q ? `🧠 Hafızada arad${done ? 'ı' : 'ıyor'}: "${q}"` : `🧠 Hafızaya bakt${done ? 'ı' : 'ıyor'}`,
@@ -568,6 +621,7 @@ export function toolLabel(name, args = {}, done = false) {
     create_flashcard: done ? '🃏 Tekrar kartı oluşturuldu' : '🃏 Tekrar kartı oluşturuyor',
     self_status: done ? '🔍 Kendi durumu incelendi' : '🔍 Kendi durumunu inceliyor',
     improve_self: `⚙️ ${done ? 'Kendini geliştirdi' : 'Kendini geliştiriyor'}${args.rule ? `: "${String(args.rule).slice(0, 50)}"` : ''}`,
+    gorsel_uret: `🎨 ${done ? (bad ? 'Görsel üretilemedi' : 'Görsel üretti') : 'Görsel üretiyor'}${args.istem ? `: "${String(args.istem).slice(0, 40)}"` : ''}`,
     api_katalog: (args.sorgu || args.query)
       ? `📚 API kataloğunda ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu || args.query).slice(0, 40)}"`
       : `📚 API kataloğuna ${done ? 'baktı' : 'bakıyor'}`,
