@@ -10,6 +10,7 @@ import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './fre
 import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 import { houseStatus, probeHouse } from './house.js';
+import { wasmStatus } from './wasm.js';
 
 export const PROVIDERS = {
   puter: {
@@ -97,6 +98,10 @@ export function active() {
   if (!key && hasWorkingFree()) {
     return { id: 'free', key: '', def: PROVIDERS.free, model: 'halka açık ücretsiz servis' };
   }
+  // 0a2) Cihaz içi küçük beyin (WASM) kurulmuşsa: çevrimdışı, sınırsız, sıfır yönlendirme
+  if (!key && wasmStatus().ready) {
+    return { id: 'wasm', key: '', def: { name: 'Küçük beyin', format: 'wasm', defaultModel: 'SmolLM2-135M' }, model: 'SmolLM2-135M (cihaz)' };
+  }
   // 0b) Chrome'un içindeki Gemini Nano hazırsa (0 indirme, sınırsız)
   if (!key && s.useNano !== false && nanoStatus().availability === 'available') {
     return { id: 'nano', key: '', def: PROVIDERS.nano, model: 'Gemini Nano (Chrome)' };
@@ -152,6 +157,7 @@ export async function probeKeyless({ onProgress } = {}) {
   }
   const av = await probeNano();
   if (av === 'available') return 'nano';
+  if (wasmStatus().ready) return 'wasm';
   return null;
 }
 

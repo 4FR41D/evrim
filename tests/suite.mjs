@@ -135,10 +135,14 @@ function fakeRes(body, toolCall, finalText) {
   ok('3. açılış: uyarı bandı YOK (beyin hazır görünür)', ($(w, '#brainBar')?.style.display || 'none') === 'none');
   ok('3. açılış: pill korkutucu değil', !($(w, '#statusPill')?.textContent || '').includes('WebGPU') && ($(w, '#statusPill')?.textContent || '').includes('ücretsiz mod'));
   $(w, '#input').value = 'merhaba'; $(w, '#send').click();
-  await wait(3000); // v22: gönder → OTOMATİK bağlan (kart/dokunuş yok)
+  await wait(3500); // v24: ev bulutu sessiz bak → yoksa kart (OTOMATİK YÖNLENDİRME YOK)
   ok('3. kart: anahtar alanı YOK', !$$(w, '#msgs .ckey').length);
-  ok('3. gönder → otomatik bağlan (ekstra dokunuş yok)', signedIn && !$$(w, '#msgs .card').length);
-  ok('3. otomatik bağlan → cevap geldi', JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').some((m) => m.role === 'assistant'));
+  ok('3. kendiliğinden siteye yönlendirme YOK (popup açılmadı)', signedIn === false);
+  ok('3. kart: cihaz içi kurulum birincil + bulut isteğe bağlı', !!$(w, '#msgs .cwasm') && !!$(w, '#msgs .cconn'));
+  const conn = $(w, '#msgs .cconn');
+  if (conn) conn.click(); // kullanıcı İSTERSE buluta basar
+  await wait(2500);
+  ok('3. isteğe bağlı bağlan → cevap geldi', signedIn && !$$(w, '#msgs .card').length && (JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').some((m) => m.role === 'assistant')));
   ok('3. pill puter', ($(w, '#statusPill')?.textContent || '').includes('Puter'));
   // 2. mesaj doğrudan (kart YOK)
   $(w, '#input').value = 'ikinci'; $(w, '#send').click();
@@ -217,7 +221,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#npName').value = 'Engel'; $(w, '#npCreate').click(); await wait(200);
   $(w, '#input').value = 'merhaba'; $(w, '#send').click();
   await wait(2500);
-  ok('7. bağlanma başarısız → seçim kartı (çıkmaz yok)', !!$(w, '#msgs .cconn') && !!$(w, '#msgs .clocal'));
+  ok('7. ev bulutu yoksa seçim kartı (çıkmaz yok, yönlendirme yok)', !!$(w, '#msgs .cconn') && !!$(w, '#msgs .cwasm'));
   ok('7. hata yok', w.errors.length === 0);
   w.close?.();
 }
@@ -295,6 +299,39 @@ function makeBroker() {
   ok('8. misafir pill: ev bulutu', ($(wG, '#statusPill')?.textContent || '').includes('ev bulutu'));
   ok('8. hatalar yok', wH.errors.length === 0 && wG.errors.length === 0);
   wH.close?.(); wG.close?.();
+}
+
+
+/* ================= 9) CİHAZ İÇİ KÜÇÜK BEYİN (WASM): kur → yönlendirmesiz cevap ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  w.__EVWASM = { pipeline: async (task, model, opts) => {
+    opts?.progress_callback?.({ status: 'progress', progress: 60 });
+    return async (prompt, o) => {
+      o?.streamer?.callback_function?.('Küçük beyinden cevap: merhaba!');
+      o?.streamer?.end?.();
+      return [{ generated_text: 'Küçük beyinden cevap: merhaba!' }];
+    };
+  } };
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Wasm'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  await wait(3500);
+  ok('9. kart: wasm birincil düğme var', !!$(w, '#msgs .cwasm'));
+  const wb = $(w, '#msgs .cwasm');
+  if (wb) wb.click();
+  await wait(2500);
+  const m9 = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('9. kur → otomatik cevap (siteye gitmeden)', m9.some((m) => m.role === 'assistant' && String(m.content).includes('Küçük beyinden cevap')));
+  ok('9. pill: küçük beyin cihazda', ($(w, '#statusPill')?.textContent || '').includes('küçük beyin'));
+  // 2. mesaj: kart yok, doğrudan cihaz beyni
+  $(w, '#input').value = 'tekrar merhaba'; $(w, '#send').click();
+  await wait(2000);
+  const m9b = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('9. sonrası: doğrudan cihaz beyni (kart yok)', !$$(w, '#msgs .card').length && m9b.filter((m) => m.role === 'assistant').length >= 2);
+  ok('9. hata yok', w.errors.length === 0);
+  w.close?.();
 }
 
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);

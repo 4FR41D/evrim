@@ -555,6 +555,11 @@ const EXEC = {
  */
 export async function agentChat(messages, opts = {}) {
   const a = activeLLM();
+  if (a.id === 'wasm') {
+    const { wasmChat } = await import('./wasm.js');
+    const out = await wasmChat(messages, opts.onChunk);
+    return { content: out.content, model: out.model || 'küçük beyin', steps: [] };
+  }
   if (a.id === 'house') {
     const { houseChat } = await import('./house.js');
     const out = await houseChat(messages, opts.onChunk);

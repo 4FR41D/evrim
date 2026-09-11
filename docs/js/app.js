@@ -13,6 +13,7 @@ import {
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
+import { wasmStatus, loadWasm, unloadWasm } from './wasm.js';
 import { agentChat, toolLabel, TOOLS, mediaGet } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
@@ -273,18 +274,15 @@ async function send(text) {
       if (!localStatus().supported) {
         // v22: SIFIR SÜRTÜNME — gönder dokunuşu jestin kendisi; ücretsiz bulut
         // penceresini BEKLEMEDEN aç, girince soruyu otomatik sor. Kart yok, kurulum yok.
+        // v24: KENDİLİĞİNDEN HİÇBİR SİTEYE YÖNLENDİRME YOK.
+        // Sessizce ev bulutuna bak; yoksa NET SEÇİM kartı (uygulama içi kurulum birincil).
         let connected = false;
-        liveStat.textContent = '🏠 Ev bulutu aranıyor…';
+        liveStat.textContent = '🏠 Ev bulutu kontrol ediliyor…';
         beat();
         try { connected = await probeHouse(2500); } catch { connected = false; }
-        if (!connected) {
-          liveStat.textContent = '☁️ Ücretsiz buluta bağlanıyorum (ilk kez) — sorunu otomatik soracağım…';
-          beat();
-          try { connected = await puterSignIn(); } catch { connected = false; }
-        }
-        if (connected && (houseStatus().ready || puterStatus().ready)) {
+        if (connected && houseStatus().ready) {
           refreshStatus(); renderSettings(); renderLocalBoxes();
-          liveStat.textContent = '☁️ Bulut hazır — cevabını yazıyorum…';
+          liveStat.textContent = '🏠 Ev bulutu hazır — cevabını yazıyorum…';
           beat();
         } else {
           clearInterval(watchdog);
@@ -464,7 +462,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'house') {
+  if (a.id === 'wasm') {
+    pill.textContent = '🧠 küçük beyin · cihazında';
+    pill.className = 'pill ok';
+    setBrainBar(null);
+  } else if (a.id === 'house') {
     pill.textContent = '🏠 ev bulutu · anahtarsız hazır';
     pill.className = 'pill ok';
     setBrainBar(null);
@@ -814,6 +816,7 @@ function renderSettings() {
   $('#setGhToken').value = s.githubToken || '';
   $('#setGhRepo').value = s.githubRepo || '';
   renderHouseBox();
+  renderWasmBox();
   const pf = $('#setPreferFree');
   if (pf) {
     pf.checked = getSettings().preferFree !== false;
@@ -1141,25 +1144,53 @@ function askBrain(pendingText) {
   const div = document.createElement('div');
   div.className = 'msg bot pick';
   div.innerHTML = `
-    <b>👋 Beyin bu cihazda ilk kez uyanıyor — cevabın hazır bekliyor</b>
+    <b>🧠 Bu cihazda beyin henüz kurulu değil — hangisini istersin?</b>
     <div class="muted" style="font-size:12.5px;margin:6px 0 10px">
-      Tek dokunuşla ücretsiz buluta bağlanırım (<b>anahtar yok, ücret yok</b>);
-      sorunu ben otomatik yeniden sorarım. Bu cihazda bir kez yapman yeterli.
+      İkisi de <b>anahtarsız ve ücretsiz</b>. Kurulumdan sonra sorunu otomatik yeniden sorarım;
+      bir daha bu kartı görmezsin.
     </div>
     <div class="item" style="border-color:rgba(124,92,255,.5)">
-      <div class="t">☁️ Ücretsiz bulut modeli <span class="chip acc">0 MB · ~2 sn · ANAHTAR YOK</span></div>
-      <div class="s">Giriş penceresi açılır → ücretsiz girersin → sorunu ben otomatik yeniden sorarım.</div>
-      <div class="a"><button class="btn sm cconn" style="flex:1">☁️ Bağlan ve cevapla</button></div>
+      <div class="t">🧠 Küçük beyni cihazıma kur <span class="chip acc">~90 MB · bir kez · ÇEVRİMDIŞI</span></div>
+      <div class="s">Açık kaynak model uygulama içine iner (başka siteye gitmez). Sonra bu cihazda
+      girişsiz, çevrimdışı, sınırsız cevap verirsin. Cevap süresi ~10-30 sn.</div>
+      <div class="a"><button class="btn sm cwasm" style="flex:1">🧠 Kur ve cevapla</button></div>
     </div>
     <div class="item">
-      <div class="t">📥 Cihazımda çalıştır <span class="chip">~194 MB · bir kez · sınırsız</span></div>
-      <div class="s">Açık kaynak model telefonuna iner; cevaplar yavaştır (10-40 sn) ama veri tamamen sende kalır.</div>
+      <div class="t">☁️ Ücretsiz bulut (puter.com) <span class="chip">0 MB · İSTEĞE BAĞLI</span></div>
+      <div class="s">Büyük bulut modeli için ücretsiz giriş penceresi açılır — ancak sen basarsan.</div>
+      <div class="a"><button class="btn sm ghost cconn">☁️ Bağlan ve cevapla</button></div>
+    </div>
+    <div class="item" style="display:none" id="wlocalItem">
+      <div class="t">📥 Büyük cihaz modeli (WebGPU) <span class="chip">~194 MB · hızlı donanım</span></div>
+      <div class="s">Bu cihaz WebGPU destekliyorsa: daha güçlü yerel model.</div>
       <div class="a"><button class="btn sm ghost clocal">📥 İndir ve başlat</button></div>
     </div>
 `;
   $('#msgs').appendChild(div);
   requestAnimationFrame(scrollBottom);
 
+  if (localStatus().supported) {
+    const li = div.querySelector('#wlocalItem'); if (li) li.style.display = '';
+  }
+  div.querySelector('.cwasm').addEventListener('click', async () => {
+    const btn = div.querySelector('.cwasm');
+    btn.disabled = true; btn.textContent = '🧠 Hazırlanıyor… %0';
+    try {
+      await loadWasm((p) => { btn.textContent = `🧠 Kuruluyor… %${p}`; });
+      div.remove();
+      toast('🧠 Küçük beyin hazır — başka siteye gerek kalmadı', 'ok');
+      refreshStatus(); renderSettings(); renderWasmBox();
+      if (pendingText) send(pendingText);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '🧠 Kur ve cevapla';
+      const note = div.querySelector('.cnote') || (() => {
+        const d = document.createElement('div');
+        d.className = 'muted cnote'; d.style.cssText = 'font-size:12px;margin-top:8px;color:var(--bad)';
+        div.appendChild(d); return d;
+      })();
+      note.textContent = 'Olamadı: ' + (e.message || e) + ' — bulut seçeneğini deneyebilirsin.';
+    }
+  });
   div.querySelector('.cconn').addEventListener('click', async () => {
     const btn = div.querySelector('.cconn');
     btn.disabled = true; btn.textContent = '☁️ Bağlanılıyor… pencereye izin ver';
@@ -1353,6 +1384,24 @@ function renderHouseBox() {
       btn.disabled = false;
     }
     renderHouseBox(); refreshStatus();
+  };
+}
+
+function renderWasmBox() {
+  const btn = $('#wasmBtn'); const stat = $('#wasmStat');
+  if (!btn) return;
+  const st = wasmStatus();
+  if (st.ready) { btn.textContent = '🧠 Kaldır'; stat.textContent = 'kurulu · çevrimdışı çalışır'; }
+  else if (st.loading) { btn.disabled = true; btn.textContent = `⬇️ %${st.progress}`; stat.textContent = 'indiriliyor…'; }
+  else { btn.disabled = false; btn.textContent = '🧠 Kur'; stat.textContent = st.error || (st.supported ? 'kurulu değil' : 'bu tarayıcıda yok'); }
+  btn.onclick = async () => {
+    if (wasmStatus().ready) { unloadWasm(); renderWasmBox(); refreshStatus(); return; }
+    btn.disabled = true; btn.textContent = '⬇️ %0';
+    try {
+      await loadWasm((p) => { btn.textContent = `⬇️ %${p}`; });
+      toast('🧠 Küçük beyin kuruldu — çevrimdışı bile cevap verir', 'ok');
+    } catch (e) { toast('Olamadı: ' + (e.message || e), 'err'); }
+    renderWasmBox(); refreshStatus();
   };
 }
 
