@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090f">
+<meta name="description" content="EVRIM — kendini sürekli geliştiren, hafızalı kişisel AI. Tarayıcında çalışır, verilerin cihazında kalır.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>EVRIM — kendini geliştiren AI</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="logo">🧬</div>
+    <div class="brand">EVRIM<small id="subBrand">kendini geliştiren ai</small></div>
+    <div class="pill demo" id="statusPill">yükleniyor…</div>
+  </header>
+
+  <main>
+    <!-- anahtar yoksa -->
+    <section class="card" id="setupCard" style="display:none;border-color:rgba(251,191,36,.45)">
+      <h3>🔑 Başlamak için ücretsiz bir anahtar</h3>
+      <p class="hint">EVRIM tamamen senin cihazında çalışır — sunucu yok, hesap yok, ücret yok.
+        Sadece yapay zekâ beyni için ücretsiz bir API anahtarı gerekiyor. <b>3 dakika</b> sürer, kredi kartı istemez.</p>
+      <div class="row">
+        <a class="btn sm" href="https://console.groq.com/keys" target="_blank" rel="noopener">1 · Groq anahtarı al</a>
+        <button class="btn sm ghost" id="gotoSettings">2 · Ayarlar’a git</button>
+      </div>
+    </section>
+
+    <!-- ============ SOHBET ============ -->
+    <section class="view on" id="v-chat">
+      <div class="card" id="welcomeCard">
+        <h3>Merhaba 👋 Ben EVRIM</h3>
+        <p class="hint">Seninle konuştukça öğreniyorum: tercihlerini, hedeflerini ve yaptığım hataları hafızama yazıp
+          bir sonraki yanıtımı buna göre iyileştiriyorum. <b>Evrim</b> sekmesinden beynimin nasıl değiştiğini izleyebilirsin.</p>
+        <div class="row">
+          <button class="btn sm ghost" data-quick="Bana bugün ne yapmam gerektiğini öner">🎯 Günlük plan</button>
+          <button class="btn sm ghost" data-quick="Beni tanıman için 3 soru sor">🧠 Beni tanı</button>
+          <button class="btn sm ghost" data-quick="Şu anki yeteneklerini ve hafızanda ne olduğunu özetle">📊 Durum raporu</button>
+        </div>
+      </div>
+      <div id="msgs"></div>
+      <div class="empty" id="chatEmpty">Henüz mesaj yok — aşağıdan yazmaya başla.</div>
+    </section>
+
+    <!-- ============ ÖĞREN ============ -->
+    <section class="view" id="v-learn">
+      <div class="grid3" id="learnStats"></div>
+      <div class="sect">AI soru üret</div>
+      <div class="card">
+        <label>Konu</label>
+        <input id="genTopic" placeholder="örn. JavaScript async/await, İngilizce, Python…">
+        <div class="row" style="margin-top:10px">
+          <div><label>Seviye</label>
+            <select id="genLevel">
+              <option value="1">1 — Çok kolay</option><option value="2">2 — Kolay</option>
+              <option value="3" selected>3 — Orta</option><option value="4">4 — Zor</option><option value="5">5 — Çok zor</option>
+            </select></div>
+          <div><label>Adet</label><select id="genCount"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:12px" id="btnGen">✨ Soruları üret</button>
+      </div>
+
+      <div class="sect">Çalışma zamanı <span class="chip" id="dueChip">0 kart</span></div>
+      <div id="studyBox"></div>
+
+      <div class="sect">Kartların</div>
+      <div id="cardList"></div>
+
+      <div class="sect">Haftalık plan</div>
+      <div class="card">
+        <label>Hedefin</label>
+        <input id="planGoal" placeholder="örn. 2 ayda A2 İngilizce">
+        <label>Günlük dakika</label>
+        <input id="planMin" type="number" value="20" min="5" max="180">
+        <button class="btn ghost" style="width:100%;margin-top:12px" id="btnPlan">🗓 Plan oluştur</button>
+        <div id="planOut" style="margin-top:10px;white-space:pre-wrap;font-size:13.5px"></div>
+      </div>
+    </section>
+
+    <!-- ============ GITHUB ============ -->
+    <section class="view" id="v-gh">
+      <div class="card">
+        <h3>Repo incele</h3>
+        <p class="hint">Herhangi bir GitHub reposunu yaz — EVRIM kodu okuyup analiz etsin.
+          Public repolar için token gerekmez.</p>
+        <label>Repo</label>
+        <div class="row">
+          <input id="ghRepoInput" placeholder="kullanici/repo">
+          <button class="btn ghost" id="btnLoadRepo" style="flex:0 0 auto">Yükle</button>
+        </div>
+        <div class="a" style="margin-top:8px"><button class="btn ghost sm" id="btnMyRepos">Repolarımı listele</button></div>
+        <div id="repoPicker" style="margin-top:8px"></div>
+      </div>
+      <div id="ghBody"></div>
+    </section>
+
+    <!-- ============ EVRİM ============ -->
+    <section class="view" id="v-evo">
+      <div class="grid3" id="evoStats"></div>
+      <div class="sect">Bekleyen yamalar</div>
+      <div id="pendingList"></div>
+      <div class="sect">Gelişim günlüğü</div>
+      <div id="evoList"></div>
+      <div class="sect">Beyin (sistem promptu) sürümleri</div>
+      <div class="card">
+        <p class="hint">Aktif kişilik: <b id="curVer">v?</b></p>
+        <div class="row">
+          <button class="btn ghost sm" id="btnShowPrompt">Aktif promptu gör</button>
+          <button class="btn ghost sm" id="btnEditPrompt">Elle düzenle</button>
+        </div>
+        <pre id="promptOut" style="display:none;max-height:280px"></pre>
+        <div id="promptEdit" style="display:none">
+          <label>Yeni sistem promptu</label>
+          <textarea id="promptText" style="min-height:180px"></textarea>
+          <label>Değişiklik nedeni</label>
+          <input id="promptReason" placeholder="örn. daha kısa yanıtlar istiyorum">
+          <button class="btn sm" style="margin-top:10px" id="btnSavePrompt">Yeni sürüm olarak kaydet</button>
+        </div>
+      </div>
+      <div id="promptVersions"></div>
+
+      <div class="sect">Hafıza</div>
+      <div class="card">
+        <label>Bir şey öğret</label>
+        <div class="row">
+          <input id="memText" placeholder="örn. Kısa cevapları tercih ederim">
+          <select id="memKind" style="flex:0 0 120px">
+            <option value="fact">Bilgi</option><option value="preference">Tercih</option>
+            <option value="skill">Beceri</option><option value="mistake">Hata</option><option value="rule">Kural</option>
+          </select>
+        </div>
+        <button class="btn ghost sm" style="margin-top:10px" id="btnAddMem">+ Hafızaya ekle</button>
+      </div>
+      <div class="tabsmini" id="memTabs">
+        <button class="on" data-mk="">Tümü</button><button data-mk="fact">Bilgi</button>
+        <button data-mk="preference">Tercih</button><button data-mk="skill">Beceri</button>
+        <button data-mk="mistake">Hata</button><button data-mk="rule">Kural</button>
+      </div>
+      <div id="memList"></div>
+      <div class="sect">Beceri haritası</div>
+      <div id="skillList"></div>
+    </section>
+
+    <!-- ============ AYARLAR ============ -->
+    <section class="view" id="v-set">
+      <div class="card">
+        <h3>🔑 AI beyni</h3>
+        <p class="hint">Anahtar yalnızca <b>bu cihazda</b> saklanır, hiçbir sunucuya gönderilmez.
+          Ücretsiz al: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> ·
+          <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">OpenRouter</a> ·
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Gemini</a></p>
+        <label>API anahtarı</label>
+        <input id="setKey" type="password" placeholder="gsk_... / sk-or-... / AIza...">
+        <label>Model (boş = varsayılan)</label>
+        <select id="setModel"></select>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="btnSaveAI">Kaydet</button>
+          <button class="btn ghost" id="btnTestAI">Test et</button>
+        </div>
+        <div id="aiOut" class="muted" style="font-size:12.5px;margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h3>🧬 Öz-gelişim</h3>
+        <div class="switch">
+          <input type="checkbox" id="setEvolve">
+          <div><b>Kendini geliştirme açık</b><small>Her yanıttan sonra hafıza + kural çıkarımı</small></div>
+        </div>
+        <div class="switch">
+          <input type="checkbox" id="setAuto">
+          <div><b>Yamaları otomatik uygula</b><small>Kapalıyken her kural değişikliği senin onayını bekler</small></div>
+        </div>
+        <label>Güven eşiği: <b id="thrLabel">0.60</b></label>
+        <input type="range" id="setThr" min="0.2" max="1" step="0.05" value="0.6" style="padding:0;border:0;background:none">
+        <label>Adın</label>
+        <input id="setName" placeholder="EVRIM sana nasıl hitap etsin?">
+        <button class="btn" style="width:100%;margin-top:12px" id="btnSaveSet">Kaydet</button>
+      </div>
+
+      <div class="card">
+        <h3>🐙 GitHub (isteğe bağlı)</h3>
+        <p class="hint">Public repolar için token gerekmez. Kendi <b>özel</b> repolarını okumak ve
+          saatte 60 istek limitini aşmak için token ekle. Bu sürümde GitHub’a yazma yoktur.</p>
+        <label>Token</label>
+        <input id="setGhToken" type="password" placeholder="ghp_... / github_pat_...">
+        <label>Varsayılan repo</label>
+        <input id="setGhRepo" placeholder="kullanici/repo">
+        <button class="btn ghost" style="width:100%;margin-top:12px" id="btnSaveGh">Kaydet</button>
+      </div>
+
+      <div class="card">
+        <h3>💾 Verilerim</h3>
+        <p class="hint">Her şey bu tarayıcının deposunda. Tarayıcı verilerini temizlersen kaybolur —
+          o yüzden arada bir yedek al. Yedeği başka cihazda “İçe aktar” ile geri yükleyebilirsin.</p>
+        <div id="dataInfo" class="muted" style="font-size:12.5px;margin-bottom:10px"></div>
+        <div class="row">
+          <button class="btn ghost sm" id="btnExport">⬇️ Yedek al</button>
+          <button class="btn ghost sm" id="btnImport">⬆️ İçe aktar</button>
+          <button class="btn danger sm" id="btnWipe">🗑 Sıfırla</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+
+      <div class="card">
+        <h3>📱 Telefona kur</h3>
+        <p class="hint">iPhone: Safari → Paylaş → <b>Ana Ekrana Ekle</b>. Android: Chrome → ⋮ → <b>Uygulamayı yükle</b>.</p>
+        <button class="btn ghost" style="width:100%" id="btnInstall">Ana ekrana ekle</button>
+      </div>
+
+      <div class="card">
+        <h3>ℹ️ Sistem</h3>
+        <div id="sysInfo"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="composer" style="display:none">
+    <div class="box">
+      <textarea id="input" rows="1" placeholder="Bir şey sor…"></textarea>
+      <button class="btn send" id="send" aria-label="Gönder">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="on" data-v="chat" style="position:relative">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Sohbet
+    </button>
+    <button data-v="learn" style="position:relative">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></span>Öğren
+      <span class="badge" id="dueBadge" style="display:none">0</span>
+    </button>
+    <button data-v="gh" style="position:relative">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 19.9 5a4.9 4.9 0 0 0-.1-3.7s-1.2-.4-3.9 1.4a13.4 13.4 0 0 0-7 0C6.2.9 5 1.3 5 1.3A4.9 4.9 0 0 0 4.9 5a5.2 5.2 0 0 0-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22"/></svg></span>GitHub
+    </button>
+    <button data-v="evo" style="position:relative">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><circle cx="12" cy="12" r="4"/><path d="M12 8a4 4 0 0 1 4 4"/></svg></span>Evrim
+      <span class="badge" id="pendingBadge" style="display:none">0</span>
+    </button>
+    <button data-v="set" style="position:relative">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg></span>Ayarlar
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<script type="module" src="js/app.js"></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body>
+</html>
