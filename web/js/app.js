@@ -144,6 +144,31 @@ function addCodeCopyButtons(root) {
   });
 }
 
+/* ---------------- v48: sesli yanıt (Web Speech TTS, tarayıcı yerleşik) ---------------- */
+function speakText(txt, btn) {
+  const S = globalThis.speechSynthesis;
+  if (!S) { toast('Bu tarayıcıda ses desteği yok', 'err'); return; }
+  if (S.speaking || S.pending) { S.cancel(); if (btn) btn.classList.remove('on'); return; }
+  const clean = String(txt || '')
+    .replace(/```[\s\S]*?```/g, ' kod bloğu. ')
+    .replace(/!?\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/[#*_|>`\[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim().slice(0, 4000);
+  if (!clean) return;
+  const u = new SpeechSynthesisUtterance(clean);
+  u.lang = 'tr-TR'; u.rate = 1;
+  const voices = (S.getVoices && S.getVoices()) || [];
+  const tr = voices.find((v) => /^tr/i.test(String(v.lang || '')));
+  if (tr) u.voice = tr;
+  if (btn) {
+    btn.classList.add('on');
+    u.onend = () => btn.classList.remove('on');
+    u.onerror = () => btn.classList.remove('on');
+  }
+  S.speak(u);
+}
+
 function addMsg(m) {
   const ce = $('#chatEmpty'); if (ce) ce.style.display = 'none';
   const wc = $('#welcomeCard'); if (wc) wc.style.display = 'none';
@@ -154,10 +179,12 @@ function addMsg(m) {
   if (m.role === 'assistant' && m.id && !m.error) {
     const meta = document.createElement('div');
     meta.className = 'meta';
-    meta.innerHTML = `<button class="fb ${m.feedback > 0 ? 'on' : ''}" data-fb="1">👍</button>
+    meta.innerHTML = `<button class="fb" data-speak="1" title="Sesli oku">🔊</button>
+      <button class="fb ${m.feedback > 0 ? 'on' : ''}" data-fb="1">👍</button>
       <button class="fb ${m.feedback < 0 ? 'on dn' : ''}" data-fb="-1">👎</button>
       <span>${new Date(m.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>`;
-    meta.querySelectorAll('.fb').forEach((b) => b.addEventListener('click', () => feedback(m.id, Number(b.dataset.fb), b)));
+    meta.querySelectorAll('[data-fb]').forEach((b) => b.addEventListener('click', () => feedback(m.id, Number(b.dataset.fb), b)));
+    meta.querySelector('[data-speak]')?.addEventListener('click', (e) => speakText(m.content, e.currentTarget));
     div.appendChild(meta);
   }
   $('#msgs').appendChild(div);

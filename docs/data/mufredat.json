@@ -635,6 +635,30 @@
     "dogru": 1,
     "aciklama": "Eğitim verisinde herkes iyi puan alır; asıl marifet görülmemiş veride — val bölmesi bunu ölçer."
    }
+  },
+  {
+   "no": 30,
+   "baslik": "Bonus: Ajan ↔ Telefon/Ses Entegrasyonu (AgentCall Vakası)",
+   "ozet": "AgentCall (AGPL-3.0), root'lu bir Android telefonu USB/ADB üzerinden masaüstüne bağlayıp AI ajanlarına GERÇEK hücresel arama uç noktası sunar; ajanlar MCP (stdio) protokolüyle arama kontrolü yapar. Ses hattı: mikrofon → STT (konuşma-metin) → ajan → TTS (metin-konuşma) → hoparlör/şebeke. Dersler: (1) Tarayıcılar hücresel aramaya erişemez — bu iş ayrıcalıklı sistem katmanı (Magisk modülü) ister; web uygulaması ancak tel: linkiyle çeviriciyi AÇABİLİR (aramayı kullanıcı başlatır). (2) Fail-closed tasarım: politika/kimlik/kayıt/sağlayıcı bozulunca arama DURUR — güvenlik varsayılanı 'dur'. (3) Rıza ve kayıt kontrolleri: aranan taraf bilgilendirme, kayıt onayı. (4) Lisans: AGPL kod ağ üzerinden hizmete verilirse türevler de açık kaynak olmalı. EVRIM'de karşılığı: 🔊 sesli yanıt (Web Speech API TTS, tarayıcıda yerleşik).",
+   "kavramlar": [
+    "MCP",
+    "STT/TTS",
+    "hücresel ağ geçidi",
+    "fail-closed",
+    "ADB",
+    "AGPL"
+   ],
+   "quiz": {
+    "soru": "AgentCall'un 'fail-closed' ilkesi ne anlama gelir?",
+    "secenekler": [
+     "Hata olursa çağrı devam eder",
+     "Politika/kimlik/kayıt/sağlayıcı sağlığı bozulduğunda arama durdurulur",
+     "Sistem yeniden başlar",
+     "Kayıtlar silinir"
+    ],
+    "dogru": 1,
+    "aciklama": "Fail-closed: şüphe/arıza durumunda güvenli tarafa geç — aramayı sürdürme, dur."
+   }
   }
  ]
 }

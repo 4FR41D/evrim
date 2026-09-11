@@ -1133,5 +1133,42 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 35) SESLİ YANIT: 🔊 düğmesi + speechSynthesis çağrısı + ders 30 ================= */
+{
+  const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      return fakeRes(body, null, 'Merhaba! Bu **kalın** bir sesli okuma testidir.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.__spoken = null;
+  w.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; this.lang = ''; } };
+  w.speechSynthesis = { speaking: false, pending: false, cancel() {}, getVoices: () => [{ lang: 'tr-TR', name: 'test' }], speak(u) { w.__spoken = u; } };
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Sesli'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  await wait(2200);
+  const btn = w.document.querySelector('#msgs [data-speak]');
+  ok('35. 🔊 düğmesi asistan mesajında', !!btn);
+  btn?.click();
+  await wait(150);
+  ok('35. TTS çağrıldı: metin iletildi', !!w.__spoken && w.__spoken.text.includes('sesli okuma testidir'));
+  ok('35. markdown temizlendi (** yok)', !!w.__spoken && !w.__spoken.text.includes('**'));
+  ok('35. tr-TR dili ayarlandı', !!w.__spoken && w.__spoken.lang === 'tr-TR');
+  btn?.click(); // ikinci tıklama: durdur
+  ok('35. ders 30 (AgentCall vakası) müfredatta', MUF.dersler.some((d) => d.no === 30 && String(d.baslik).includes('Telefon')));
+  ok('35. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
