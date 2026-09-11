@@ -1058,7 +1058,7 @@ async function startLocal({ skipConfirm = false } = {}) {
 /** Beyin hazır değilse: büyük indirme yerine kullanıcıya 3 net seçenek sun */
 function askBrainChoice(pendingText) {
   const div = document.createElement('div');
-  div.className = 'msg bot';
+  div.className = 'msg bot pick';
   div.innerHTML = `
     <b>⚡ Hızlı cevap için bulut modeli gerekiyor</b>
     <div class="muted" style="font-size:12.5px;margin:6px 0 10px">

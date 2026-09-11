@@ -325,3 +325,7 @@ nav.tabs{display:none !important}
 .msg .item{white-space:normal}
 .msg .item .s{white-space:pre-wrap}
 .msg .row,.msg .steps,.msg .step,.msg .keybox{white-space:normal}
+
+/* beyin seçim kartı: metin akışı normal (şablon boşlukları balonu şişirmesin) */
+.msg.pick{white-space:normal;max-width:min(100%,760px)}
+.msg.pick .s{white-space:pre-wrap}
