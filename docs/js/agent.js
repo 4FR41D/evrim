@@ -607,6 +607,10 @@ const EXEC = {
     const s = getSettings();
     const tok = s.githubToken;
     if (!tok) return { hata: 'linux_komut yalnız SAHİBİN cihazında çalışır (GitHub token gerekir) — düğüm sahibi değilsen bu araç kapalı.' };
+    if (s.linuxPin) {
+      const pin = globalThis.prompt ? globalThis.prompt('🐧 Linux düğümü bağlantı PIN\'i:') : null;
+      if (String(pin == null ? '' : pin).trim() !== String(s.linuxPin)) return { hata: 'Yanlış PIN — komut gönderilmedi.' };
+    }
     const q = String(komut || '').trim();
     if (!q) return { hata: 'komut boş' };
     const REPO = s.linuxBus || '4FR41D/evrim-node-bus';

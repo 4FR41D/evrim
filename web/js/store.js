@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
   evolveThreshold: 0.6,
   autoApply: true,         // yamaları otomatik uygula (kapalıysa hep onay bekler)
   githubToken: '',         // isteğe bağlı: sadece kendi repolarını okumak için
+  linuxPin: '',            // 🐧 linux_komut bağlantı PIN'i (boş = koruma kapalı)
   githubRepo: '',
   createdAt: null,
 };

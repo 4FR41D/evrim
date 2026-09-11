@@ -894,5 +894,49 @@ function makeBroker() {
   w2.close?.();
 }
 
+
+/* ================= 29) linux_komut PIN koruması: yanlış PIN red, doğru PIN geçer ================= */
+{
+  const b64 = (o) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64');
+  let round = 0; const calls = []; let busOut = { id: 'seed-0' }; let putCount = 0;
+  let promptN = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('evrim-node-bus/contents/cmd.json') && opts?.method === 'PUT') {
+      putCount++;
+      const cmd = JSON.parse(Buffer.from(JSON.parse(opts.body).content, 'base64').toString('utf8'));
+      busOut = { id: cmd.id, exit: 0, stdout: 'pin gecti', stderr: '', ms: 9, host: 'codespace', user: 'runner' };
+      return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({}), text: async () => '{}' };
+    }
+    if (u.includes('evrim-node-bus/contents/cmd.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ sha: 'sc1', content: b64({ id: 'eski' }) }), text: async () => '{}' };
+    if (u.includes('evrim-node-bus/contents/out.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ sha: 'so1', content: b64(busOut) }), text: async () => '{}' };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'linux_komut', args: { komut: 'echo bir' } });
+      if (round === 2) return fakeRes(body, { name: 'linux_komut', args: { komut: 'echo iki' } });
+      return fakeRes(body, null, 'Bitti.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.prompt = () => { promptN++; return promptN === 1 ? '0000' : '4242'; };
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ githubToken: 'ghp_test', linuxPin: '4242', createdAt: Date.now() }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Pinli'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'linux komutu çalıştır'; $(w, '#send').click();
+  await wait(7000);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).filter((r) => r && (r.hata || 'stdout' in r));
+  ok('29. yanlış PIN reddedildi', R.some((r) => r.hata && String(r.hata).includes('Yanlış PIN')));
+  ok('29. doğru PIN geçti + çıktı döndü', R.some((r) => r.ok === true && String(r.stdout).includes('pin gecti')));
+  ok('29. yanlış PIN’de bus’a komut YAZILMADI', putCount === 1);
+  ok('29. ayarlarda PIN alanı var', !!$(w, '#setLinuxPin') && !!$(w, '#btnSavePin'));
+  ok('29. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

@@ -970,6 +970,8 @@ function renderSettings() {
   $('#thrLabel').textContent = Number(s.evolveThreshold).toFixed(2);
   $('#setName').value = s.userName || '';
   $('#setGhToken').value = s.githubToken || '';
+  const lpin = $('#setLinuxPin'); if (lpin) lpin.value = s.linuxPin || '';
+  const lpst = $('#linuxPinState'); if (lpst) lpst.textContent = s.linuxPin ? '🔒 PIN koruması AÇIK' : '🔓 PIN koruması kapalı';
   $('#setGhRepo').value = s.githubRepo || '';
   renderHouseBox();
   renderWasmBox();
@@ -1044,6 +1046,13 @@ $('#btnSaveSet').addEventListener('click', () => {
   });
   toast('Ayarlar kaydedildi', 'ok');
   refreshStatus();
+});
+$('#btnSavePin')?.addEventListener('click', () => {
+  const v = String($('#setLinuxPin')?.value || '').trim().slice(0, 8);
+  setSettings({ linuxPin: v });
+  const lpst = $('#linuxPinState'); if (lpst) lpst.textContent = v ? '🔒 PIN koruması AÇIK' : '🔓 PIN koruması kapalı';
+  toast(v ? 'Linux PIN kaydedildi 🔒' : 'Linux PIN kaldırıldı', 'ok');
+  refreshStatus(); renderSettings();
 });
 $('#btnSaveGh').addEventListener('click', () => {
   setSettings({ githubToken: $('#setGhToken').value.trim(), githubRepo: gh.parseRepo($('#setGhRepo').value) || $('#setGhRepo').value.trim() });

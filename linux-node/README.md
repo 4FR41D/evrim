@@ -60,6 +60,19 @@ sudo systemctl daemon-reload && sudo systemctl enable --now evrim-node
 sudo journalctl -u evrim-node -f   # canlı günlük
 ```
 
+## Bilgisayarın yok mu? Ücretsiz online Linux: GitHub Codespaces
+
+Ayda **120 saat ücretsiz**, tarayıcıdan (telefonda bile) çalışır — kayıt/kart gerekmez, GitHub hesabın yeter:
+
+1. `github.com/4FR41D/evrim` → yeşil **Code** düğmesi → **Codespaces** sekmesi → **Create codespace on main**
+2. Editör açılınca alttaki **Terminal** sekmesine geç ve 3 kurulum komutunu çalıştır (yukarıdaki gibi)
+3. `node evrim-node.mjs` → düğüm hazır; EVRIM'den "linux'ta uname -a çalıştır" de
+
+Notlar:
+- Codespace ~30 dk boşta kalınca uyur → düğüm durur. Kullanmadan önce Codespace sayfasını açıp terminalde `node evrim-node.mjs` yeniden başlat (Ctrl+C ile eskiyi durdur).
+- Ayda 120 saat dolunca Codespace kapanır; süre sıfırlanınca devam.
+- **PIN koruması önerilir:** EVRIM → Ayarlar → 🐧 Linux düğümü PIN'i. PIN varken her `linux_komut` tarayıcıda şifre sorar.
+
 ## Güvenlik notları (bilinçli tam yetki)
 
 - **Token = makinenin anahtarı.** Sızarsa repo'ya komut yazabilen herkes makinede root komut çalıştırabilir. Token'ı kimseyle paylaşma; şüphede token'ı GitHub'da iptal edip yenisini üret.

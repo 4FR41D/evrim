@@ -350,6 +350,14 @@
         <label>Varsayılan repo</label>
         <input id="setGhRepo" placeholder="kullanici/repo">
         <button class="btn ghost" style="width:100%;margin-top:12px" id="btnSaveGh">Kaydet</button>
+        <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:14px;padding-top:12px">
+          <h3>🐧 Linux düğümü bağlantı PIN'i</h3>
+          <p class="hint">PIN belirleyince <b>linux_komut</b> her çalıştığında tarayıcı şifre sorar — token'ı ele geçiren biri bile PIN'siz komut gönderemez. Boş bırakıp kaydedersen PIN koruması kapanır.</p>
+          <label>Bağlantı PIN'i (4-8 hane)</label>
+          <input id="setLinuxPin" type="password" inputmode="numeric" maxlength="8" placeholder="örn. 482913">
+          <div class="muted" id="linuxPinState" style="font-size:12px;margin-top:6px"></div>
+          <button class="btn ghost" style="width:100%;margin-top:12px" id="btnSavePin">PIN'i kaydet</button>
+        </div>
       </div>
 
       <div class="card">
@@ -477,6 +485,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="js/app.js"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=41').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=42').catch(()=>{}))}</script>
 </body>
 </html>
