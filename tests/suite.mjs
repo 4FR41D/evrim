@@ -25,6 +25,7 @@ function makeWin(overrides = {}) {
     get() { return ''; }, configurable: true,
   });
   w.prompt = () => 'daha kısa ve maddeli yaz';
+  if (!('__EVHOUSEKEY' in overrides)) w.__EVHOUSEKEY = ''; // testlerde ev anahtarı kapalı (gerçek senaryo: anahtarsız zincir)
   w.errors = [];
   w.addEventListener('error', (e) => w.errors.push(e.error?.stack || e.message));
   Object.assign(w, overrides);

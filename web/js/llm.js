@@ -49,8 +49,8 @@ export const PROVIDERS = {
   groq: {
     name: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    defaultModel: 'llama-3.3-70b-versatile',
-    models: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant', 'openai/gpt-oss-20b'],
+    defaultModel: 'openai/gpt-oss-120b',
+    models: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'qwen/qwen3.6-27b'],
     signup: 'https://console.groq.com/keys',
     prefix: 'gsk_',
     format: 'openai',
@@ -111,7 +111,7 @@ export function active() {
 
   // 0z) Ev anahtarı: sağlayıcıyı kendim wire ederim (kullanıcı hiçbir şey seçmez)
   if (houseKey && PROVIDERS[HOUSE_PROVIDER]) {
-    return { id: HOUSE_PROVIDER, key, def: PROVIDERS[HOUSE_PROVIDER], model: s.model || PROVIDERS[HOUSE_PROVIDER].defaultModel, houseKey: true };
+    return { id: HOUSE_PROVIDER, key, def: PROVIDERS[HOUSE_PROVIDER], model: PROVIDERS[HOUSE_PROVIDER].defaultModel, houseKey: true };
   }
   // 1) Kullanıcı açıkça bir sağlayıcı seçtiyse
   if (s.provider && s.provider !== 'auto' && s.provider !== 'local') {
