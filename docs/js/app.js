@@ -14,6 +14,7 @@ import {
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
 import { wasmStatus, loadWasm, unloadWasm } from './wasm.js';
+import { reflexAnswer } from './reflex.js';
 import { agentChat, toolLabel, TOOLS, mediaGet } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
@@ -267,6 +268,28 @@ async function send(text) {
     const pers = personaPrompt(currentPersonaId());
     const messages = [{ role: 'system', content: evo.buildSystemPrompt() + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '') }, ...history];
 
+    // v26 REFLEKS: beyin yoksa bile selam/small-talk/matematik/saat ANINDA cevaplanır.
+    // Sessizlik yasak — kullanıcı her yazdığında bir şey duyar.
+    {
+      const a0 = activeLLM();
+      const brainReady = !(a0.id === 'local' && !localStatus().ready);
+      if (!brainReady) {
+        const rx = reflexAnswer(content, { userName: getSettings().userName });
+        if (rx) {
+          clearInterval(watchdog);
+          live.remove();
+          typing(true);
+          await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
+          typing(false);
+          const rxMsg = insert('messages', { conversationId, role: 'assistant', content: rx, model: 'refleks' });
+          addMsg(rxMsg);
+          busy($('#send'), false);
+          sending = false;
+          return;
+        }
+      }
+    }
+
     // Beyin hazır değilse: SESSIZCE indirme başlatma; önce anahtarsız kaynağı ARA,
     // bulamazsan KULLANICIDAN ANAHTAR İSTEME — tek dokunuşluk ücretsiz bağlantı sun.
     const a = activeLLM();
@@ -279,7 +302,7 @@ async function send(text) {
         let connected = false;
         liveStat.textContent = '🏠 Ev bulutu kontrol ediliyor…';
         beat();
-        try { connected = await probeHouse(2500); } catch { connected = false; }
+        try { connected = await probeHouse(1800); } catch { connected = false; }
         if (connected && houseStatus().ready) {
           refreshStatus(); renderSettings(); renderLocalBoxes();
           liveStat.textContent = '🏠 Ev bulutu hazır — cevabını yazıyorum…';

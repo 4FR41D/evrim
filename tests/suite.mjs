@@ -134,7 +134,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#npName').value = 'Yeni'; $(w, '#npCreate').click(); await wait(200);
   ok('3. açılış: uyarı bandı YOK (beyin hazır görünür)', ($(w, '#brainBar')?.style.display || 'none') === 'none');
   ok('3. açılış: pill korkutucu değil', !($(w, '#statusPill')?.textContent || '').includes('WebGPU') && ($(w, '#statusPill')?.textContent || '').includes('ücretsiz mod'));
-  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  $(w, '#input').value = 'kuantum bilgisayarı nedir kısaca'; $(w, '#send').click();
   await wait(3500); // v24: ev bulutu sessiz bak → yoksa kart (OTOMATİK YÖNLENDİRME YOK)
   ok('3. kart: anahtar alanı YOK', !$$(w, '#msgs .ckey').length);
   ok('3. kendiliğinden siteye yönlendirme YOK (popup açılmadı)', signedIn === false);
@@ -219,7 +219,7 @@ function fakeRes(body, toolCall, finalText) {
   try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
   await wait(400);
   $(w, '#npName').value = 'Engel'; $(w, '#npCreate').click(); await wait(200);
-  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  $(w, '#input').value = 'kuantum nedir'; $(w, '#send').click();
   await wait(2500);
   ok('7. ev bulutu yoksa seçim kartı (çıkmaz yok, yönlendirme yok)', !!$(w, '#msgs .cconn') && !!$(w, '#msgs .cwasm'));
   ok('7. hata yok', w.errors.length === 0);
@@ -317,7 +317,7 @@ function makeBroker() {
   try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
   await wait(400);
   $(w, '#npName').value = 'Wasm'; $(w, '#npCreate').click(); await wait(200);
-  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  $(w, '#input').value = 'kuantum nedir'; $(w, '#send').click();
   await wait(3500);
   ok('9. kart: wasm birincil düğme var', !!$(w, '#msgs .cwasm'));
   const wb = $(w, '#msgs .cwasm');
@@ -332,6 +332,35 @@ function makeBroker() {
   const m9b = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
   ok('9. sonrası: doğrudan cihaz beyni (kart yok)', !$$(w, '#msgs .card').length && m9b.filter((m) => m.role === 'assistant').length >= 2);
   ok('9. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 10) REFLEKS: beyinsiz cihazda bile ANINDA cevap ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Refleks'; $(w, '#npCreate').click(); await wait(200);
+  const t0 = Date.now();
+  $(w, '#input').value = 'Merhaba'; $(w, '#send').click();
+  await wait(1200);
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  const bot = ms.find((m) => m.role === 'assistant');
+  ok('10. "Merhaba" → anında cevap (<1.5 sn, beyinsiz)', !!bot && Date.now() - t0 < 2000 && /merhaba|selam|hey/i.test(bot.content));
+  ok('10. kart/popup YOK', !$$(w, '#msgs .card').length);
+  $(w, '#input').value = '2+2'; $(w, '#send').click();
+  await wait(1200);
+  const ms2 = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('10. matematik anında: 2+2=4', ms2.some((m) => m.role === 'assistant' && String(m.content).includes('4')));
+  $(w, '#input').value = 'saat kaç'; $(w, '#send').click();
+  await wait(1200);
+  const ms3 = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('10. saat/tarih anında', ms3.some((m) => m.role === 'assistant' && String(m.content).includes('🕒')));
+  $(w, '#input').value = 'kuantum dolanıklık nedir'; $(w, '#send').click();
+  await wait(3000);
+  ok('10. bilgi sorusu → refleks değil, beyin zinciri (kart)', !!$(w, '#msgs .cconn') || !!$(w, '#msgs .cwasm'));
+  ok('10. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

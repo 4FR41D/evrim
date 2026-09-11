@@ -131,6 +131,7 @@ evrim/
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_oku: herhangi bir web sayfasını okur (r.jina.ai, anahtarsız)
+│     ├─ reflex.js      # REFLEKS KATMANI: beyinsiz bile anında cevap (selam, saat, matematik)
 │     ├─ wasm.js        # CİHAZ İÇİ KÜÇÜK BEYİN: transformers.js WASM (SmolLM2-135M) —
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez
 │     └─ house.js       # EV BULUTU: sunucusuz/hesapsız WebRTC beyni (PeerJS) —
