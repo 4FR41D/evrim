@@ -68,7 +68,7 @@ export const TOOLS = [
     odak: { type: 'string', description: 'Opsiyonel: sayfada aranacak konu/anahtar kelime (uzun sayfalarda ilgili bölümü getirir)' },
   }, ['url']),
 
-  F('gorsel_uret', 'GÖRSEL ÜRET (anahtarsız + ücretsiz, Puter üzerinden): kullanıcı fotoğraf, çizim, logo, afiş, duvar kağıdı, ikon gibi bir GÖRSEL istediğinde kullan. Araç bir İŞARET döndürür (![görsel](evrimimg:...)) — o işareti yanıtına AYNEN koy ki görsel görünsün.', {
+  F('gorsel_uret', 'GÖRSEL ÜRET (anahtarsız + ücretsiz + GİRİŞSİZ): kullanıcı fotoğraf, çizim, logo, afiş, duvar kağıdı, ikon gibi bir GÖRSEL istediğinde kullan. Asla hesap/giriş istemez. Araç bir İŞARET döndürür (![görsel](evrimimg:...)) — o işareti yanıtına AYNEN koy ki görsel görünsün.', {
     istem: { type: 'string', description: 'Detaylı görsel promptu (İngilizce önerilir: konu, stil, ışık, kompozisyon)' },
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
@@ -512,25 +512,48 @@ const EXEC = {
   async gorsel_uret({ istem, model }) {
     const prompt = String(istem || '').trim();
     if (!prompt) return { hata: 'istem boş' };
+    const seed = Math.floor(Math.random() * 1e6);
+    const remote = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt)
+      + `?width=768&height=768&nologo=true&seed=${seed}` + (model ? `&model=${encodeURIComponent(model)}` : '');
+    const id = 'g' + Date.now().toString(36);
+    const isaret = `![görsel](evrimimg:${id})`;
+    // 1) ANAHTARSIZ + GİRİŞSİZ görsel servisi (CORS *): blob olarak çek, depoya göm
     try {
-      const { puterTxt2Img, shrinkDataUrl } = await import('./puter.js');
-      const raw = await puterTxt2Img(prompt, model ? { model } : {});
-      const small = await shrinkDataUrl(raw);
-      const id = 'g' + Date.now().toString(36);
-      mediaKaydet(id, small);
-      const isaret = `![görsel](evrimimg:${id})`;
-      return {
-        ok: true, id,
-        boyut: Math.round(small.length / 1024) + ' KB',
-        not: `Görsel üretildi. Yanıtına bu işareti AYNEN ekle (kopyala-yapıştır): ${isaret}`,
-      };
-    } catch (e) {
-      const m = String(e.message || e);
-      if (/insufficient_funds|402|sign|auth|denied|GIRIS/i.test(m)) {
-        return { hata: 'Puter oturumu/kredisi gerekiyor: Ayarlar → "☁️ Puter" kutusundan ücretsiz giriş yap, sonra tekrar iste.' };
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 60000);
+      const res = await fetch(remote, { signal: ctl.signal, headers: { Accept: 'image/*' } });
+      clearTimeout(t);
+      if (res.ok) {
+        const blob = await res.blob();
+        if (blob && blob.size > 500) {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.onerror = () => reject(new Error('okunamadı'));
+            fr.readAsDataURL(blob);
+          });
+          const { shrinkDataUrl } = await import('./puter.js');
+          const small = await shrinkDataUrl(dataUrl);
+          mediaKaydet(id, small);
+          return { ok: true, id, kaynak: 'anahtarsız görsel servisi', boyut: Math.round(small.length / 1024) + ' KB',
+            not: `Görsel üretildi (giriş gerekmedi). Yanıtına bu işareti AYNEN ekle: ${isaret}` };
+        }
       }
-      return { hata: m.slice(0, 160) };
+    } catch { /* aşağıya düş */ }
+    // 2) Blob alınamadıysa (CORS/ağ): uzak URL'yi doğrudan göm (img etiketi zaten yükler)
+    try { mediaKaydet(id, remote); return { ok: true, id, kaynak: 'anahtarsız görsel servisi (uzak)', not: `Görsel hazır. İşareti AYNEN ekle: ${isaret}` }; } catch {}
+    // 3) Puter: YALNIZCA oturum zaten varsa — popup/yönlendirme ASLA
+    if (puterStatus().ready) {
+      try {
+        const { puterTxt2Img, shrinkDataUrl } = await import('./puter.js');
+        const raw = await puterTxt2Img(prompt, model ? { model } : {});
+        const small = await shrinkDataUrl(raw);
+        mediaKaydet(id, small);
+        return { ok: true, id, kaynak: 'puter (oturum açık)', boyut: Math.round(small.length / 1024) + ' KB',
+          not: `Görsel üretildi. Yanıtına bu işareti AYNEN ekle: ${isaret}` };
+      } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
+    return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
   async api_katalog({ sorgu, adet }) {

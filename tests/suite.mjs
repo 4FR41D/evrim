@@ -435,5 +435,41 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 15) GÖRSEL: girişsiz üretim, puter'a YÖNLENDİRME YOK ================= */
+{
+  let puterSignInCalls = 0; let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('pollinations.ai')) {
+      calls.push('img');
+      const blob = new w.Blob([new Uint8Array(2048).fill(7)], { type: 'image/jpeg' });
+      return { ok: true, status: 200, headers: { get: () => 'image/jpeg' }, blob: async () => blob };
+    }
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push('groq');
+      round++;
+      return round === 1
+        ? fakeRes(body, { name: 'gorsel_uret', args: { istem: 'Beyoğlu Nakliyat logosu' } })
+        : fakeRes(body, null, 'Logon hazır: ![görsel](evrimimg:GTEST)');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.puter = { auth: { isSignedIn: () => false, signIn: async () => { puterSignInCalls++; throw new Error('popup'); } },
+    ai: { chat: async () => { throw new Error('x'); }, models: async () => [], txt2img: async () => { throw new Error('sign-in'); } } };
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Logo'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'Beyoğlu Nakliyat logo yap'; $(w, '#send').click();
+  await wait(3500);
+  const media = JSON.parse(w.localStorage.getItem('evrim:media') || '{}');
+  ok('15. görsel girişsiz üretildi (media deposu dolu)', Object.keys(media).length === 1 && String(Object.values(media)[0]).startsWith('data:'));
+  ok('15. putera yönlendirme YOK (signIn 0)', puterSignInCalls === 0);
+  ok('15. pollinations çağrıldı', calls.includes('img'));
+  ok('15. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
