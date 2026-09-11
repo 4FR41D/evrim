@@ -41,7 +41,34 @@ export async function loadPuter(timeoutMs = 20000) {
   return state.loading;
 }
 
-/** Hazır mı? (kısa bir deneme isteğiyle) */
+/**
+ * PASİF kontrol: oturum zaten var mı? (ağ isteği/pencere açmaz)
+ * Puter, oturum yoksa kendi giriş penceresini AÇAR — bu yüzden sayfa açılışında
+ * yalnızca bu pasif kontrol yapılır; gerçek deneme kullanıcı düğmeye basınca.
+ */
+export async function passiveCheck() {
+  try {
+    const puter = await loadPuter();
+    const signedIn = !!(puter?.auth?.isSignedIn?.());
+    const token = (() => {
+      try {
+        // Puter token'ı localStorage'da tutar (anahtar adı sürüme göre değişebilir)
+        return Object.keys(localStorage)
+          .filter((k) => /puter/i.test(k) && /token/i.test(k))
+          .some((k) => !!localStorage.getItem(k));
+      } catch { return false; }
+    })();
+    state.ready = signedIn || token;
+    if (state.ready) state.lastCheck = Date.now();
+    state.error = null;
+    return state.ready;
+  } catch (e) {
+    state.error = e.message;
+    return false;
+  }
+}
+
+/** Gerçek deneme: bir istek gönderir. Oturum yoksa Puter penceresi açılır. */
 export async function probePuter({ force = false } = {}) {
   if (!force && state.ready && Date.now() - state.lastCheck < 30 * 60 * 1000) return true;
   try {

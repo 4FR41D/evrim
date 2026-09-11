@@ -755,7 +755,7 @@ function renderPuterBox() {
 async function testPuter(force = true) {
   const out = $('#puterOut'); const btn = $('#btnPuterTest');
   btn.disabled = true;
-  if (out) out.textContent = '☁️ Puter deneniyor… (SDK 400 KB iner, ilk sefer 5-15 sn)';
+  if (out) out.innerHTML = '☁️ Puter deneniyor… <b>Pencere açılırsa e-posta veya GitHub ile ücretsiz giriş yap.</b><br><span class="muted">(SDK 400 KB iner, ilk sefer 10-20 sn)</span>';
   try {
     const ok = await probePuter({ force });
     if (out) out.innerHTML = ok

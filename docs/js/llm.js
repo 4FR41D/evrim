@@ -8,7 +8,7 @@ import { getSettings, setSettings } from './store.js';
 import { detectWebGPU, loadLocal, localChat, localStatus, shortName, guessTier } from './local.js';
 import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './free.js';
 import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
-import { probePuter, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
+import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 
 export const PROVIDERS = {
   puter: {
@@ -131,8 +131,10 @@ export function isReady() {
 export async function probeKeyless({ onProgress } = {}) {
   if ((getSettings().apiKey || '').trim()) return null;
   if (getSettings().usePuter !== false) {
-    onProgress?.('☁️ Anahtarsız bulut modeli deneniyor (Puter)…');
-    const ok = await probePuter();
+    // Pasif: oturum zaten varsa etkinleştir. YOKSA pencere açmayız —
+    // kullanıcı "☁️ Dene" düğmesine basınca Puter kendi giriş penceresini açar.
+    onProgress?.('☁️ Puter oturumu kontrol ediliyor…');
+    const ok = await passiveCheck();
     if (ok) return 'puter';
   }
   if (getSettings().preferFree !== false) {
@@ -400,5 +402,5 @@ export async function testConnection() {
 export {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, FREE_ENDPOINTS,
   detectNano, nanoStatus, createNano, destroyNano, hasNanoAPI,
-  probePuter, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown,
+  probePuter, passiveCheck, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown,
 };
