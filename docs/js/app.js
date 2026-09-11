@@ -9,6 +9,7 @@ import {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
   fetchFreeModels, bestFreeModel,
   probeNano, nanoStatus, createNano, hasNanoAPI,
+  probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache, deviceProfile, vramCap, previewModels } from './local.js';
@@ -243,7 +244,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'nano') {
+  if (a.id === 'puter') {
+    pill.textContent = '☁️ Puter · anahtarsız bulut';
+    pill.className = 'pill ok';
+    $('#setupCard').style.display = 'none';
+  } else if (a.id === 'nano') {
     pill.textContent = '⚡ Chrome Nano · anahtarsız, sınırsız';
     pill.className = 'pill ok';
     $('#setupCard').style.display = 'none';
@@ -616,6 +621,12 @@ function renderSettings() {
   renderLocalBoxes();
   renderSmartCard();
   renderNanoBox();
+  renderPuterBox();
+  const up = $('#setUsePuter');
+  if (up) {
+    up.checked = getSettings().usePuter !== false;
+    up.onchange = () => { setSettings({ usePuter: up.checked }); refreshStatus(); };
+  }
 }
 $('#setKey').addEventListener('input', () => {
   const d = detectProvider($('#setKey').value.trim());
@@ -703,11 +714,12 @@ $('#btnInstall').addEventListener('click', async () => {
   refreshStatus();
   renderSettings();
   // Anahtar yoksa: indirmesiz çalışan ücretsiz bir servis var mı diye ARKA PLANDA bak
-  // Chrome'un içindeki hazır model var mı? (0 indirme, sınırsız)
-  probeNano().then((av) => { renderNanoBox(); renderLocalBoxes(); if (av === 'available') refreshStatus(); }).catch(() => {});
-  probeFree({ onProgress: (t) => { const el = $('#capBox'); if (el) el.textContent = t; } })
-    .then((freeId) => {
-      if (freeId) toast('🌐 Ücretsiz servis bulundu — indirme yapmadan kullanabilirsin', 'ok');
+  // ANAHTARSIZ en iyi kaynağı bul: Puter (büyük bulut) -> ücretsiz servisler -> Chrome Nano
+  probeKeyless({ onProgress: (t) => { const el = $('#capBox'); if (el) el.textContent = t; } })
+    .then((found) => {
+      if (found === 'puter') toast('☁️ Anahtarsız bulut modeli hazır — indirme yok, anahtar yok', 'ok');
+      else if (found === 'nano') toast('⚡ Chrome Nano hazır', 'ok');
+      else if (found) toast('🌐 Ücretsiz servis bulundu', 'ok');
       refreshStatus(); renderSettings(); renderLocalBoxes();
     })
     .catch(() => {});
@@ -726,6 +738,36 @@ function setLocalProgress(pct, text) {
     if (txt) txt.textContent = text || '';
     if (wrap) wrap.style.display = pct > 0 && pct < 100 ? 'block' : (pct >= 100 ? 'block' : wrap.style.display);
   }
+}
+
+function renderPuterBox() {
+  const el = $('#puterBox'); if (!el) return;
+  const p = puterStatus();
+  const auth = (globalThis.puter?.auth?.isSignedIn?.() ?? false);
+  const btn = $('#btnPuterTest'), sign = $('#btnPuterSign');
+  el.innerHTML = p.ready
+    ? `<span class="chip ok">✅ ÇALIŞIYOR</span> anahtarsız bulut modeli aktif${auth ? ' · Puter hesabın açık' : ' · misafir hakkıyla'}`
+      : `<span class="chip ${p.error ? 'warn' : ''}">${p.error ? '❌ ' + esc(p.error.slice(0, 90)) : 'henüz test edilmedi'}</span>`;
+  if (btn) btn.disabled = false;
+  if (sign) sign.style.display = p.ready || p.error ? 'inline-flex' : 'none';
+}
+
+async function testPuter(force = true) {
+  const out = $('#puterOut'); const btn = $('#btnPuterTest');
+  btn.disabled = true;
+  if (out) out.textContent = '☁️ Puter deneniyor… (SDK 400 KB iner, ilk sefer 5-15 sn)';
+  try {
+    const ok = await probePuter({ force });
+    if (out) out.innerHTML = ok
+      ? '✅ <b>Çalışıyor!</b> Anahtar ve indirme olmadan büyük bulut modeli cevap veriyor. Artık sohbet edebilirsin.'
+      : '❌ Çalışmadı: ' + esc(puterStatus().error || 'bilinmeyen hata')
+        + '<br>Misafir hakkı dolmuş olabilir → "Puter ile giriş yap" düğmesini dene (ücretsiz hesap, API anahtarı istemez).';
+    if (ok) { toast('☁️ Anahtarsız bulut beyni hazır!', 'ok'); $('#smartCard') && ($('#smartCard').style.display = 'none'); }
+  } catch (e) {
+    if (out) out.textContent = '❌ ' + e.message;
+  }
+  btn.disabled = false;
+  renderPuterBox(); refreshStatus(); renderLocalBoxes();
 }
 
 function renderNanoBox() {
@@ -986,6 +1028,11 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'btnQuickKey') { e.preventDefault(); saveQuickKey(); }
   if (e.target.id === 'btnSmartKey') { e.preventDefault(); saveSmartKey(); }
   if (e.target.id === 'btnNanoStart' || e.target.id === 'btnNanoTop') { e.preventDefault(); startNano(); }
+  if (e.target.id === 'btnPuterTest' || e.target.id === 'btnPuterTop') { e.preventDefault(); testPuter(); }
+  if (e.target.id === 'btnPuterSign') {
+    e.preventDefault();
+    puterSignIn().then((ok) => toast(ok ? '✅ Giriş başarılı, bulut modeli hazır' : 'Giriş tamamlanmadı', ok ? 'ok' : 'warn'));
+  }
   if (e.target.id === 'btnPasteKey') { e.preventDefault(); pasteInto('#smartKey'); }
   if (e.target.id === 'btnSmartLater') {
     e.preventDefault();

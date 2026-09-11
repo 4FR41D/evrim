@@ -47,6 +47,11 @@
     <section class="card" id="setupCard" style="display:none;border-color:rgba(124,92,255,.5)">
       <h3>🧠 Beyni başlat — 3 yol var, hiçbiri ücretli değil</h3>
       <div id="capBox" class="muted" style="font-size:12.5px;margin-bottom:10px">denetleniyor…</div>
+      <div class="item" style="padding:10px;margin-bottom:8px;border:1px solid rgba(124,92,255,.45);border-radius:12px">
+        <div class="t">☁️ 0 · Anahtarsız BULUT modeli <span class="chip acc">EN İYİSİ · 0 MB</span></div>
+        <div class="s">Puter üzerinden büyük bulut modeli. <b>API anahtarı yok, indirme yok.</b> Telefon için en iyi seçenek.</div>
+        <div class="a"><button class="btn sm" id="btnPuterTop">☁️ Dene (10 sn)</button></div>
+      </div>
       <div class="item" style="padding:10px;margin-bottom:8px">
         <div class="t">⚡ 0 · Chrome'un kendi modeli <span class="chip ok">0 MB · SINIRSIZ</span></div>
         <div class="s">Chrome 148+ masaüstünde Gemini Nano yerleşik. Anahtar yok, indirme yok, kota yok.</div>
@@ -209,15 +214,31 @@
     <!-- ============ AYARLAR ============ -->
     <section class="view" id="v-set">
       <div class="card">
-        <h3>🌐 Ücretsiz halka açık servisler <span class="chip acc">anahtar + indirme yok</span></h3>
-        <p class="hint">Topluluğun çalıştırdığı ücretsiz uç noktalar. Çalışırsa <b>hiçbir şey indirmeden</b> sohbet edersin.
-          ⚠️ Garantisi yok: bugün çalışır yarın kapanabilir (bu yüzden yedek katmanlar var).</p>
+        <h3>🌐 Ücretsiz halka açık servisler <span class="chip warn">şu an boş</span></h3>
+        <p class="hint">Burada Pollinations vardı — <b>2026'da kapandı</b> (8 istek / 0 başarı ölçtüm), o yüzden listeden çıkardım.
+          Çalışan anahtarsız bir halka açık uç nokta bulunursa buraya eklenecek. Onun yerine <b>Puter</b> katmanını kullan (yukarıda).</p>
         <div id="freeBox" style="margin-bottom:10px"></div>
         <button class="btn ghost" style="width:100%" id="btnTestFree">🔎 Ücretsiz servisleri test et</button>
         <div id="freeOut" class="muted" style="font-size:12.5px;margin-top:8px"></div>
         <div class="switch" style="margin-top:8px">
           <input type="checkbox" id="setPreferFree">
           <div><b>Önce ücretsiz servisi dene</b><small>Kapalıyken doğrudan cihazındaki modele geçer</small></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(124,92,255,.45)">
+        <h3>☁️ Puter — anahtarsız bulut modeli <span class="chip acc">önerilen</span></h3>
+        <p class="hint">Büyük bulut modeli <b>API anahtarı olmadan</b> kullanılır. 0 MB indirme — telefon için ideal.
+          Misafir hakkı biterse Puter kendi giriş penceresini açar (ücretsiz hesap, e-posta veya GitHub ile; <b>anahtar istemez</b>).</p>
+        <div id="puterBox" style="margin-bottom:8px"></div>
+        <div class="row">
+          <button class="btn" id="btnPuterTest">☁️ Test et / etkinleştir</button>
+          <button class="btn ghost" id="btnPuterSign" style="display:none">Puter ile giriş yap</button>
+        </div>
+        <div id="puterOut" class="muted" style="font-size:12.5px;margin-top:8px"></div>
+        <div class="switch" style="margin-top:8px">
+          <input type="checkbox" id="setUsePuter">
+          <div><b>Önce Puter'ı kullan</b><small>Kapalıyken doğrudan cihazındaki modele geçer</small></div>
         </div>
       </div>
 

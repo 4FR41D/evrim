@@ -12,43 +12,12 @@ const TIMEOUT_MS = 45000;
  * chat() düz metin döndürür.
  */
 export const FREE_ENDPOINTS = [
-  {
-    id: 'pollinations',
-    name: 'Pollinations (topluluk)',
-    async health() {
-      const out = await post('https://text.pollinations.ai/', {
-        messages: [{ role: 'user', content: 'hi' }],
-      }, 15000);
-      return out.ok && !/^</.test(out.text) && !/payment|deprecat/i.test(out.text);
-    },
-    async chat(messages) {
-      const out = await post('https://text.pollinations.ai/', { messages }, TIMEOUT_MS);
-      if (!out.ok) throw new Error(out.error);
-      if (/^</.test(out.text)) throw new Error('servis HTML hata sayfası döndürdü (çalışmıyor)');
-      if (/payment required/i.test(out.text)) throw new Error('servis artık ücret/anahtar istiyor');
-      return out.text.trim();
-    },
-  },
-  {
-    id: 'pollinations-openai',
-    name: 'Pollinations OpenAI-uyumlu',
-    async health() {
-      const out = await post('https://text.pollinations.ai/openai', {
-        messages: [{ role: 'user', content: 'hi' }], model: 'openai',
-      }, 15000);
-      if (!out.ok) return false;
-      try { const j = JSON.parse(out.text); return !!j.choices?.[0]?.message?.content; } catch { return false; }
-    },
-    async chat(messages, opts = {}) {
-      const out = await post('https://text.pollinations.ai/openai', {
-        messages, model: opts.model || 'openai',
-        ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
-      }, TIMEOUT_MS);
-      if (!out.ok) throw new Error(out.error);
-      const j = JSON.parse(out.text);
-      return (j.choices?.[0]?.message?.content || '').trim();
-    },
-  },
+  // NOT: Pollinations.ai burada duruyordu — 2026'da ölçüldü: 8 istek / 0 başarı
+  // (402 "deprecation_notice" + Cloudflare 502). Ölü servisleri denemek kullanıcıya
+  // sadece bekleme ve kafa karışıklığı yaşatıyor, o yüzden çıkarıldı.
+  // Çalışan anahtarsız bir halka açık uç nokta bulunursa buraya eklenir:
+  //   { id, name, async health() {...}, async chat(messages, opts) {...} }
+  // (CORS başlığı access-control-allow-origin: <bizim origin> şart!)
 ];
 
 async function post(url, body, ms = TIMEOUT_MS) {

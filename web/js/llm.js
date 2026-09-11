@@ -8,8 +8,17 @@ import { getSettings, setSettings } from './store.js';
 import { detectWebGPU, loadLocal, localChat, localStatus, shortName, guessTier } from './local.js';
 import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './free.js';
 import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
+import { probePuter, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 
 export const PROVIDERS = {
+  puter: {
+    name: 'Puter (anahtarsız bulut)',
+    defaultModel: 'Puter otomatik',
+    models: [],
+    signup: null,
+    prefix: null,
+    format: 'puter',
+  },
   nano: {
     name: 'Chrome Nano (cihazında)',
     defaultModel: 'Gemini Nano',
@@ -75,7 +84,11 @@ export function detectProvider(key) {
 export function active() {
   const s = getSettings();
   const key = (s.apiKey || '').trim();
-  // 0) Anahtar yok ama çalışan ücretsiz servis tespit edilmişse
+  // 0) Anahtar yoksa: ÖNCE anahtarsız BÜYÜK bulut modeli (Puter) — en iyi kalite
+  if (!key && s.usePuter !== false && puterStatus().ready) {
+    return { id: 'puter', key: '', def: PROVIDERS.puter, model: 'Puter bulut modeli' };
+  }
+  // 0a) Anahtar yok ama çalışan ücretsiz servis tespit edilmişse
   if (!key && hasWorkingFree()) {
     return { id: 'free', key: '', def: PROVIDERS.free, model: 'halka açık ücretsiz servis' };
   }
@@ -105,9 +118,30 @@ export function active() {
 export function isReady() {
   const a = active();
   if (a.id !== 'local') return true;
+  if (puterStatus().ready) return true;
   if (hasWorkingFree()) return true;
   if (nanoStatus().availability === 'available') return true;
   return localStatus().supported === true;   // WebGPU varsa hazır (model ilk mesajda iner)
+}
+
+/**
+ * Açılışta çalışır: anahtarsız en iyi kaynağı bul.
+ * Sıra: Puter (büyük bulut) -> ücretsiz servisler -> Chrome Nano
+ */
+export async function probeKeyless({ onProgress } = {}) {
+  if ((getSettings().apiKey || '').trim()) return null;
+  if (getSettings().usePuter !== false) {
+    onProgress?.('☁️ Anahtarsız bulut modeli deneniyor (Puter)…');
+    const ok = await probePuter();
+    if (ok) return 'puter';
+  }
+  if (getSettings().preferFree !== false) {
+    const id = await findWorkingFree({ onProgress });
+    if (id) return id;
+  }
+  const av = await probeNano();
+  if (av === 'available') return 'nano';
+  return null;
 }
 
 /** Nano'yu dene: varsa 'available'/'downloadable' döner */
@@ -223,6 +257,21 @@ function errText(status, data, id) {
 export async function chat(messages, opts = {}) {
   let a = active();
 
+  // --- PUTER: ANAHTARSIZ BÜYÜK BULUT MODELİ ---
+  if (a.id === 'puter') {
+    try {
+      return await puterChat(messages, opts);
+    } catch (e) {
+      console.warn('[llm] Puter başarısız:', e.message);
+      opts.onProgress?.(0, `☁️ Puter yanıt vermedi (${e.message.slice(0, 60)}) — yedek kaynağa geçiliyor…`);
+      markPuterDown(e.message);
+      const alt = await findWorkingFree({});
+      a = alt ? { id: 'free', def: PROVIDERS.free } : (nanoStatus().availability === 'available'
+        ? { id: 'nano', def: PROVIDERS.nano } : { id: 'local', def: PROVIDERS.local });
+      if (a.id === 'free') { try { return await freeChat(messages, opts); } catch {} a = { id: 'local', def: PROVIDERS.local }; }
+    }
+  }
+
   // --- CHROME GEMINI NANO (anahtarsız + sınırsız, 0 indirme) ---
   if (a.id === 'nano') {
     try {
@@ -241,7 +290,7 @@ export async function chat(messages, opts = {}) {
     } catch (e) {
       // Servis öldüyse yerel modele düş
       console.warn('[llm] ücretsiz servis başarısız, yerel modele geçiliyor:', e.message);
-      opts.onProgress?.(0, 'Ücretsiz servis yanıt vermedi, cihazında model başlatılıyor…');
+      opts.onProgress?.(0, '🌐 Ücretsiz halka açık servisler kapalı (bu servislerin garantisi yok) → cihazında açık kaynak model başlatılıyor…');
       a = { id: 'local', def: PROVIDERS.local };
     }
   }
@@ -351,4 +400,5 @@ export async function testConnection() {
 export {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, FREE_ENDPOINTS,
   detectNano, nanoStatus, createNano, destroyNano, hasNanoAPI,
+  probePuter, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown,
 };
