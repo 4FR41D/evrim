@@ -7,3 +7,5 @@ data/
 !web/data/*
 !docs/data/
 !docs/data/*
+
+tests/bundle.js

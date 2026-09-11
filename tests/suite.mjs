@@ -1,0 +1,212 @@
+/* EVRIM jsdom regresyon seti — kalıcı (repo içinde).
+   Çalıştırma: cd /home/user/evrim && npx esbuild web/js/app.js --bundle --format=iife --outfile=tests/bundle.js && node tests/suite.mjs
+   Bölümler: 1) beyin v5 + web_oku + perf + 👎kural  2) gorsel_uret (puter)  3) anahtarsız bağlan akışı  4) geçersiz anahtar kurtarma  5) katalog  6) gorsel reload kalıcılığı */
+import { JSDOM } from 'jsdom';
+import fs from 'fs';
+
+const html = fs.readFileSync('/home/user/evrim/web/index.html', 'utf8');
+const bundle = fs.readFileSync('/home/user/evrim/tests/bundle.js', 'utf8');
+let pass = 0, fail = 0;
+const ok = (n, c) => { c ? pass++ : fail++; console.log(`${c ? '✅' : '❌'} ${n}`); };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const $ = (w, s) => w.document.querySelector(s);
+const $$ = (w, s) => [...w.document.querySelectorAll(s)];
+
+function makeWin(overrides = {}) {
+  const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/' });
+  const w = dom.window;
+  w.matchMedia = () => ({ matches: false, addEventListener(){}, removeEventListener(){} });
+  w.Element.prototype.scrollTo = function () {};
+  w.HTMLElement.prototype.scrollIntoView = function () {};
+  w.confirm = () => true; w.alert = () => {};
+  // jsdom dış scriptleri yüklemez: src atanınca 'load' olayı simüle et (Puter SDK mock akışı için)
+  Object.defineProperty(w.HTMLScriptElement.prototype, 'src', {
+    set() { setTimeout(() => this.dispatchEvent(new w.Event('load')), 0); },
+    get() { return ''; }, configurable: true,
+  });
+  w.prompt = () => 'daha kısa ve maddeli yaz';
+  w.errors = [];
+  w.addEventListener('error', (e) => w.errors.push(e.error?.stack || e.message));
+  Object.assign(w, overrides);
+  return w;
+}
+function fakeRes(body, toolCall, finalText) {
+  const enc = new TextEncoder();
+  if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+  const chunk1 = toolCall
+    ? { delta: { tool_calls: [{ index: 0, id: 'tc1', type: 'function', function: { name: toolCall.name, arguments: JSON.stringify(toolCall.args) } }] }, finish_reason: null }
+    : { delta: { content: finalText }, finish_reason: null };
+  const chunks = [chunk1, { delta: {}, finish_reason: toolCall ? 'tool_calls' : 'stop' }];
+  const text = chunks.map((c) => `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', model: body.model, choices: [{ index: 0, ...c }] })}\n\n`).join('') + 'data: [DONE]\n\n';
+  return { ok: true, status: 200, headers: { get: () => 'text/event-stream' }, json: async () => ({}), text: async () => text,
+    body: { getReader() { let d = false; return { read: async () => d ? { done: true, value: undefined } : (d = true, { done: false, value: enc.encode(text) }), cancel: async () => {} }; } } };
+}
+
+/* ================= 1) BEYİN v5 + web_oku + perf + 👎 kural ================= */
+{
+  let step = 0; const calls = [];
+  const JINA_MD = `Title: Test Sayfası\n\nURL Source: https://example.com/x\n\nMarkdown Content:\n![resim](https://example.com/i.png)\nBu bir [bağlantı](https://example.com/y) içeren test metnidir.\n\n## test bölümü\nBurada TEST KONU geçiyor.\n\n\n\nSon satır.`;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('r.jina.ai')) { calls.push({ u }); return { ok: true, status: 200, headers: { get: () => 'text/plain' }, text: async () => JINA_MD, json: async () => ({}) }; }
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push({ u, body });
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [{ id: 'a/m:free' }] }) };
+      step++;
+      return step === 1
+        ? fakeRes(body, { name: 'web_oku', args: { url: 'https://example.com/x', odak: 'test konu' } })
+        : fakeRes(body, null, 'Sayfaya göre: TEST KONU şudur.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ apiKey: 'sk-or-v1-' + 'a'.repeat(56), provider: 'openrouter', model: 'a/m:free' }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Zeka'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'şu linki özetler misin https://example.com/x';
+  $(w, '#send').click();
+  await wait(3000);
+  const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
+  ok('1. beyin v5 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 5'));
+  ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
+  const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
+  const res = toolMsg ? JSON.parse(toolMsg.content) : null;
+  ok('1. web_oku: jina çağrıldı + başlık', calls.some((c) => c.u.includes('r.jina.ai')) && res?.baslik === 'Test Sayfası');
+  ok('1. web_oku: görsel/url temizliği', !String(res?.icerik).includes('![') && String(res?.icerik).includes('bağlantı') && !String(res?.icerik).includes('](https://example.com/y)'));
+  ok('1. web_oku: odak bölümü', String(res?.icerik).includes('TEST KONU'));
+  ok('1. UI çipi: Sayfa okudu', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Sayfa okudu')));
+  ok('1. cevap kaydedildi + meta düğmeleri', (JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').length >= 2) && $$(w, '#msgs .fb').length > 0);
+  const perf = JSON.parse(w.localStorage.getItem('evrim:modelPerf') || '{}');
+  const pe = Object.values(perf)[0];
+  ok('1. model performansı ölçüldü', !!pe && pe.ok >= 1 && pe.ms >= 0);
+  const dn = $$(w, '#msgs .fb[data-fb="-1"]')[0];
+  if (dn) dn.click();
+  await wait(300);
+  const mems = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('1. 👎+yorum → kalıcı kural', mems.some((m) => m.kind === 'rule' && String(m.content).includes('Kullanıcı düzeltmesi')));
+  ok('1. evrim günlüğüne işlendi', JSON.parse(w.localStorage.getItem('evrim:evolutions') || '[]').some((e) => e.type === 'feedback'));
+  ok('1. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 2) gorsel_uret (puter mock) ================= */
+{
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push({ body });
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return round === 1 ? fakeRes(body, { name: 'gorsel_uret', args: { istem: 'kırmızı gül' } }) : fakeRes(body, null, 'Görsel hazır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.puter = { auth: { isSignedIn: () => true, signIn: async () => {} },
+    ai: { chat: async () => ({ message: { content: 'ok' } }), models: async () => [], txt2img: async () => { const i = w.document.createElement('img'); i.src = 'data:image/png;base64,iVBORw0KGgo='; return i; } } };
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ apiKey: 'sk-or-v1-' + 'a'.repeat(56), provider: 'openrouter', model: 'a/m:free' }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Çizer'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'gül çiz'; $(w, '#send').click();
+  await wait(2500);
+  const t2 = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
+  const r2 = t2 ? JSON.parse(t2.content) : null;
+  const media2 = JSON.parse(w.localStorage.getItem('evrim:media') || '{}');
+  ok('2. gorsel: txt2img → ok + media deposuna yazıldı', r2?.ok === true && Object.keys(media2).length === 1 && String(r2?.not || '').includes('evrimimg:'));
+  ok('2. gorsel: araç çipi', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Görsel')));
+  ok('2. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 3) ANAHTARSIZ: kart + bağlan + otomatik tekrar ================= */
+{
+  const calls = []; let signedIn = false;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('openrouter.ai') && !u.includes('/models')) { const body = opts?.body ? JSON.parse(opts.body) : null; calls.push({ body }); return fakeRes(body, null, 'Puter cevabı.'); }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.puter = { auth: { isSignedIn: () => signedIn, signIn: async () => { signedIn = true; return true; } },
+    ai: { chat: async () => { if (!signedIn) throw new Error('sign-in required'); return { message: { content: 'Merhaba, Puter cevabı.' } }; }, models: async () => [{ id: 'p1', name: 'p1' }] } };
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Yeni'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  await wait(8000); // probeKeyless 6sn kap
+  ok('3. kart: anahtar alanı YOK', !$$(w, '#msgs .ckey').length);
+  ok('3. kart: ücretsiz bağlan düğmesi var', !!$(w, '#msgs .cconn'));
+  const conn = $(w, '#msgs .cconn');
+  if (conn) conn.click();
+  await wait(2500);
+  ok('3. bağlan → signIn → kart kapandı + cevap geldi', signedIn && !$$(w, '#msgs .card').length && (JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').some((m) => m.role === 'assistant')));
+  ok('3. pill puter', ($(w, '#statusPill')?.textContent || '').includes('Puter'));
+  // 2. mesaj doğrudan (kart YOK)
+  $(w, '#input').value = 'ikinci'; $(w, '#send').click();
+  await wait(2500);
+  ok('3. oturum sonrası doğrudan cevap (kart yok)', (JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').filter((m) => m.role === 'assistant').length >= 2) && !$$(w, '#msgs .card').length);
+  ok('3. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 4) GEÇERSİZ ANAHTAR → temizle + bağlan kartı ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 401, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'invalid api key' } }), text: async () => '{"error":{"message":"invalid api key"}}' }) });
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ apiKey: 'sk-or-v1-' + 'b'.repeat(56), provider: 'openrouter', model: 'a/m:free' }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Ölü'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'selam'; $(w, '#send').click();
+  await wait(1500);
+  const st = JSON.parse(w.localStorage.getItem('evrim:settings') || '{}');
+  ok('4. ölü anahtar otomatik temizlendi', !st.apiKey);
+  ok('4. bağlan kartı çıktı', !!$(w, '#msgs .cconn'));
+  ok('4. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 5) api_katalog (anahtarsız) ================= */
+{
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('katalog.json')) { const j = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8')); return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => j, text: async () => fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8') }; }
+    if (u.includes('githubusercontent') || u.includes('api.github.com')) return { ok: false, status: 404, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push({ body });
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return round === 1 ? fakeRes(body, { name: 'api_katalog', args: { sorgu: 'chat' } }) : fakeRes(body, null, 'Katalogda free-api var.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ apiKey: 'sk-or-v1-' + 'a'.repeat(56), provider: 'openrouter', model: 'a/m:free' }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kat'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'ücretsiz api bul'; $(w, '#send').click();
+  await wait(2500);
+  const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
+  ok('5. katalog sonucu döndü (yerel ayna)', !!toolMsg && toolMsg.content.includes('kaynak') && !/\"found\":0/.test(toolMsg.content));
+  ok('5. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 6) gorsel reload kalıcılığı ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  w.localStorage.setItem('evrim:media', JSON.stringify({ g1: 'data:image/png;base64,iVBORw0KGgo=' }));
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'pr1', name: 'Test', color: '#7c5cff', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'pr1');
+  w.localStorage.setItem('evrim:conversations', JSON.stringify([{ id: 'c1', title: 'Görsel', profileId: 'pr1', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:messages', JSON.stringify([{ id: 'm1', conversationId: 'c1', role: 'assistant', content: 'Görsel hazır. ![görsel](evrimimg:g1)', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:personas', JSON.stringify([{ id: 'p1', name: 'EVRIM', emoji: '⚡', tone: '', model: '', focus: [], createdAt: new Date().toISOString() }]));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(500);
+  ok('6. reload sonrası görsel mesajda görünüyor', $$(w, '#msgs img.gen').length === 1);
+  ok('6. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
+process.exit(fail ? 1 : 0);

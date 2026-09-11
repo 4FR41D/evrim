@@ -242,11 +242,47 @@ export async function bestFreeModel() {
 }
 
 /** Sırayla denenecek modeller (ölçülmüş öncelik + canlı liste) */
+/* --- KENDİNİ SIRALAMA: her modelin gerçek başarısı+hızı ölçülür,
+       sıra zamanla ölçüme göre değişir (öz-gelişimin altyapı katmanı) --- */
+const PERF_KEY = 'evrim:modelPerf';
+let perfMem = null;
+function perfLoad() {
+  if (perfMem) return perfMem;
+  try { perfMem = JSON.parse(localStorage.getItem(PERF_KEY) || '{}'); } catch { perfMem = {}; }
+  return perfMem;
+}
+export function perfRecord(id, ok, ms) {
+  try {
+    const p = perfLoad();
+    const e = p[id] || (p[id] = { n: 0, ok: 0, ms: 0, last: 0 });
+    e.n++;
+    if (ok) { e.ok++; e.ms = e.ms ? Math.round(e.ms * 0.7 + ms * 0.3) : ms; }
+    e.last = Date.now();
+    const keys = Object.keys(p);
+    if (keys.length > 40) delete p[keys[0]];
+    perfMem = p;
+    localStorage.setItem(PERF_KEY, JSON.stringify(p));
+  } catch { /* kota/gizli mod */ }
+}
+export function perfSnapshot() { return { ...perfLoad() }; }
+const perfScore = (id) => {
+  const e = perfLoad()[id];
+  if (!e || e.n < 2) return 0.35;              // ölçülmemiş: ortada başla (denensin)
+  const rate = e.ok / e.n;
+  const speed = e.ms ? Math.min(1, 4000 / e.ms) : 0.5;   // ≤4 sn = tam puan
+  const fresh = Math.max(0, 1 - (Date.now() - e.last) / (7 * 864e5));
+  return rate * 0.6 + speed * 0.3 + fresh * 0.1;
+};
+
 export async function rankedFreeModels() {
   const list = await fetchFreeModels();
   const ids = [...OR_PRIORITY];
   for (const m of list) if (!ids.includes(m.id)) ids.push(m.id);
-  return ids;
+  // ölçülen performans varsa sırayı ona göre yeniden kur (kararlı sıralama)
+  return ids
+    .map((id, i) => ({ id, i, s: perfScore(id) }))
+    .sort((a, b) => (b.s - a.s) || (a.i - b.i))
+    .map((x) => x.id);
 }
 
 /** 429/502/403 = bu model şu an dolu -> sıradakine geç */
@@ -281,12 +317,14 @@ export async function rawChat(messages, opts = {}) {
         ...(supportsTools ? { tools: opts.tools, tool_choice: 'auto' } : {}),
         ...(useStream ? { stream: true } : {}),
       };
+      const t0 = Date.now();
       try {
         // eslint-disable-next-line no-await-in-loop
         const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           const msg = errText(res.status, data, a.id);
+          if (a.id === 'openrouter') perfRecord(mid, false, 0);
           if (ROTATABLE.test(`${res.status} ${msg}`) && qi < queue.length - 1) {
             lastErr = new Error(msg);
             opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model…`);
@@ -296,6 +334,7 @@ export async function rawChat(messages, opts = {}) {
         }
         if (useStream) {
           const r = await streamOpenAI(res, opts.onChunk, mid, supportsTools);
+          if (a.id === 'openrouter') perfRecord(mid, true, Date.now() - t0);
           return { content: stripReasoning(r.content), toolCalls: r.toolCalls, model: mid };
         }
         const data = await res.json().catch(() => ({}));

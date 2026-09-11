@@ -60,6 +60,11 @@ export const TOOLS = [
     reason: { type: 'string', description: 'Bu kuralın nedeni' },
   }, ['rule']),
 
+  F('web_oku', 'WEB SAYFASI OKU (anahtarsız): kullanıcı bir LİNK paylaştıysa MUTLAKA bunu çağır ve sayfı özetle. Güncel/kesin bilgi lazım olup Vikipedi yetmezse de kullan (resmî site, doküman, haber). Dakikada 20 istek limiti var; gereksiz çağırma.', {
+    url: { type: 'string', description: 'https:// ile başlayan tam adres' },
+    odak: { type: 'string', description: 'Opsiyonel: sayfada aranacak konu/anahtar kelime (uzun sayfalarda ilgili bölümü getirir)' },
+  }, ['url']),
+
   F('gorsel_uret', 'GÖRSEL ÜRET (anahtarsız + ücretsiz, Puter üzerinden): kullanıcı fotoğraf, çizim, logo, afiş, duvar kağıdı, ikon gibi bir GÖRSEL istediğinde kullan. Araç bir İŞARET döndürür (![görsel](evrimimg:...)) — o işareti yanıtına AYNEN koy ki görsel görünsün.', {
     istem: { type: 'string', description: 'Detaylı görsel promptu (İngilizce önerilir: konu, stil, ışık, kompozisyon)' },
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
@@ -472,6 +477,35 @@ const EXEC = {
     };
   },
 
+  async web_oku({ url, odak }) {
+    const u = String(url || '').trim();
+    if (!/^https?:\/\/[^\s]+$/i.test(u)) return { hata: 'geçersiz adres (https:// ile başlamalı)' };
+    try {
+      const r = await fetch('https://r.jina.ai/' + u, { headers: { Accept: 'text/plain' } });
+      if (r.status === 429) return { hata: 'okuyucu limiti dolu (20/dk); 1 dk sonra tekrar dene' };
+      if (!r.ok) return { hata: `sayfa okunamadı (${r.status})` };
+      let t = await r.text();
+      t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      if (!t) return { hata: 'sayfa boş döndü' };
+      let govde = t;
+      if (odak) {
+        const i = t.toLocaleLowerCase('tr').indexOf(String(odak).toLocaleLowerCase('tr'));
+        if (i > 800) govde = '…' + t.slice(Math.max(0, i - 400), i + 5200);
+      }
+      return {
+        ok: true,
+        url: u,
+        baslik: (t.match(/^Title:\s*(.+)/m) || [])[1] || null,
+        karakter: t.length,
+        icerik: govde.slice(0, 6500),
+        not: 'İçerik kırpılmış olabilir; kritik iddiaları ikinci bir kaynakla doğrula.',
+      };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
+  },
+
   async gorsel_uret({ istem, model }) {
     const prompt = String(istem || '').trim();
     if (!prompt) return { hata: 'istem boş' };
@@ -622,6 +656,9 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     self_status: done ? '🔍 Kendi durumu incelendi' : '🔍 Kendi durumunu inceliyor',
     improve_self: `⚙️ ${done ? 'Kendini geliştirdi' : 'Kendini geliştiriyor'}${args.rule ? `: "${String(args.rule).slice(0, 50)}"` : ''}`,
     gorsel_uret: `🎨 ${done ? (bad ? 'Görsel üretilemedi' : 'Görsel üretti') : 'Görsel üretiyor'}${args.istem ? `: "${String(args.istem).slice(0, 40)}"` : ''}`,
+    web_oku: args.url
+      ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
+      : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
     api_katalog: (args.sorgu || args.query)
       ? `📚 API kataloğunda ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu || args.query).slice(0, 40)}"`
       : `📚 API kataloğuna ${done ? 'baktı' : 'bakıyor'}`,

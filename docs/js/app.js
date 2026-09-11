@@ -125,6 +125,16 @@ function addMsg(m) {
 function feedback(id, value, btn) {
   const comment = value < 0 ? (prompt('Neyi iyileştirmemi istersin? (EVRIM bunu hafızasına yazar)') || '') : '';
   evo.recordFeedback({ messageId: id, value, comment });
+  // 👎 + yorum = kalıcı davranış kuralı: öz-gelişim döngüsünü anında kapat
+  if (value < 0 && comment.trim()) {
+    const rule = `Kullanıcı düzeltmesi: ${comment.trim().slice(0, 160)}`;
+    evo.addMemory({ content: rule, kind: 'rule', source: 'feedback', strength: 0.9 });
+    insert('evolutions', {
+      type: 'feedback', summary: 'Geri bildirimden kural öğrendi', detail: rule,
+      applied: true, confidence: 0.9, createdAt: new Date().toISOString(),
+    });
+    toast('📌 Kural öğrenildi, bundan sonraki cevaplarda geçerli', 'ok');
+  }
   $$('.fb', btn.parentElement).forEach((b) => b.classList.remove('on', 'dn'));
   btn.classList.add('on');
   if (value < 0) btn.classList.add('dn');
