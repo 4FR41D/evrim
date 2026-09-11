@@ -68,6 +68,7 @@ export function stopHouseHost() {
 /* ---------------- MİSAFİR TARAFI: ev bulutuna bağlan ---------------- */
 export async function probeHouse(timeoutMs = 3000) {
   if (state.ready && state.conn?.open) return true;
+  if (state.hosting) return false;   // zaten beyin olan cihaz misafir olmaz
   if (getSettings().houseHost) return false; // kendi kendine misafir olma
   try {
     const Peer = await loadPeer();

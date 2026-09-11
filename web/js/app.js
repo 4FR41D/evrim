@@ -960,10 +960,20 @@ $('#btnInstall').addEventListener('click', async () => {
 
 let booted = false;
 async function bootApp() {
-  if (getSettings().houseHost) {
+  // v25: ORTAM KENDİNİ KURAR (ajan modeli): ilk cihaz beyin olur,
+  // beyin başka cihazda doluysa bu cihaz SESSİZCE misafir olur — kullanıcı hiçbir şey yapmaz.
+  if (getSettings().houseHost !== false) {
     startHouseHost(houseHandlers())
       .then(() => { renderHouseBox(); refreshStatus(); })
-      .catch(() => { renderHouseBox(); });
+      .catch((e) => {
+        const msg = String(e?.message || e);
+        if (/zaten|unavailable/i.test(msg)) {
+          probeHouse(2500).then((ok) => {
+            if (ok) toast('🏠 Ev bulutuna bağlandın — yaz, cevap hazır', 'ok');
+            renderHouseBox(); refreshStatus();
+          }).catch(() => renderHouseBox());
+        } else { renderHouseBox(); }
+      });
   }
   loadChat();
   go('chat');

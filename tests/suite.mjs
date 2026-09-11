@@ -289,7 +289,8 @@ function makeBroker() {
   wG.puter = { auth: { isSignedIn: () => false, signIn: async () => { throw new Error('pop'); } }, ai: { chat: async () => { throw new Error('x'); }, models: async () => [] } };
   try { wG.eval(bundle); } catch (e) { wG.errors.push('THROW: ' + e.stack); }
   await wait(300);
-  $(wG, '#npName').value = 'Misafir'; $(wG, '#npCreate').click(); await wait(200);
+  $(wG, '#npName').value = 'Misafir'; $(wG, '#npCreate').click(); await wait(1600);
+  ok('8. misafir: açılışta SESSİZCE ev bulutuna bağlandı (pill)', ($(wG, '#statusPill')?.textContent || '').includes('ev bulutu'));
   $(wG, '#input').value = 'merhaba'; $(wG, '#send').click();
   await wait(3500);
   const gmsgs = JSON.parse(wG.localStorage.getItem('evrim:messages') || '[]');

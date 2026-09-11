@@ -135,6 +135,7 @@ evrim/
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez
 │     └─ house.js       # EV BULUTU: sunucusuz/hesapsız WebRTC beyni (PeerJS) —
 │                       #   sahibin cihazı beyin olur, diğer tüm cihazlar sıfır girişle bağlanır
+│                       #   v25: ilk cihaz otomatik beyin, doluySA yeni cihaz otomatik misafir
 │     ├─ data/katalog.json  # kataloğun YEREL YEDEĞİ (upstream silinse bile çalışır)
 │     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu
 │     ├─ store.js       # localStorage tabanlı veri katmanı + beyin sürümleri
