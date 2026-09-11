@@ -28,8 +28,8 @@ export const PROVIDERS = {
   groq: {
     name: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    defaultModel: 'openai/gpt-oss-120b',
-    models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
+    defaultModel: 'llama-3.3-70b-versatile',
+    models: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant', 'openai/gpt-oss-20b'],
     signup: 'https://console.groq.com/keys',
     prefix: 'gsk_',
     format: 'openai',
@@ -37,8 +37,9 @@ export const PROVIDERS = {
   openrouter: {
     name: 'OpenRouter',
     url: 'https://openrouter.ai/api/v1/chat/completions',
-    defaultModel: 'meta-llama/llama-3.3-70b-instruct:free',
-    models: ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free'],
+    defaultModel: 'auto',           // canlı listeden en iyi :free model seçilir
+    models: [],                     // fetchFreeModels() doldurur
+    dynamic: true,
     signup: 'https://openrouter.ai/settings/keys',
     prefix: 'sk-or-',
     format: 'openai',
@@ -117,6 +118,74 @@ async function withTimeout(url, opts, ms = 60000) {
   finally { clearTimeout(t); }
 }
 
+/* OpenRouter'ın ÜCRETSİZ (:free) modelleri sürekli değişiyor.
+   Sabit liste yerine canlı çekip Türkçe için en uygununu seçiyoruz. */
+const OR_SCORE = (id) => {
+  if (/gemini|gemma/i.test(id)) return 100;
+  if (/llama/i.test(id)) return 96;
+  if (/qwen|deepseek|mistral|nex-n2\.5-pro|nemotron-3-ultra/i.test(id)) return 90;
+  if (/nemotron|inkling|laguna|dots|ling-3/i.test(id)) return 78;
+  return 60;
+};
+let orCache = { at: 0, models: [] };
+
+export async function fetchFreeModels(force = false) {
+  if (!force && orCache.models.length && Date.now() - orCache.at < 3600_000) return orCache.models;
+  try {
+    const res = await withTimeout('https://openrouter.ai/api/v1/models', { method: 'GET' }, 15000);
+    const j = await res.json();
+    let free = (j.data || []).filter((m) => m.id.endsWith(':free')).map((m) => ({
+      id: m.id, ctx: m.context_length || 0, name: m.name || m.id,
+    }));
+    // kod/güvenlik/vizyon/finans gibi özel amaçlıları ele
+    free = free.filter((m) => !/(-code|-vl|-sante|-fin$|-finance|safety|omni|reasoning)/i.test(m.id));
+    free.sort((a, b) => (OR_SCORE(b.id) - OR_SCORE(a.id)) || (b.ctx - a.ctx));
+    if (free.length) { orCache = { at: Date.now(), models: free }; }
+    return free;
+  } catch (e) {
+    console.warn('[llm] OpenRouter model listesi alınamadı:', e.message);
+    return orCache.models;
+  }
+}
+
+/** Sohbet için en iyi ücretsiz model (OpenRouter) */
+export async function bestFreeModel() {
+  const list = await fetchFreeModels();
+  return list[0]?.id || 'google/gemma-4-26b-a4b-it:free';
+}
+
+/* --- AKIŞ (streaming): yanıt kelime kelime gelir, "cevap yok" hissi biter --- */
+async function streamOpenAI(res, onChunk, model) {
+  if (!res.body) {
+    const d = await res.json().catch(() => ({}));
+    const txt = (d.choices?.[0]?.message?.content || '').trim();
+    if (txt) onChunk?.(txt, txt);
+    return txt;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', out = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const parts = buf.split('\n');
+    buf = parts.pop() || '';
+    for (const line of parts) {
+      const l = line.trim();
+      if (!l.startsWith('data:')) continue;
+      const payload = l.slice(5).trim();
+      if (payload === '[DONE]') continue;
+      try {
+        const j = JSON.parse(payload);
+        const delta = j.choices?.[0]?.delta?.content ?? '';
+        if (delta) { out += delta; onChunk?.(delta, out, model); }
+      } catch {}
+    }
+  }
+  return out.trim();
+}
+
 function errText(status, data, id) {
   const msg = data?.error?.message || data?.error?.error?.message || JSON.stringify(data || {}).slice(0, 200);
   if (status === 401) return `Anahtar geçersiz (${id}). Ayarlar’dan kontrol et.`;
@@ -160,28 +229,43 @@ export async function chat(messages, opts = {}) {
     return localChat(messages, opts);
   }
 
-  const model = a.model;
+  let model = a.model;
   const temperature = opts.temperature ?? 0.7;
+  if (opts.model) model = opts.model;          // yeniden denemede zorlanan model
+  const useStream = !!opts.onChunk && !opts.json;
+
+  // OpenRouter'da model seçilmemiş/seçim bayatsa canlı ücretsiz listeden seç
+  if (a.id === 'openrouter' && (!model || model === 'auto' || !model.endsWith(':free'))) {
+    model = await bestFreeModel();
+    opts.onProgress?.(0, `Ücretsiz model: ${model}`);
+  }
 
   if (a.def.format === 'openai') {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
     if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
-    const res = await withTimeout(a.def.url, {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        model, messages, temperature,
-        max_tokens: opts.maxTokens ?? 900,
-        ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
+    const body = {
+      model, messages, temperature,
+      max_tokens: opts.maxTokens ?? 900,
+      ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
+      ...(useStream ? { stream: true } : {}),
+    };
+    const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
     if (!res.ok) {
-      if (res.status === 404 && model !== a.def.defaultModel) {
+      const data = await res.json().catch(() => ({}));
+      // Model artık yoksa listeden yenisini seçip bir kez daha dene
+      if ((res.status === 404 || res.status === 400) && a.id === 'openrouter' && !opts._retriedModel) {
+        orCache = { at: 0, models: [] };
+        const alt = await bestFreeModel();
+        if (alt && alt !== model) return chat(messages, { ...opts, _retriedModel: true, model: alt });
+      }
+      if (res.status === 404 && model !== a.def.defaultModel && !opts._retriedModel) {
         setSettings({ model: '' });
-        return chat(messages, opts);   // varsayılan modelle bir kez daha
+        return chat(messages, { ...opts, _retriedModel: true });
       }
       throw new Error(errText(res.status, data, a.id));
     }
+    if (useStream) return await streamOpenAI(res, opts.onChunk, model);
+    const data = await res.json().catch(() => ({}));
     return (data.choices?.[0]?.message?.content || '').trim();
   }
 

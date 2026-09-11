@@ -7,6 +7,7 @@ import {
 import {
   PROVIDERS, active as activeLLM, isReady, chat, testConnection, detectProvider,
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
+  fetchFreeModels, bestFreeModel,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache } from './local.js';
@@ -104,16 +105,45 @@ function typing(on) {
 async function send(text) {
   const content = (text ?? $('#input').value).trim();
   if (!content || sending) return;
-  if (!isReady()) {
-    $('#setupCard').style.display = 'block';
-    toast('Önce beyni başlat (aşağıdaki düğme) ya da Ayarlar’dan ücretsiz anahtar gir', 'bad');
-    return;
-  }
   sending = true;
   $('#input').value = ''; autoGrow();
   addMsg({ role: 'user', content });
   busy($('#send'), true, '');
-  typing(true);
+  $('#setupCard').style.display = 'none';
+
+  // Canlı yanıt balonu: model indirilirken/yazarken kullanıcı boş ekran görmesin
+  const live = document.createElement('div');
+  live.className = 'msg bot';
+  live.innerHTML = '<div class="livebody"><span class="typing"><i></i><i></i><i></i></span></div>'
+    + '<div class="livestatus muted" style="font-size:12px;margin-top:6px"></div>';
+  $('#msgs').appendChild(live);
+  const liveBody = live.querySelector('.livebody');
+  const liveStat = live.querySelector('.livestatus');
+  const scroll = () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  scroll();
+
+  let streamed = '';
+  const onChunk = (delta, full) => {
+    if (!streamed) { liveBody.innerHTML = ''; }
+    streamed = full || (streamed + delta);
+    liveBody.innerHTML = md(streamed) + '<span class="cursor">▌</span>';
+    scroll();
+  };
+
+  // Takılma koruması: 3 dk boyunca hiçbir ilerleme yoksa kullanıcıyı bilgilendir
+  let lastBeat = Date.now();
+  const beat = () => { lastBeat = Date.now(); };
+  const watchdog = setInterval(() => {
+    const idle = (Date.now() - lastBeat) / 1000;
+    if (idle > 180) {
+      clearInterval(watchdog);
+      liveStat.innerHTML = '⏳ 3 dakikadır yanıt yok. '
+        + '<button class="btn sm ghost" id="wdRetry">Tekrar dene</button> '
+        + '<button class="btn sm ghost" id="wdDiag">🩺 Tanıla</button>';
+      $('#wdRetry')?.addEventListener('click', () => { live.remove(); sending = false; send(content); });
+      $('#wdDiag')?.addEventListener('click', () => { go('set'); setTimeout(runDiag, 60); });
+    }
+  }, 5000);
 
   try {
     if (!conversationId) conversationId = insert('conversations', { title: content.slice(0, 40) }).id;
@@ -123,23 +153,59 @@ async function send(text) {
       .map((m) => ({ role: m.role, content: m.content }));
     const messages = [{ role: 'system', content: evo.buildSystemPrompt() }, ...history];
 
+    // Model hazır değilse OTOMATİK başlat (kullanıcıdan düğmeye basmasını bekleme)
+    const a = activeLLM();
+    if (a.id === 'local' && !localStatus().ready) {
+      liveStat.textContent = '🧠 Beyin başlatılıyor… (ilk seferde model iner)';
+      beat();
+    }
+
     const reply = await chat(messages, {
       temperature: 0.7,
       maxTokens: 1200,
-      onProgress: (pct, text) => setLocalProgress(pct, text),
+      onChunk,
+      onProgress: (pct, t) => {
+        beat();
+        if (pct > 0 && pct < 100) {
+          liveStat.textContent = `⬇️ ${t || ''} %${pct}`;
+          setLocalProgress(pct, t);
+        } else if (t) {
+          liveStat.textContent = t;
+        }
+      },
     });
+    beat();
+    clearInterval(watchdog);
+    live.remove();
     typing(false);
+
     const botMsg = insert('messages', { conversationId, role: 'assistant', content: reply });
     addMsg(botMsg);
 
-    // öz-gelişim arka planda
     evo.evolveAfterTurn({ conversationId, userText: content, assistantText: reply, messageId: botMsg.id })
-      .then((r) => { console.log('[evolve]', r); refreshStatus(); })
+      .then(() => refreshStatus())
       .catch((e) => console.error('[evolve]', e));
   } catch (err) {
+    clearInterval(watchdog);
+    live.remove();
     typing(false);
-    addMsg({ role: 'assistant', content: `⚠️ ${err.message}`, error: true, createdAt: new Date().toISOString() });
+    const st = localStatus();
+    const a = activeLLM();
+    let extra = '';
+    if (a.id === 'local') {
+      extra = '\n\n**Ne yapabilirsin?**\n'
+        + '1. 🩺 Ayarlar → "Tanıla" ile hangi sunucunun kapalı olduğunu gör\n'
+        + '2. 🔑 Ayarlar → ücretsiz OpenRouter/Groq anahtarı gir (indirme yok, anında çalışır)\n'
+        + '3. 🌐 Ayarlar → "Ücretsiz servisleri test et"';
+    }
+    addMsg({
+      role: 'assistant',
+      content: `⚠️ **Yanıt alınamadı**\n\n${err.message}${extra}`,
+      error: true, createdAt: new Date().toISOString(),
+    });
+    console.error('[send]', err);
   } finally {
+    clearInterval(watchdog);
     busy($('#send'), false);
     sending = false;
     refreshStatus();
@@ -478,19 +544,34 @@ $('#btnSavePrompt').addEventListener('click', () => {
 });
 
 /* ---------------- ayarlar ---------------- */
-function fillModelOptions(providerId) {
+async function fillModelOptions(providerId) {
   const sel = $('#setModel');
-  const list = PROVIDERS[providerId]?.models || [];
+  if (!sel) return;
+  const def = PROVIDERS[providerId];
+  let list = def?.models || [];
   const cur = getSettings().model;
-  sel.innerHTML = `<option value="">Varsayılan (${PROVIDERS[providerId]?.defaultModel || '-'})</option>` +
-    list.map((m) => `<option value="${m}" ${m === cur ? 'selected' : ''}>${m}</option>`).join('');
+  const paint = (items, label) => {
+    sel.innerHTML = `<option value="">${label}</option>` +
+      items.map((m) => {
+        const id = typeof m === 'string' ? m : m.id;
+        const txt = typeof m === 'string' ? m : `${m.name || m.id} · ${Math.round((m.ctx || 0) / 1000)}k`;
+        return `<option value="${esc(id)}" ${id === cur ? 'selected' : ''}>${esc(txt)}</option>`;
+      }).join('');
+  };
+  if (def?.dynamic) {
+    paint([], 'Otomatik (en iyi ücretsiz model seçilir)');
+    const free = await fetchFreeModels();
+    paint(free, `Otomatik: ${free[0]?.id || 'en iyi ücretsiz'}`);
+  } else {
+    paint(list, `Varsayılan (${def?.defaultModel || '-'})`);
+  }
 }
 
 function renderSettings() {
   const s = getSettings();
   $('#setKey').value = s.apiKey || '';
   const detected = detectProvider(s.apiKey) || s.provider || 'groq';
-  fillModelOptions(detected === 'auto' ? 'groq' : detected);
+  fillModelOptions(detected === 'auto' ? 'groq' : detected).catch(() => {});
   $('#setEvolve').checked = s.selfEvolution;
   $('#setAuto').checked = s.autoApply !== false;
   $('#setThr').value = s.evolveThreshold;
@@ -692,6 +773,30 @@ async function startLocal() {
   refreshStatus();
 }
 
+async function saveQuickKey() {
+  const inp = $('#quickKey'); const out = $('#quickKeyOut'); const btn = $('#btnQuickKey');
+  const key = (inp?.value || '').trim();
+  if (!key) { if (out) out.textContent = '⚠️ Önce anahtarı yapıştır'; return; }
+  btn.disabled = true; if (out) out.textContent = '🔎 anahtar deneniyor…';
+  setSettings({ apiKey: key, model: '' });
+  try {
+    const r = await testConnection();
+    if (r.ok) {
+      if (out) out.innerHTML = `✅ Çalışıyor! <b>${esc(r.provider)} · ${esc(r.model)}</b><br>Yanıt: ${esc(String(r.reply || '').slice(0, 80))}`;
+      toast('🎉 Bulut beyni hazır — artık akıllı ve hızlı', 'ok');
+      $('#keyBox').style.display = 'none';
+      refreshStatus(); renderSettings();
+      return;
+    }
+    if (out) out.textContent = '❌ ' + (r.error || 'bağlanamadı');
+    setSettings({ apiKey: '' });
+  } catch (e) {
+    if (out) out.textContent = '❌ ' + e.message;
+    setSettings({ apiKey: '' });
+  }
+  btn.disabled = false;
+}
+
 async function runDiag() {
   const out = $('#diagOut'); const btn = $('#btnDiag');
   if (!out) return;
@@ -753,6 +858,13 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'btnStartLocal' || e.target.id === 'btnLoadLocal') { e.preventDefault(); startLocal(); }
   if (e.target.id === 'btnTryFree') { e.preventDefault(); tryFreeNow(); }
   if (e.target.id === 'btnDiag') { e.preventDefault(); runDiag(); }
+  if (e.target.id === 'btnShowKey') {
+    e.preventDefault();
+    const k = $('#keyBox');
+    k.style.display = k.style.display === 'none' ? 'block' : 'none';
+    if (k.style.display === 'block') $('#quickKey')?.focus();
+  }
+  if (e.target.id === 'btnQuickKey') { e.preventDefault(); saveQuickKey(); }
   if (e.target.id === 'btnClearCache') {
     e.preventDefault();
     clearModelCache().then((d) => toast(d.length ? `Temizlendi: ${d.join(', ')}` : 'Temizlenecek model önbelleği yok', 'ok'));

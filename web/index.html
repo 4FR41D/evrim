@@ -38,9 +38,22 @@
         <div class="a"><button class="btn sm" id="btnStartLocal">Modeli indir ve başlat</button></div>
       </div>
       <div class="item" style="padding:10px">
-        <div class="t">🔑 3 · Ücretsiz bulut anahtarı <span class="chip acc">en akıllı</span></div>
-        <div class="s">3 dakikada alınır, 120B model gelir. İndirme yok, kota ücretsiz katmanda.</div>
-        <div class="a"><a class="btn sm ghost" href="https://console.groq.com/keys" target="_blank" rel="noopener">Anahtar al</a></div>
+        <div class="t">🔑 3 · Ücretsiz bulut anahtarı <span class="chip acc">EN İYİ KALİTE · indirme yok</span></div>
+        <div class="s">Büyük bulut modeli (70B+) gelir → <b>asistan akıllı ve hızlı olur</b>. Tamamen ücretsiz, kredi kartı yok.</div>
+        <div class="a"><button class="btn sm" id="btnShowKey">Nasıl alırım? (30 sn)</button></div>
+      </div>
+      <div class="keybox" id="keyBox" style="display:none">
+        <b>OpenRouter ile ücretsiz anahtar — 4 adım</b>
+        <ol>
+          <li><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> aç → Google/GitHub ile giriş yap</li>
+          <li>"Create API Key" → isim yaz → <b>Create</b></li>
+          <li><code>sk-or-...</code> anahtarını kopyala</li>
+          <li>Aşağıya yapıştır → <b>Kaydet</b>. Bitti, artık indirme de gerekmez.</li>
+        </ol>
+        <input type="password" id="quickKey" placeholder="sk-or-... (buraya yapıştır)" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit">
+        <button class="btn" style="width:100%;margin-top:8px" id="btnQuickKey">✅ Kaydet ve test et</button>
+        <div class="muted" id="quickKeyOut" style="font-size:12px;margin-top:6px"></div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Alternatif: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq anahtarı</a> (gsk_...) — Türkçe'de çok iyi, o da ücretsiz.</div>
       </div>
       <div id="localProgress" style="display:none;margin-top:10px">
         <div class="muted" style="font-size:12px" id="localProgressText">hazırlanıyor…</div>

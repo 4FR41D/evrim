@@ -406,6 +406,16 @@ export async function localChat(messages, opts = {}) {
     top_p: 0.9,
   };
   if (opts.json) body.response_format = { type: 'json_object' };
+  // AKIŞ: yanıt kelime kelime gelir (küçük modellerde bekleme hissi azalır)
+  if (opts.onChunk && !opts.json) {
+    let out = '';
+    const stream = await state.engine.chat.completions.create({ ...body, stream: true });
+    for await (const part of stream) {
+      const d = part.choices?.[0]?.delta?.content || '';
+      if (d) { out += d; opts.onChunk(d, out, state.modelId); }
+    }
+    return out.trim();
+  }
   try {
     const out = await state.engine.chat.completions.create(body);
     return (out.choices?.[0]?.message?.content || '').trim();
