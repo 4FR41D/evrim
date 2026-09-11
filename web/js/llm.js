@@ -176,12 +176,35 @@ async function withTimeout(url, opts, ms = 60000) {
 }
 
 /* OpenRouter'ın ÜCRETSİZ (:free) modelleri sürekli değişiyor.
-   Sabit liste yerine canlı çekip Türkçe için en uygununu seçiyoruz. */
+   Aşağıdaki sıra ÖLÇÜLEREK belirlendi (2026-09-11, gerçek isteklerle):
+     nemotron-3-ultra-550b : ilk token 3.3 sn, 550B parametre, Türkçe mükemmel  <-- BİRİNCİ
+     nemotron-3-super-120b : ilk token 2.5 sn, temiz Türkçe                     <-- yedek
+     nemotron-3.5-lightning: 26 sn (çok yavaş)                                  <-- ELENDİ
+     inkling               : 403 "only on agentic harnesses"                    <-- ELENDİ
+     gemma-4 / laguna      : 429 upstream rate-limit (geçici, listede duruyor)
+   Ayrıca "reasoning:{exclude:true}" ZORUNLU — yoksa modelin düşünce metni
+   cevabın içine sızıyor ("Okay, the user is asking..." gibi). */
+// Sıra ÖLÇÜLEREK belirlendi (2026-09-11, gerçek Türkçe isteklerle):
+//   super-120b : 1.9 sn, temiz Türkçe, madde biçimine uyuyor   <-- EN HIZLI+İYİ
+//   nex-n2.5-pro: 4.0 sn, daha detaylı                          <-- 2.
+//   ultra-550b : 3-20 sn değişken, sık 502 veriyor ama en akıllı <-- 3.
+//   gemma-4    : sürekli 429 (upstream dolu)                    <-- yedek
+const OR_PRIORITY = [
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nex-agi/nex-n2.5-pro:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'google/gemma-4-31b-it:free',
+  'dots-studio/dots-3-note-preview:free',
+];
+const OR_SKIP = /inkling|lightning|laguna|-code|-vl|safety|omni|sante|-fin$/i;
 const OR_SCORE = (id) => {
+  const p = OR_PRIORITY.indexOf(id);
+  if (p !== -1) return 1000 - p;
+  if (/nemotron-3-ultra|nemotron-3-super/i.test(id)) return 500;
   if (/gemini|gemma/i.test(id)) return 100;
   if (/llama/i.test(id)) return 96;
-  if (/qwen|deepseek|mistral|nex-n2\.5-pro|nemotron-3-ultra/i.test(id)) return 90;
-  if (/nemotron|inkling|laguna|dots|ling-3/i.test(id)) return 78;
+  if (/qwen|deepseek|mistral|nex-n2\.5-pro/i.test(id)) return 90;
   return 60;
 };
 let orCache = { at: 0, models: [] };
@@ -195,8 +218,15 @@ export async function fetchFreeModels(force = false) {
       id: m.id, ctx: m.context_length || 0, name: m.name || m.id,
     }));
     // kod/güvenlik/vizyon/finans gibi özel amaçlıları ele
-    free = free.filter((m) => !/(-code|-vl|-sante|-fin$|-finance|safety|omni|reasoning)/i.test(m.id));
-    free.sort((a, b) => (OR_SCORE(b.id) - OR_SCORE(a.id)) || (b.ctx - a.ctx));
+    free = free.filter((m) => !OR_SKIP.test(m.id));
+    // Ölçülmüş öncelik listesi başa, kalanlar kaliteye göre
+    const live = new Map(free.map((m) => [m.id, m]));
+    const head = OR_PRIORITY.filter((id) => live.has(id)).map((id) => live.get(id));
+    const rest = free.filter((m) => !OR_PRIORITY.includes(m.id))
+      .sort((a, b) => (OR_SCORE(b.id) - OR_SCORE(a.id)) || (b.ctx - a.ctx));
+    free = [...head, ...rest];
+    // Öncelik listesinde olup canlıda görünmeyenleri de ekle (bazen listeden düşüyor)
+    for (const id of OR_PRIORITY) if (!free.some((m) => m.id === id)) free.push({ id, ctx: 0, name: id });
     if (free.length) { orCache = { at: Date.now(), models: free }; }
     return free;
   } catch (e) {
@@ -208,46 +238,99 @@ export async function fetchFreeModels(force = false) {
 /** Sohbet için en iyi ücretsiz model (OpenRouter) */
 export async function bestFreeModel() {
   const list = await fetchFreeModels();
-  return list[0]?.id || 'google/gemma-4-26b-a4b-it:free';
+  return list[0]?.id || OR_PRIORITY[0];
 }
+
+/** Sırayla denenecek modeller (ölçülmüş öncelik + canlı liste) */
+export async function rankedFreeModels() {
+  const list = await fetchFreeModels();
+  const ids = [...OR_PRIORITY];
+  for (const m of list) if (!ids.includes(m.id)) ids.push(m.id);
+  return ids;
+}
+
+/** 429/502/403 = bu model şu an dolu -> sıradakine geç */
+const ROTATABLE = /429|502|503|403|overloaded|rate.?limit|temporarily/i;
 
 /* --- AKIŞ (streaming): yanıt kelime kelime gelir, "cevap yok" hissi biter --- */
 async function streamOpenAI(res, onChunk, model) {
+  /* DİKKAT: OpenRouter bazen HTTP 200 döner ama AKIŞIN İÇİNE hata koyar:
+       data: {"choices":[],"error":{"code":502,"message":"...overloaded"}}
+     Bunu yakalamazsak boş cevap "başarılı" sanılır. (2026-09-11'de ölçüldü) */
+  const fail = (code, msg) => { const e = new Error(`${model}: HTTP ${code} ${msg}`); e.status = code; throw e; };
+
   if (!res.body) {
     const d = await res.json().catch(() => ({}));
+    if (d?.error) fail(d.error.code || res.status, d.error.message || 'akış hatası');
     const txt = (d.choices?.[0]?.message?.content || '').trim();
     if (txt) onChunk?.(txt, txt);
     return txt;
   }
   const reader = res.body.getReader();
   const dec = new TextDecoder();
-  let buf = '', out = '';
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    const parts = buf.split('\n');
-    buf = parts.pop() || '';
-    for (const line of parts) {
-      const l = line.trim();
-      if (!l.startsWith('data:')) continue;
-      const payload = l.slice(5).trim();
-      if (payload === '[DONE]') continue;
-      try {
-        const j = JSON.parse(payload);
-        const delta = j.choices?.[0]?.delta?.content ?? '';
-        if (delta) { out += delta; onChunk?.(delta, out, model); }
-      } catch {}
+  let buf = '', out = '', streamErr = null;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n');
+      buf = parts.pop() || '';
+      for (const line of parts) {
+        const l = line.trim();
+        if (!l.startsWith('data:')) continue;
+        const payload = l.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const j = JSON.parse(payload);
+          // Akış içi hata -> anında durdur, rotasyon devreye girsin
+          if (j.error) { streamErr = { code: j.error.code || 502, msg: j.error.message || 'akış hatası' }; break; }
+          const ch = j.choices?.[0];
+          const delta = ch?.delta?.content ?? '';
+          if (delta) { out += delta; onChunk?.(delta, out, model); }
+          if (ch?.finish_reason && ch.finish_reason !== 'stop' && !out) {
+            streamErr = { code: 502, msg: `finish_reason=${ch.finish_reason}` };
+          }
+        } catch {}
+      }
+      if (streamErr) break;
+    }
+  } finally {
+    try { reader.releaseLock(); } catch {}
+  }
+  if (streamErr) {
+    // Kısmi çıktı geldiyse çöpe atma; hiç gelmediyse hata fırlat
+    if (!out.trim()) fail(streamErr.code, streamErr.msg);
+    console.warn('[llm] akış yarıda kesildi, kısmi yanıt kullanılıyor:', streamErr.msg);
+  }
+  if (!out.trim()) fail(502, 'model boş akış döndürdü');
+  return out.trim();
+}
+
+/** "Düşünce" metni cevaba sızarsa temizle (reasoning:exclude çalışmazsa yedek) */
+export function stripReasoning(text) {
+  let t = String(text || '');
+  const marks = [
+    /^(?:Okay|OK|Hmm|Alright|Let me|The user|Here'?s a thinking process|I need to|First,|Analysis:)[\s\S]*?(?=\n\s*(?:\d+[.)]|[-*•]|\*\*|#))/im,
+  ];
+  // İçerik İngilizce düşünce ile başlayıp sonra Türkçe/madde cevapla devam ediyorsa kes
+  const nl = t.indexOf('\n');
+  if (nl > 0 && nl < 200) {
+    const head = t.slice(0, nl);
+    if (/^(Okay|OK|Hmm|Alright|Let me|The user|Here'?s|I need to|So,|Well,)/i.test(head.trim())
+      && /[çğıöşü]|\d+[.)]|[-*•]/i.test(t.slice(nl))) {
+      t = t.slice(nl + 1);
     }
   }
-  return out.trim();
+  for (const re of marks) { if (re.test(t)) { const m = t.match(re); if (m && m.index === 0 && m[0].length < t.length * 0.7) t = t.slice(m[0].length); } }
+  return t.trim();
 }
 
 function errText(status, data, id) {
   const msg = data?.error?.message || data?.error?.error?.message || JSON.stringify(data || {}).slice(0, 200);
   if (status === 401) return `Anahtar geçersiz (${id}). Ayarlar’dan kontrol et.`;
   if (status === 402) return `${id}: ücretsiz kota/bakiye tükendi.`;
-  if (status === 429) return `${id}: hız limiti doldu. Ücretsiz katmanda dakikalık sınır var, biraz bekle.`;
+  if (status === 429) return `${id}: hız limiti/kota doldu. OpenRouter ücretsiz katmanı günde ~50 istek verir; yarın sıfırlanır ya da modeli değiştir.`;
   if (status === 404) return `Model bulunamadı (${id}): ${msg}`;
   return `${id} HTTP ${status}: ${msg}`;
 }
@@ -326,30 +409,60 @@ export async function chat(messages, opts = {}) {
   if (a.def.format === 'openai') {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
     if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
-    const body = {
-      model, messages, temperature,
-      max_tokens: opts.maxTokens ?? 900,
-      ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
-      ...(useStream ? { stream: true } : {}),
-    };
-    const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      // Model artık yoksa listeden yenisini seçip bir kez daha dene
-      if ((res.status === 404 || res.status === 400) && a.id === 'openrouter' && !opts._retriedModel) {
-        orCache = { at: 0, models: [] };
-        const alt = await bestFreeModel();
-        if (alt && alt !== model) return chat(messages, { ...opts, _retriedModel: true, model: alt });
+
+    // OpenRouter'da model sırayla denenir: 429/502/403 -> sıradakine geç
+    const queue = a.id === 'openrouter' ? (opts._queue || await rankedFreeModels()).slice(0, 5) : [model];
+    let lastErr = null;
+
+    for (let qi = 0; qi < queue.length; qi++) {
+      const mid = queue[qi];
+      const body = {
+        model: mid, messages, temperature,
+        max_tokens: opts.maxTokens ?? 900,
+        // DÜŞÜNCE METNİNİ GİZLE — yoksa "Okay, the user is asking..." diye sızıyor
+        ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
+        ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
+        ...(useStream ? { stream: true } : {}),
+      };
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await withTimeout(a.def.url, { method: 'POST', headers, body: JSON.stringify(body) }, 120000);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const msg = errText(res.status, data, a.id);
+          // Bu model dolu/erişilemez -> sıradakini dene
+          if (ROTATABLE.test(`${res.status} ${msg}`) && qi < queue.length - 1) {
+            lastErr = new Error(msg);
+            opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model deneniyor…`);
+            continue;
+          }
+          throw new Error(msg);
+        }
+        if (useStream) return stripReasoning(await streamOpenAI(res, opts.onChunk, mid));
+        const data = await res.json().catch(() => ({}));
+        const text = (data.choices?.[0]?.message?.content || '').trim();
+        if (!text) {
+          if (qi < queue.length - 1) { lastErr = new Error('boş yanıt'); continue; }
+          throw new Error('Model boş yanıt döndürdü');
+        }
+        return stripReasoning(text);
+      } catch (e) {
+        lastErr = e;
+        const rotatable = ROTATABLE.test(`${e.status || ''} ${e.message || ''}`);
+        // 502 "overloaded" geçicidir: aynı modeli bir kez daha dene
+        if (rotatable && !opts._retriedSame && (e.status === 502 || /overloaded|empty|boş/i.test(e.message || ''))) {
+          opts.onProgress?.(0, `🔁 ${mid.split('/').pop()} meşgul, 2 sn sonra tekrar…`);
+          await new Promise((r) => setTimeout(r, 2000));
+          return chat(messages, { ...opts, _retriedSame: true, _queue: queue.slice(qi) });
+        }
+        if (rotatable && qi < queue.length - 1) {
+          opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} yanıt vermedi → sıradaki model deneniyor…`);
+          continue;
+        }
+        throw e;
       }
-      if (res.status === 404 && model !== a.def.defaultModel && !opts._retriedModel) {
-        setSettings({ model: '' });
-        return chat(messages, { ...opts, _retriedModel: true });
-      }
-      throw new Error(errText(res.status, data, a.id));
     }
-    if (useStream) return await streamOpenAI(res, opts.onChunk, model);
-    const data = await res.json().catch(() => ({}));
-    return (data.choices?.[0]?.message?.content || '').trim();
+    throw lastErr || new Error('Hiçbir ücretsiz model yanıt vermedi (günlük kota dolmuş olabilir)');
   }
 
   // Gemini
@@ -365,7 +478,7 @@ export async function chat(messages, opts = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(errText(res.status, data, a.id));
-  return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).join('').trim();
+  return stripReasoning((data.candidates?.[0]?.content?.parts || []).map((p) => p.text).join('').trim());
 }
 
 export function safeJSON(raw) {
