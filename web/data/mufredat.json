@@ -467,6 +467,30 @@
     "dogru": 1,
     "aciklama": "Nöral ODE: ağ türev alanını öğrenir; yörünge sayısal entegrasyonla (ör. RK4) üretilir."
    }
+  },
+  {
+   "no": 23,
+   "baslik": "Bonus: Web Güvenliği Temelleri — OWASP Top 10 (Savunma)",
+   "ozet": "Kendi siteni koruma rehberi: (1) Enjeksiyon — kullanıcı girdisini SQL/komuta asla doğrudan gömme, parametreli sorgu kullan. (2) Kimlik doğrulama — güçlü parola, 2FA, oturum yönetimi. (3) XSS — çıktıyı HTML'e yazarken escape et, CSP başlığı koy. (4) Güvensiz yapılandırma — HTTPS zorunlu, HSTS, gereksiz servis/dizin kapalı, varsayılan parolalar değiştirilmiş. (5) Eski bileşenler — CMS/eklenti/bağımlılık güncel tut. Ayrıca: güvenlik başlıkları (X-Frame-Options, X-Content-Type-Options), düzenli yedek, en az yetki. Gerçek sızma testi yalnızca SAHİBİ olduğun veya YAZILI İZİN aldığın sistemlerde, yetkili uzmanca yapılır.",
+   "kavramlar": [
+    "OWASP Top 10",
+    "XSS",
+    "enjeksiyon",
+    "CSP",
+    "HSTS",
+    "en az yetki"
+   ],
+   "quiz": {
+    "soru": "Kullanıcı girdisini veritabanı sorgusuna eklerken enjeksiyonu önlemenin doğru yolu nedir?",
+    "secenekler": [
+     "Girdideki tehlikeli kelimeleri silmek",
+     "Parametreli sorgu (prepared statement) kullanmak",
+     "Girdiyi iki kez escape etmek",
+     "Admin onayı istemek"
+    ],
+    "dogru": 1,
+    "aciklama": "Parametreli sorgu, girdiyi koddan ayırır — enjeksiyonun köklü çözümü budur; kara liste/escape güvenilmez."
+   }
   }
  ]
 }
