@@ -659,6 +659,30 @@
     "dogru": 1,
     "aciklama": "Fail-closed: şüphe/arıza durumunda güvenli tarafa geç — aramayı sürdürme, dur."
    }
+  },
+  {
+   "no": 31,
+   "baslik": "Bonus: Otomatik Türev ve Yüksek Performanslı Hesaplama (JAX)",
+   "ozet": "JAX (Apache 2.0) = NumPy + dönüşümler: grad (otomatik türev), vmap (otomatik vektörizasyon), jit (derleme), GPU/TPU hızlandırma. Otomatik türev (AD), sembolik türev (ifade şişer) ve sayısal farktan (yuvarlama hatası) farklıdır: TAM makine hassasiyetinde gradyan verir. İki mod: (1) İleri mod — girdiyle birlikte 'dual sayı' taşır, az girdili işlerde verimli. (2) Ters mod (backprop!) — ileri geçişte işlem bandı (tape) tutar, tek geri geçişte TÜM parametrelere göre gradyanı çıkarır; sinir ağlarında milyonlarca parametre için bu yüzden kullanılır. Her derin öğrenme框架'si (JAX, PyTorch, Flux/Zygote, TFP) aynı tape mantığını uygular. EVRIM'in otomatik_turev aracı ters mod AD'yi tarayıcıda çalıştırır ve sayısal farkla doğrular.",
+   "kavramlar": [
+    "grad",
+    "ters mod AD",
+    "tape",
+    "vmap",
+    "jit",
+    "sayısal fark"
+   ],
+   "quiz": {
+    "soru": "Ters mod otomatik türev neden sinir ağları için idealdir?",
+    "secenekler": [
+     "Daha az bellek kullanır",
+     "Tek geri geçişte tüm parametrelerin gradyanını verir",
+     "Sembolik ifade üretir",
+     "GPU gerektirmez"
+    ],
+    "dogru": 1,
+    "aciklama": "Milyonlarca parametre × 1 kayıp: ters mod, maliyeti ileri geçişin ~2 katında tutar (backprop'un ta kendisi)."
+   }
   }
  ]
 }

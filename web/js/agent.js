@@ -74,6 +74,10 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('otomatik_turev', 'OTOMATİK TÜREV / AUTOGRAD (JAX grad() ruhu, tarayıcıda): matematik ifadenin değerini + gradyanını TERS MOD otomatik türevle (işlem bandı/backprop) hesaplar ve sayısal farkla DOĞRULAR. İfade doğal matematik: sin(x)*x + exp(-x^2), ^ üs, fonksiyonlar sin/cos/tan/exp/log/sqrt/abs, sabitler pi/e. Türev/gradyan/marjinal değişim sorularında çağır.', {
+    ifade: { type: 'string', description: 'f(x,y,...) doğal matematik, örn. "sin(x)*x" veya "x^2*y + sin(y)"' },
+    degiskenler: { type: 'string', description: 'JSON nokta: {"x":1.5} veya {"x":1,"y":2} (verilmezse x=1)' },
+  }, ['ifade']),
   F('oto_model', 'OTOMATİK MODEL ARAMA / AutoML (AutoKeras ruhu, tarayıcıda): sinir ağı hiperparametrelerini (gizli nöron 3-12, öğrenme oranı 0.05-0.5) OTOMATİK arar — rastgele arama + doğrulama bölmesi (overfitting elemesi), en iyi yapılandırmayı seçer ve tam veriyle yeniden eğitir. gorev: xor | daire | sinus. Kullanıcı "en iyi modeli bul/otomatik dene/hiperparametre ara" derse çağır.', {
     gorev: { type: 'string', description: 'xor | daire | sinus' },
     deneme: { type: 'number', description: 'denenecek yapılandırma 3-12 (varsayılan 6)' },
@@ -630,6 +634,121 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async otomatik_turev({ ifade, degiskenler }) {
+    try {
+      const expr = String(ifade || '').trim();
+      if (!expr) return { hata: 'ifade boş' };
+      if (/[;{}]|=>|\bfunction\b|\breturn\b|import|require|fetch|eval|globalThis|window|document|localStorage/.test(expr)) return { hata: 'ifade yalnızca matematik olmalı' };
+      let pt = {};
+      try { pt = typeof degiskenler === 'string' && degiskenler.trim() ? JSON.parse(degiskenler) : (degiskenler || {}); } catch { pt = {}; }
+      if (!pt || typeof pt !== 'object' || !Object.keys(pt).length) pt = { x: 1 };
+      // ---- tokenizer ----
+      const toks = [];
+      const re = /(\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+)|([A-Za-z_][A-Za-z0-9_]*)|([+\-*/^(),])|(\s+)/g;
+      let m2; let pos = 0;
+      while ((m2 = re.exec(expr))) {
+        if (m2[0].length === 0) break;
+        pos = re.lastIndex;
+        if (m2[4]) continue;
+        if (m2[1]) toks.push({ t: 'num', v: parseFloat(m2[1]) });
+        else if (m2[2]) toks.push({ t: 'name', v: m2[2].toLowerCase() });
+        else if (m2[3]) toks.push({ t: 'op', v: m2[3] });
+        else return { hata: `ayrıştırılamayan karakter: ${m2[0]}` };
+      }
+      if (pos < expr.replace(/\s+$/, '').length) return { hata: 'ifade tam ayrıştırılamadı' };
+      const FNS = ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs'];
+      // ---- shunting-yard -> RPN ----
+      const rpn = []; const ops2 = [];
+      const prec = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 3, 'u-': 2.5 };
+      let prev = null;
+      for (const tk of toks) {
+        if (tk.t === 'num') { rpn.push(tk); }
+        else if (tk.t === 'name') {
+          if (FNS.includes(tk.v)) { ops2.push({ t: 'fn', v: tk.v }); }
+          else if (tk.v === 'pi' || tk.v === 'e') { rpn.push({ t: 'num', v: tk.v === 'pi' ? Math.PI : Math.E }); }
+          else rpn.push({ t: 'var', v: tk.v });
+        } else if (tk.t === 'op') {
+          const c = tk.v;
+          if (c === '-' && (prev === null || (prev.t === 'op') || (prev.t === 'lp'))) { ops2.push({ t: 'op', v: 'u-' }); }
+          else if (c === '(') { ops2.push({ t: 'lp' }); }
+          else if (c === ')') {
+            while (ops2.length && ops2[ops2.length - 1].t !== 'lp') rpn.push(ops2.pop());
+            if (!ops2.length) return { hata: 'parantez dengesi bozuk' };
+            ops2.pop();
+            if (ops2.length && ops2[ops2.length - 1].t === 'fn') rpn.push(ops2.pop());
+          } else {
+            while (ops2.length) {
+              const top = ops2[ops2.length - 1];
+              if (top.t === 'fn' || (top.t === 'op' && (prec[top.v] > prec[c] || (prec[top.v] === prec[c] && c !== '^')))) rpn.push(ops2.pop());
+              else break;
+            }
+            ops2.push({ t: 'op', v: c });
+          }
+        }
+        prev = c2p(tk);
+      }
+      function c2p(tk) { if (tk.t === 'op' && tk.v === '(') return { t: 'lp' }; return tk; }
+      while (ops2.length) { const o = ops2.pop(); if (o.t === 'lp') return { hata: 'parantez dengesi bozuk' }; rpn.push(o); }
+      // ---- AD tape ----
+      const evalAt = (point) => {
+        const nodes = [];
+        const V = (v, par, back) => { const o = { v, par: par || [], back: back || null, g: 0, id: nodes.length }; nodes.push(o); return o; };
+        const B = {
+          '+': (a, b) => V(a.v + b.v, [a, b], (g) => [[a, g], [b, g]]),
+          '-': (a, b) => V(a.v - b.v, [a, b], (g) => [[a, g], [b, -g]]),
+          '*': (a, b) => V(a.v * b.v, [a, b], (g) => [[a, g * b.v], [b, g * a.v]]),
+          '/': (a, b) => V(a.v / b.v, [a, b], (g) => [[a, g / b.v], [b, -g * a.v / (b.v * b.v)]]),
+          '^': (a, b) => V(Math.pow(a.v, b.v), [a, b], (g) => [[a, g * b.v * Math.pow(a.v, b.v - 1)], [b, g * Math.pow(a.v, b.v) * Math.log(Math.abs(a.v) || 1e-12)]]),
+          'u-': (a) => V(-a.v, [a], (g) => [[a, -g]]),
+          sin: (a) => V(Math.sin(a.v), [a], (g) => [[a, g * Math.cos(a.v)]]),
+          cos: (a) => V(Math.cos(a.v), [a], (g) => [[a, -g * Math.sin(a.v)]]),
+          tan: (a) => V(Math.tan(a.v), [a], (g) => [[a, g / (Math.cos(a.v) ** 2)]]),
+          exp: (a) => V(Math.exp(a.v), [a], (g) => [[a, g * Math.exp(a.v)]]),
+          log: (a) => { if (!(a.v > 0)) throw new Error('log pozitif girdi ister'); return V(Math.log(a.v), [a], (g) => [[a, g / a.v]]); },
+          sqrt: (a) => { if (a.v < 0) throw new Error('sqrt negatif girdi istermez'); const r = Math.sqrt(a.v); return V(r, [a], (g) => [[a, g / (2 * r)]]); },
+          abs: (a) => V(Math.abs(a.v), [a], (g) => [[a, g * Math.sign(a.v)]]),
+        };
+        const vars = {};
+        for (const k of Object.keys(point)) vars[k.toLowerCase()] = V(Number(point[k]));
+        const st = [];
+        for (const tk of rpn) {
+          if (tk.t === 'num') st.push(V(tk.v));
+          else if (tk.t === 'var') { const v = vars[tk.v]; if (!v) throw new Error(`bilinmeyen değişken: ${tk.v}`); st.push(v); }
+          else if (tk.t === 'fn') { const a = st.pop(); if (!a) throw new Error('eksik argüman'); st.push(B[tk.v](a)); }
+          else {
+            if (tk.v === 'u-') { const a = st.pop(); if (!a) throw new Error('eksik argüman'); st.push(B['u-'](a)); }
+            else { const b = st.pop(); const a = st.pop(); if (!a || !b) throw new Error('eksik işleç'); st.push(B[tk.v](a, b)); }
+          }
+        }
+        if (st.length !== 1) throw new Error('ifade eksik/fazla işleçli');
+        const root = st[0];
+        if (!isFinite(root.v)) throw new Error('sonuç sonlu değil');
+        root.g = 1;
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const nd = nodes[i];
+          if (nd.back && nd.g !== 0) { for (const [par, gg] of nd.back(nd.g)) par.g += gg; }
+        }
+        const grads = {};
+        for (const k of Object.keys(vars)) grads[k] = vars[k].g;
+        return { value: root.v, grads, finite: Object.values(grads).every(isFinite) };
+      };
+      const base = evalAt(pt);
+      if (!base.finite) return { hata: 'gradyan sonlu değil — noktayı değiştir (ör. log(0), 1/0)' };
+      // sayısal doğrulama (merkezi fark)
+      const h = 1e-5;
+      const rows = [];
+      for (const k of Object.keys(pt)) {
+        const pp = { ...pt, [k]: pt[k] + h }; const pm = { ...pt, [k]: pt[k] - h };
+        let num = null;
+        try { num = (evalAt(pp).value - evalAt(pm).value) / (2 * h); } catch { num = NaN; }
+        rows.push({ degisken: k, ad: +base.grads[k].toFixed(8), sayisal: isFinite(num) ? +num.toFixed(8) : null, fark: isFinite(num) ? +Math.abs(base.grads[k] - num).toExponential(2) : null });
+      }
+      const tabloMarkdown = '| değişken | AD gradyanı | sayısal kontrol | fark |\n|---|---|---|---|\n'
+        + rows.map((r) => `| ${r.degisken} | ${r.ad} | ${r.sayisal} | ${r.fark} |`).join('\n');
+      return { ok: true, arac: 'ters mod otomatik türev (tape)', ifade: expr, nokta: pt, deger: +base.value.toFixed(8), tabloMarkdown, dogrulama: rows.every((r) => r.fark === null || r.fark < 1e-4) ? 'AD = sayısal ✓' : 'FARK VAR — ifadeyi kontrol et', not: 'Tabloyu koy; gradyanın fiziksel anlamını 1 cümleyle yorumla (x artınca f ne hızla değişir).' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
   },
 
   async oto_model({ gorev, deneme }) {
@@ -1467,6 +1586,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',
     oto_model: (args.gorev) ? `🤖 AutoML ${done ? (bad ? 'arama başarısız' : 'en iyi modeli buldu') : 'model arıyor'}: ${String(args.gorev).slice(0, 10)}` : `🤖 AutoML ${done ? 'tamam' : 'çalışıyor'}`,
     gizli_ogren: (args.gorev) ? `🔐 Gizli öğrenme ${done ? (bad ? 'başarısız' : 'çalıştı') : 'çalışıyor'}: ${String(args.gorev).slice(0, 16)}` : `🔐 Gizli öğrenme ${done ? 'çalıştı' : 'çalışıyor'}`,
     olasilik: (args.gorev) ? `🎲 Olasılık ${done ? (bad ? 'hesaplanamadı' : 'hesaplandı') : 'hesaplanıyor'}: ${String(args.gorev).slice(0, 14)}` : `🎲 Olasılık ${done ? 'hesaplandı' : 'hesaplanıyor'}`,
