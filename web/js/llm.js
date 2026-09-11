@@ -311,6 +311,9 @@ export async function rankedFreeModels() {
     .map((x) => x.id);
 }
 
+/** v52: dakikalık token limiti küçük modeller — araç şeması çekirdek sete indirilir */
+const SMALL_ITPM_RE = /gpt-oss-20b|qwen3\.[68]-27b/i;
+
 /** 429/502/403 = bu model şu an dolu -> sıradakine geç */
 const ROTATABLE = /429|502|503|403|overloaded|rate.?limit|temporarily/i;
 
@@ -339,12 +342,15 @@ export async function rawChat(messages, opts = {}) {
     let lastErr = null;
     for (let qi = 0; qi < queue.length; qi++) {
       const mid = queue[qi];
+      // v52: küçük ITPM limitli modeller (20b/qwen27b) yalnız çekirdek araç setini alır → 413 kökten önlenir
+      const toolsForModel = (SMALL_ITPM_RE.test(mid) && Array.isArray(opts.toolsSlim) && opts.toolsSlim.length)
+        ? opts.toolsSlim : opts.tools;
       const body = {
         model: mid, messages, temperature: opts.temperature ?? 0.7,
         max_tokens: opts.maxTokens ?? 900,
         ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
         ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
-        ...(supportsTools ? { tools: opts.tools, tool_choice: 'auto' } : {}),
+        ...(supportsTools ? { tools: toolsForModel, tool_choice: 'auto' } : {}),
         ...(useStream ? { stream: true } : {}),
       };
       const t0 = Date.now();

@@ -1282,5 +1282,39 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 39) Kademeli araç şeması: 120b tam takım, 20b/qwen çekirdek set ================= */
+{
+  let round = 0; const bodies = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      bodies.push(body);
+      round++;
+      if (round === 1) return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'Rate limit reached for model gpt-oss-120b' } }), text: async () => '{}' };
+      return fakeRes(body, null, 'Küçük modelden cevap geldi.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kademeli'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'merhaba kademe testi'; $(w, '#send').click();
+  await wait(2600);
+  const b1 = bodies.find((b) => b?.model === 'openai/gpt-oss-120b');
+  const b2 = bodies.find((b) => b?.model && b.model.includes('gpt-oss-20b'));
+  ok('39. 120b tam takım aldı (>20 araç)', !!b1 && Array.isArray(b1.tools) && b1.tools.length > 20);
+  ok('39. 20b çekirdek set aldı (≤12 araç)', !!b2 && Array.isArray(b2.tools) && b2.tools.length <= 12 && b2.tools.length >= 8);
+  const names2 = (b2?.tools || []).map((t) => t?.function?.name || t?.name);
+  ok('39. çekirdek sette web_ara+kod_calistir var', names2.includes('web_ara') && names2.includes('kod_calistir'));
+  ok('39. çekirdek sette ağır bilimsel araçlar YOK', !names2.includes('kuantum_devre') && !names2.includes('linux_komut'));
+  ok('39. yanıt kullanıcıya ulaştı', $$(w, '#msgs .msg.bot').some((e) => e.textContent.includes('Küçük modelden cevap')));
+  ok('39. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

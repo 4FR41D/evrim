@@ -475,6 +475,11 @@ function mediaKaydet(id, dataUrl) {
     catch { localStorage.removeItem(MEDIA_KEY); }   // kota: sadece oturumda kalsın
   } catch { /* gizli mod vb. */ }
 }
+// v52: KADEMELİ ARAÇ ŞEMASI — küçük dakikalık-token limitli (ITPM) modellere yalnız çekirdek set gönderilir.
+// Tam 28 araç şeması ~8k token; qwen/20b sınıfının limiti 7k → 413. Çekirdek 10 araç sohbet+arama+kurs+görsel için yeter.
+export const CORE_TOOL_NAMES = ['calculator', 'datetime', 'wikipedia', 'memory_search', 'remember', 'web_ara', 'web_oku', 'kod_calistir', 'gorsel_uret', 'ders_calis'];
+export const CORE_TOOLS = TOOLS.filter((t) => CORE_TOOL_NAMES.includes(t?.function?.name || t?.name));
+
 export function mediaGet(id) {
   if (mediaMem.has(id)) return mediaMem.get(id);
   try {
@@ -1565,6 +1570,7 @@ export async function agentChat(messages, opts = {}) {
     const r = await rawChat(msgs, {
       ...opts,
       tools: TOOLS,
+      toolsSlim: CORE_TOOLS,
       // Araç turunda akış açıksa ve içerik gelirse göster (genelde boş gelir)
       onChunk: opts.onChunk,
     });
