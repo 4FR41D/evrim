@@ -24,7 +24,8 @@
     "aciklama": "LLM'ler sıradaki token'ın olasılığını tahmin ederek ardışık üretim yapar."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/01-introduction-to-genai",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/01-introduction-to-genai/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/01-introduction-to-genai/README.md",
+   "yerel": "data/dersler/01.md"
   },
   {
    "no": 2,
@@ -47,7 +48,8 @@
     "aciklama": "Doğru model, işin gereğine göre dengeleyen modeldir."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/02-exploring-and-comparing-different-llms",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/02-exploring-and-comparing-different-llms/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/02-exploring-and-comparing-different-llms/README.md",
+   "yerel": "data/dersler/02.md"
   },
   {
    "no": 3,
@@ -70,7 +72,8 @@
     "aciklama": "Halüsinasyon: gerçek olmayan bilginin akıcı ve emin biçimde üretilmesi."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/03-using-generative-ai-responsibly",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/03-using-generative-ai-responsibly/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/03-using-generative-ai-responsibly/README.md",
+   "yerel": "data/dersler/03.md"
   },
   {
    "no": 4,
@@ -94,7 +97,8 @@
     "aciklama": "Talimat, bağlam, örnek ve biçim promptun dört direğidir."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/04-prompt-engineering-fundamentals",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/04-prompt-engineering-fundamentals/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/04-prompt-engineering-fundamentals/README.md",
+   "yerel": "data/dersler/04.md"
   },
   {
    "no": 5,
@@ -117,7 +121,8 @@
     "aciklama": "CoT, modeli ara adımlar üretmeye yönlendirerek doğruluğu artırır."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/05-advanced-prompts",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/05-advanced-prompts/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/05-advanced-prompts/README.md",
+   "yerel": "data/dersler/05.md"
   },
   {
    "no": 6,
@@ -140,7 +145,8 @@
     "aciklama": "Yüksek sıcaklık dağılımı düzleştirir → daha çeşitli çıktılar."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/06-text-generation-apps",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/06-text-generation-apps/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/06-text-generation-apps/README.md",
+   "yerel": "data/dersler/06.md"
   },
   {
    "no": 7,
@@ -163,7 +169,8 @@
     "aciklama": "LLM durumsuzdur; geçmiş her çağrıda iletilir (pencere limiti içinde)."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/07-building-chat-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/07-building-chat-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/07-building-chat-applications/README.md",
+   "yerel": "data/dersler/07.md"
   },
   {
    "no": 8,
@@ -186,7 +193,8 @@
     "aciklama": "Embedding, metnin anlamını yoğun vektör olarak kodlar."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/08-building-search-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/08-building-search-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/08-building-search-applications/README.md",
+   "yerel": "data/dersler/08.md"
   },
   {
    "no": 9,
@@ -209,7 +217,8 @@
     "aciklama": "Diffusion: gürültüden başlayıp adım adım görseli netleştirir."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/09-building-image-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/09-building-image-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/09-building-image-applications/README.md",
+   "yerel": "data/dersler/09.md"
   },
   {
    "no": 10,
@@ -232,7 +241,8 @@
     "aciklama": "Low-code, görsel araçlarla hızlı kurulum sağlar."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/10-building-low-code-ai-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/10-building-low-code-ai-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/10-building-low-code-ai-applications/README.md",
+   "yerel": "data/dersler/10.md"
   },
   {
    "no": 11,
@@ -255,7 +265,8 @@
     "aciklama": "Model yalnızca çağrı kararı+parametre üretir; yürütme uygulamadadır."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/11-integrating-with-function-calling",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/11-integrating-with-function-calling/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/11-integrating-with-function-calling/README.md",
+   "yerel": "data/dersler/11.md"
   },
   {
    "no": 12,
@@ -278,7 +289,8 @@
     "aciklama": "Güven: şeffaflık + kullanıcı kontrolüyle kurulur."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/12-designing-ux-for-ai-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/12-designing-ux-for-ai-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/12-designing-ux-for-ai-applications/README.md",
+   "yerel": "data/dersler/12.md"
   },
   {
    "no": 13,
@@ -301,7 +313,8 @@
     "aciklama": "Zararlı girdi, modelin talimatlarını ele geçirmeye çalışır."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/13-securing-ai-applications",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/13-securing-ai-applications/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/13-securing-ai-applications/README.md",
+   "yerel": "data/dersler/13.md"
   },
   {
    "no": 14,
@@ -324,7 +337,8 @@
     "aciklama": "Yaşam döngüsü: ölç, izle, iyileştir — sürekli."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/14-the-generative-ai-application-lifecycle",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/14-the-generative-ai-application-lifecycle/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/14-the-generative-ai-application-lifecycle/README.md",
+   "yerel": "data/dersler/14.md"
   },
   {
    "no": 15,
@@ -347,7 +361,8 @@
     "aciklama": "Cevap, getirilen kanıt bağlamına dayanır."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/15-rag-and-vector-databases",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/15-rag-and-vector-databases/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/15-rag-and-vector-databases/README.md",
+   "yerel": "data/dersler/15.md"
   },
   {
    "no": 16,
@@ -370,7 +385,8 @@
     "aciklama": "Hub, açık ekosistemin merkezidir."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/16-open-source-models",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/16-open-source-models/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/16-open-source-models/README.md",
+   "yerel": "data/dersler/16.md"
   },
   {
    "no": 17,
@@ -393,7 +409,8 @@
     "aciklama": "Ajan: düşün→araç→gözlemle döngüsüyle iş bitirir."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/17-ai-agents",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/17-ai-agents/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/17-ai-agents/README.md",
+   "yerel": "data/dersler/17.md"
   },
   {
    "no": 18,
@@ -416,7 +433,8 @@
     "aciklama": "Önce prompt/RAG; yetmezse fine-tune."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/18-fine-tuning",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/18-fine-tuning/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/18-fine-tuning/README.md",
+   "yerel": "data/dersler/18.md"
   },
   {
    "no": 19,
@@ -439,7 +457,8 @@
     "aciklama": "SLM: yerel, hızlı, gizli — dar alanda etkili."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/19-slm",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/19-slm/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/19-slm/README.md",
+   "yerel": "data/dersler/19.md"
   },
   {
    "no": 20,
@@ -462,7 +481,8 @@
     "aciklama": "MoE: token başına seçili uzmanlar → verimlilik."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/20-mistral",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/20-mistral/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/20-mistral/README.md",
+   "yerel": "data/dersler/20.md"
   },
   {
    "no": 21,
@@ -485,7 +505,8 @@
     "aciklama": "Meta, Llama ağırlıklarını açık yayınlar; ekosistem büyütür."
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/21-meta",
-   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/21-meta/README.md"
+   "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/21-meta/README.md",
+   "yerel": "data/dersler/21.md"
   },
   {
    "no": 22,

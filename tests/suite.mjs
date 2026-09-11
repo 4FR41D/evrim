@@ -1317,5 +1317,45 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 40) LINK OLSE BILE KURS: ders_calis tam:true -> yerel arsiv ================= */
+{
+  let round = 0; const calls = []; const hits = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const ARSIV = '# AI Agents\nAn agent uses tools in a loop. Plan, act, observe.';
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    hits.push(u);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('data/dersler/17.md')) return { ok: true, status: 200, headers: { get: () => 'text/markdown' }, json: async () => ({}), text: async () => ARSIV };
+    if (u.includes('raw.githubusercontent.com') || u.includes('r.jina.ai')) return { ok: false, status: 404, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }; // dış linkler ÖLÜ simülasyonu
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'ders_calis', args: { ders: 17, tam: true } });
+      if (round === 2) return fakeRes(body, { name: 'ders_calis', args: { ders: 22, tam: true } });
+      return fakeRes(body, null, 'Ders anlatımı burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Arşiv'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = '17. dersi derinlemesine anlat'; $(w, '#send').click();
+  await wait(3400);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const d17 = R.find((r) => r?.ok && r.ders === 17);
+  const d22 = R.find((r) => r?.ok && r.ders === 22);
+  ok('40. ders 17 tam metin YEREL arşivden geldi', !!d17 && String(d17.tamMetin).includes('AI Agents') && hits.some((h) => h.includes('data/dersler/17.md')));
+  ok('40. dış link ölüyken bile içerik var', !!d17 && String(d17.tamMetin).includes('loop'));
+  ok('40. arşivsiz ders (22) zarif uyarı verdi', !!d22 && String(d22.tamMetin).includes('yerel arşivi yok'));
+  ok('40. tüm derslerde yerel arşiv tanımı var', MUF.dersler.filter((d) => d.no <= 21).every((d) => d.yerel && d.yerel.startsWith('data/dersler/')));
+  ok('40. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

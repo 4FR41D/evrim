@@ -139,7 +139,8 @@ export const TOOLS = [
     yontem: { type: 'string', description: '"rk4" (varsayılan) veya "euler"' },
   }, ['denklem', 'y0']),
   F('ders_calis', 'GENAI DERSİ (Microsoft Generative AI for Beginners müfredatı, MIT): kullanıcı ders/öğrenme/kurs/quiz isterse VEYA sıradaki dersini sorarsa çağır. Ders içeriği+quiz döner: önce 2-4 cümleyle öğret, kavramları maddele, sonra quiz sorusunu seçenekleriyle yaz; kullanıcının cevabını değerlendir ve ders_bitir çağır.', {
-    ders: { type: 'number', description: 'Ders no (1-21); verilmezse sıradaki tamamlanmamış ders' },
+    ders: { type: 'number', description: 'Ders no (1-32); verilmezse sıradaki tamamlanmamış ders' },
+    tam: { type: 'boolean', description: 'true = orijinal ders metnini de getir (yerel arşivden; link ölse bile çalışır)' },
   }, []),
   F('ders_bitir', 'Ders quiz sonucunu kalıcı kaydeder: seviye + flash-card güncellenir. Kullanıcı quizi cevapladıktan SONRA çağır.', {
     ders: { type: 'number', description: 'Ders no' },
@@ -1429,7 +1430,7 @@ ${kapanis}
     } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
   },
 
-  async ders_calis({ ders }) {
+  async ders_calis({ ders, tam }) {
     try {
       const m = await mufredat();
       const skills = all('skills');
@@ -1438,12 +1439,27 @@ ${kapanis}
       if (!no) no = (m.dersler.find((d) => !done(d.no)) || m.dersler[0]).no;
       const d = m.dersler.find((x) => x.no === no);
       if (!d) return { hata: 'ders bulunamadı (1-21)' };
+      // v54: tam metin — önce YEREL ARŞİV (data/dersler), o yoksa dış ham link
+      let tamMetin = null;
+      if (tam) {
+        try {
+          if (d.yerel) {
+            const tr = await fetch(d.yerel);
+            if (tr.ok) tamMetin = (await tr.text()).slice(0, 6000);
+          }
+          if (!tamMetin && d.ham) {
+            const tr2 = await fetch('https://r.jina.ai/' + d.ham, { headers: { Accept: 'text/plain' } });
+            if (tr2.ok) tamMetin = (await tr2.text()).slice(0, 6000);
+          }
+        } catch {}
+        if (!tamMetin) tamMetin = 'Bu dersin yerel arşivi yok — özet ve kavramlar tam içeriklidir; istersen kaynak linkini kullanıcıya ver (site_tara/web_oku ile de okunabilir).';
+      }
       const tamam = m.dersler.filter((x) => done(x.no)).length;
       return {
         ok: true, ders: d.no, toplam: m.dersler.length, tamamlanan: tamam,
         baslik: d.baslik, ozet: d.ozet, kavramlar: d.kavramlar, quiz: d.quiz, kaynak: m.url,
-        kaynakLink: d.link || m.url, hamMetin: d.ham || null,
-        not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır. Cevabın sonuna kaynakLink ekle; kullanıcı derinlemesine isterse web_oku ile hamMetin (İngilizce orijinal ders) okunup Türkçe özetlenebilir.',
+        kaynakLink: d.link || m.url, hamMetin: d.ham || null, tamMetin,
+        not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır. Cevabın sonuna kaynakLink ekle. Derin anlatım istenirse ders_calis(ders, tam:true) çağır — tamMetin YEREL ARŞİVDEN gelir (dış link ölse bile çalışır); onu Türkçe özetle.',
       };
     } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
   },

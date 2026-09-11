@@ -139,7 +139,8 @@ evrim/
 │     │                 #   + kod_calistir: JS sandbox (benim bash'imin karşılığı)
 │     │                 #   + gorsel_uret: girişsiz/anahtarsız görsel (pollinations, CORS *)
 │     ├─ linux-node/     # 🐧 SAHİBE ÖZEL Linux düğümü: private GitHub bus üzerinden tam yetkili yürütücü
-│     ├─ data/mufredat.json # 🎓 KURS MODU: GenAI 21 ders (MIT, Microsoft) + SciML bonusu, TR
+│     ├─ data/mufredat.json # 🎓 KURS MODU: GenAI 21 ders (MIT, Microsoft) + 11 bonus, TR
+│     ├─ data/dersler/   # 📚 derslerin YEREL ARŞİVİ (link ölse bile kurs çalışır, MIT)
 │     ├─ reflex.js      # REFLEKS KATMANI: beyinsiz bile anında cevap (selam, saat, matematik)
 │     ├─ wasm.js        # CİHAZ İÇİ KÜÇÜK BEYİN: transformers.js WASM (SmolLM2-135M) —
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez
