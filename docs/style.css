@@ -23,7 +23,7 @@ label{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px;letter-spa
 ::placeholder{color:#5b6784}
 
 /* ---------- iskelet ---------- */
-#app{max-width:860px;margin:0 auto;padding:0 0 84px;min-height:100dvh}
+#app{width:100%;max-width:none;margin:0;padding:0;min-height:100dvh}
 header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;
   padding:12px 14px;background:rgba(7,9,15,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;
@@ -186,3 +186,126 @@ hr{border:0;border-top:1px solid var(--line);margin:12px 0}
 .msg th,.msg td{border:1px solid var(--line);padding:5px 8px;text-align:left}
 .msg th{background:rgba(255,255,255,.06)}
 .msg blockquote{border-left:3px solid var(--acc);margin:7px 0;padding:2px 10px;opacity:.85}
+
+/* ==================================================================
+   YENİ KABUK — kenar çubuğu + sohbet (2026-09 arayüz yenilemesi)
+   ================================================================== */
+html,body{height:100%}
+body{overflow:hidden}
+
+.shell{display:grid;grid-template-columns:264px 1fr;height:100dvh;width:100%}
+
+/* --- kenar çubuğu --- */
+#sidebar{display:flex;flex-direction:column;min-height:0;background:rgba(9,12,22,.72);
+  border-right:1px solid var(--line);backdrop-filter:blur(8px)}
+.sb-head{display:flex;align-items:center;gap:8px;padding:12px 12px 8px}
+.sb-brand{display:flex;align-items:center;gap:8px;font-size:15px;letter-spacing:.4px}
+.sb-brand .logo{font-size:19px}
+.newchat{display:flex;align-items:center;gap:8px;margin:4px 10px 10px;padding:10px 12px;
+  border-radius:11px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(124,92,255,.20),rgba(124,92,255,.08));
+  color:var(--txt);font-weight:620;cursor:pointer;font-size:13.5px}
+.newchat:hover{border-color:var(--acc)}
+.sb-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 8px 10px}
+.sb-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--mut);
+  padding:6px 6px 5px;opacity:.75}
+.sb-nav{display:flex;flex-direction:column;gap:1px}
+.sb-nav button,.persona,.conv{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:8px 9px;border-radius:9px;border:0;background:transparent;color:var(--mut);
+  cursor:pointer;font-size:13px;line-height:1.3}
+.sb-nav button:hover,.persona:hover,.conv:hover{background:rgba(255,255,255,.05);color:var(--txt)}
+.sb-nav button.on,.persona.on,.conv.on{background:rgba(124,92,255,.16);color:var(--txt)}
+.persona .pe{font-size:15px;flex:0 0 20px;text-align:center}
+.persona .pn{font-weight:600;color:var(--txt)}
+.persona .pt{display:block;font-size:10.5px;color:var(--mut);font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.conv{position:relative;padding-right:26px}
+.conv .ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.conv .cx{position:absolute;right:5px;top:50%;transform:translateY(-50%);opacity:0;
+  border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:14px;padding:2px 5px;border-radius:6px}
+.conv:hover .cx{opacity:.8}
+.conv .cx:hover{background:rgba(251,113,133,.2);color:var(--bad)}
+.sb-foot{padding:8px 10px;border-top:1px solid var(--line)}
+.profile-chip{display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border-radius:10px;
+  border:1px solid transparent;background:transparent;color:var(--txt);cursor:pointer;font-size:13px}
+.profile-chip:hover{background:rgba(255,255,255,.05);border-color:var(--line)}
+.avatar{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;color:#0b0e18}
+.icon-btn{border:0;background:transparent;color:var(--mut);cursor:pointer;padding:6px;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center}
+.icon-btn:hover{background:rgba(255,255,255,.07);color:var(--txt)}
+
+/* --- ana kolon --- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;height:100dvh}
+.top{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--line);
+  background:rgba(7,9,15,.8);backdrop-filter:blur(10px);flex:0 0 auto}
+.top .brand{flex:1;min-width:0;font-size:14.5px;font-weight:650}
+.top .brand small{display:block;font-size:11px;font-weight:400;color:var(--mut);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sbOpen{display:none}
+#scrollArea{flex:1;min-height:0;overflow-y:auto;padding:14px;scroll-behavior:smooth}
+#scrollArea .view{max-width:820px;margin:0 auto}
+#composer{flex:0 0 auto;padding:9px 14px calc(11px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:rgba(7,9,15,.85);backdrop-filter:blur(10px)}
+#composer .box{max-width:820px;margin:0 auto}
+#scrim{display:none}
+
+/* --- giriş ekranı --- */
+.login{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:18px;overflow-y:auto;background:
+    radial-gradient(800px 500px at 20% 0%, rgba(124,92,255,.26), transparent 60%),
+    radial-gradient(700px 420px at 100% 100%, rgba(34,211,238,.16), transparent 55%), var(--bg)}
+.login-box{width:100%;max-width:370px;text-align:center;padding:26px 22px;border-radius:20px;
+  border:1px solid var(--line);background:rgba(17,23,41,.72);backdrop-filter:blur(10px)}
+.login-logo{font-size:40px;line-height:1}
+.login-box h1{margin:8px 0 2px;font-size:26px;letter-spacing:3px}
+.login-sub{margin:0 0 18px;font-size:12.5px;color:var(--mut)}
+.login-box label{display:block;text-align:left;font-size:12px;color:var(--mut);margin-bottom:4px}
+.login-note{margin-top:14px;font-size:11px;color:var(--mut);line-height:1.5;text-align:left}
+.pcard{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;margin-bottom:7px;
+  border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);
+  color:var(--txt);cursor:pointer;font-size:14px;text-align:left}
+.pcard:hover{border-color:var(--acc);background:rgba(124,92,255,.10)}
+.pcard .pn{font-weight:620;flex:1}
+.pcard .pm{font-size:10.5px;color:var(--mut)}
+.pcard .lock{font-size:12px;opacity:.6}
+.login-who{font-size:14px;font-weight:620;margin-bottom:10px}
+
+/* --- modal --- */
+.modal{position:fixed;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;
+  padding:16px;overflow-y:auto;background:rgba(3,5,10,.72);backdrop-filter:blur(4px)}
+.modal.on{display:flex}
+.modal-box{width:100%;max-width:620px;margin:auto;border-radius:18px;border:1px solid var(--line);
+  background:var(--card);padding:0;position:relative}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);
+  border-radius:18px 18px 0 0;z-index:2}
+.modal-body{padding:14px}
+.modal-body .card{margin-bottom:12px}
+
+/* --- mobil: çekmece --- */
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  #sidebar{position:fixed;top:0;bottom:0;left:0;width:min(84vw,290px);z-index:50;
+    transform:translateX(-102%);transition:transform .22s ease;background:#0a0e1a}
+  body.sb-open #sidebar{transform:none;box-shadow:0 0 44px rgba(0,0,0,.6)}
+  #sbOpen{display:inline-flex}
+  #sbClose{display:inline-flex}
+  body.sb-open #scrim{display:block;position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.5)}
+  #scrollArea{padding:11px}
+}
+@media (min-width:901px){ #sbClose{display:none} }
+
+/* --- eski alt sekme çubuğu artık yok --- */
+nav.tabs{display:none !important}
+
+/* araç adımları kalıcı mesajda */
+.msg .toolsteps.done{opacity:.85;margin-bottom:8px}
+.msg .toolsteps.done .toolstep{background:rgba(255,255,255,.03)}
+
+/* beyin hazır değil şeridi (engelleyici değil) */
+.brainbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:0 0 12px;
+  border:1px solid rgba(255,176,32,.4);border-left:3px solid #ffb020;border-radius:12px;background:rgba(255,176,32,.07)}
+.brainbar .bb-t{font-weight:700;font-size:13px}
+.brainbar .bb-s{flex:1;min-width:160px;color:var(--mut);font-size:12px}
+#statusPill{cursor:pointer;font:inherit}
+#statusPill:hover{filter:brightness(1.15)}

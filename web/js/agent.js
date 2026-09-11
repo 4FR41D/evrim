@@ -376,7 +376,7 @@ export async function agentChat(messages, opts = {}) {
       }
       const ms = Math.round(performance.now() - t0);
       steps.push({ tool: tc.name, args, result, ms });
-      opts.onTool?.(tc.name, 'done', result, ms);
+      opts.onTool?.(tc.name, 'done', result, ms, args);
       msgs.push({ role: 'tool', tool_call_id: id, content: JSON.stringify(result).slice(0, 6000) });
     }
     // Son turda hâlâ araç istiyorsa cevabı zorla
@@ -407,18 +407,19 @@ export async function agentChat(messages, opts = {}) {
 }
 
 /** Araç adını Türkçe eylem metnine çevir (UI için) */
-export function toolLabel(name, args = {}) {
+export function toolLabel(name, args = {}, done = false) {
+  const q = args.query || '';
   const map = {
-    memory_search: `🧠 Hafızada arıyor: "${args.query || ''}"`,
-    remember: '📝 Hafızaya kaydediyor',
-    conversation_search: `💬 Geçmiş sohbeti arıyor: "${args.query || ''}"`,
-    calculator: `🧮 Hesaplıyor: ${args.expression || ''}`,
-    datetime: '📅 Tarih/saat alıyor',
-    wikipedia: `🌐 Vikipedi: "${args.query || ''}"`,
-    learning_status: '🎓 Öğrenme durumuna bakıyor',
-    create_flashcard: '🃏 Tekrar kartı oluşturuyor',
-    self_status: '🔍 Kendi durumunu inceliyor',
-    improve_self: `⚙️ Kendini geliştiriyor: "${(args.rule || '').slice(0, 50)}"`,
+    memory_search: q ? `🧠 Hafızada arad${done ? 'ı' : 'ıyor'}: "${q}"` : `🧠 Hafızaya bakt${done ? 'ı' : 'ıyor'}`,
+    remember: done ? '📝 Hafızaya kaydetti' : '📝 Hafızaya kaydediyor',
+    conversation_search: q ? `💬 Geçmişte arad${done ? 'ı' : 'ıyor'}: "${q}"` : `💬 Geçmiş sohbeti ar${done ? 'adı' : 'ıyor'}`,
+    calculator: args.expression ? `🧮 ${done ? 'Hesapladı' : 'Hesaplıyor'}: ${args.expression}` : `🧮 ${done ? 'Hesapladı' : 'Hesaplıyor'}`,
+    datetime: done ? '📅 Tarih/saat alındı' : '📅 Tarih/saat alıyor',
+    wikipedia: q ? `🌐 Vikipedi${done ? ' okundu' : ''}: "${q}"` : `🌐 Vikipedi'ye bak${done ? 'tı' : 'ıyor'}`,
+    learning_status: done ? '🎓 Öğrenme durumu okundu' : '🎓 Öğrenme durumuna bakıyor',
+    create_flashcard: done ? '🃏 Tekrar kartı oluşturuldu' : '🃏 Tekrar kartı oluşturuyor',
+    self_status: done ? '🔍 Kendi durumu incelendi' : '🔍 Kendi durumunu inceliyor',
+    improve_self: `⚙️ ${done ? 'Kendini geliştirdi' : 'Kendini geliştiriyor'}${args.rule ? `: "${String(args.rule).slice(0, 50)}"` : ''}`,
   };
   return map[name] || `🔧 ${name}`;
 }

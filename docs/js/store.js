@@ -51,7 +51,8 @@ export function all(table) { return rows(table); }
 
 export function insert(table, row) {
   const list = rows(table);
-  const full = { id: row.id || uid(table.slice(0, 3)), createdAt: row.createdAt || now(), ...row };
+  const { id: _rid, createdAt: _rc, ...rest } = row || {};
+  const full = { ...rest, id: _rid || uid(table.slice(0, 3)), createdAt: _rc || now() };
   list.push(full);
   store.write(table, list);
   return full;
@@ -179,7 +180,7 @@ export function rollbackPrompt(id) {
 }
 
 // ---------- yedekleme (cihazlar arası taşımak için) ----------
-const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations'];
+const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations', 'profiles', 'personas'];
 
 export function exportData() {
   const out = { app: 'EVRIM-web', version: 1, exportedAt: now() };

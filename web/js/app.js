@@ -13,6 +13,9 @@ import {
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { agentChat, toolLabel, TOOLS } from './agent.js';
+import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
+import { personaPrompt } from './personas.js';
+import { activeProfile, renameProfile, isLoggedIn } from './profile.js';
 import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache, deviceProfile, vramCap, previewModels } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
@@ -21,6 +24,10 @@ import * as gh from './github.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const scrollBottom = () => {
+  const el = $('#scrollArea') || document.scrollingElement;
+  if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+};
 
 let toastT;
 function toast(msg, kind = '') {
@@ -48,13 +55,19 @@ function md(src) {
 
 /* ---------------- navigasyon ---------------- */
 let currentView = 'chat';
-$$('nav.tabs button').forEach((b) => b.addEventListener('click', () => go(b.dataset.v)));
 function go(v) {
   currentView = v;
   $$('.view').forEach((el) => el.classList.toggle('on', el.id === `v-${v}`));
-  $$('nav.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  $$('.sb-nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
   $('#composer').style.display = v === 'chat' ? 'block' : 'none';
-  window.scrollTo({ top: 0 });
+  $('#scrollArea')?.scrollTo({ top: 0 });
+  const pe = getPersona(currentPersonaId());
+  const tm = $('#chatTitleMain');
+  const sb = $('#subBrand');
+  if (tm) tm.textContent = v === 'chat' ? `${pe.emoji} ${pe.name}`
+    : ({ learn: '🎓 Öğrenme koçu', gh: '🐙 GitHub', evo: '🧬 Evrim', set: '⚙️ Ayarlar' }[v] || 'EVRIM');
+  if (sb && v === 'chat') sb.textContent = pe.tag || 'yeni sohbet';
+  closeDrawer();
   if (v === 'learn') renderLearn();
   if (v === 'gh') { $('#ghRepoInput').value = getSettings().githubRepo || $('#ghRepoInput').value; }
   if (v === 'evo') renderEvo();
@@ -82,7 +95,8 @@ function addCodeCopyButtons(root) {
 }
 
 function addMsg(m) {
-  $('#chatEmpty').style.display = 'none';
+  const ce = $('#chatEmpty'); if (ce) ce.style.display = 'none';
+  const wc = $('#welcomeCard'); if (wc) wc.style.display = 'none';
   const div = document.createElement('div');
   div.className = `msg ${m.role === 'user' ? 'user' : 'bot'}${m.error ? ' err' : ''}`;
   div.innerHTML = md(m.content);
@@ -97,7 +111,7 @@ function addMsg(m) {
     div.appendChild(meta);
   }
   $('#msgs').appendChild(div);
-  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+  requestAnimationFrame(scrollBottom);
   return div;
 }
 
@@ -117,7 +131,7 @@ function typing(on) {
     div.className = 'msg bot'; div.id = 'typing';
     div.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
     $('#msgs').appendChild(div);
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    scrollBottom();
   } else $('#typing')?.remove();
 }
 
@@ -137,7 +151,7 @@ async function send(text) {
       addMsg({ role: 'assistant', createdAt: new Date().toISOString(),
         content: `✅ **Anahtar çalışıyor!** ${esc(r.provider)} · \`${esc(r.model)}\`\n\nArtık büyük bulut modeli **2 saniyede** cevap veriyor. Bir şey sor.` });
       $('#smartCard') && ($('#smartCard').style.display = 'none');
-      $('#setupCard').style.display = 'none';
+      closeSetupModal();
     } else {
       setSettings({ apiKey: '' });
       addMsg({ role: 'assistant', error: true, createdAt: new Date().toISOString(),
@@ -151,7 +165,7 @@ async function send(text) {
   $('#input').value = ''; autoGrow();
   addMsg({ role: 'user', content });
   busy($('#send'), true, '');
-  $('#setupCard').style.display = 'none';
+  closeSetupModal();
 
   // Canlı yanıt balonu: model indirilirken/yazarken kullanıcı boş ekran görmesin
   const live = document.createElement('div');
@@ -166,7 +180,7 @@ async function send(text) {
   const toolRows = new Map();
 
   // AJAN: modelin araç çağrıları burada görünür (tıpkı bir ajanın "ne yaptığı" gibi)
-  const onTool = (name, phase, detail, ms) => {
+  const onTool = (name, phase, detail, ms, args) => {
     if (phase === 'running') {
       const row = document.createElement('div');
       row.className = 'toolstep run';
@@ -181,13 +195,13 @@ async function send(text) {
       if (row) {
         const bad = detail && detail.error;
         row.className = 'toolstep ' + (bad ? 'bad' : 'ok');
-        row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, {}))}`
+        row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, args || {}, true))}`
           + `<span class="tms">${ms || 0} ms</span>`;
       }
       scroll();
     }
   };
-  const scroll = () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  const scroll = () => scrollBottom();
   scroll();
 
   let streamed = '';
@@ -215,12 +229,24 @@ async function send(text) {
   }, 5000);
 
   try {
-    if (!conversationId) conversationId = insert('conversations', { title: content.slice(0, 40) }).id;
+    if (!conversationId) {
+      conversationId = insert('conversations', {
+        title: content.slice(0, 40),
+        profileId: activeProfile()?.id || null,
+        personaId: currentPersonaId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }).id;
+    } else {
+      update('conversations', conversationId, { updatedAt: new Date().toISOString() });
+    }
     insert('messages', { conversationId, role: 'user', content });
+    renderSidebar();
 
     const history = all('messages').filter((m) => m.conversationId === conversationId).slice(-24)
       .map((m) => ({ role: m.role, content: m.content }));
-    const messages = [{ role: 'system', content: evo.buildSystemPrompt() }, ...history];
+    const pers = personaPrompt(currentPersonaId());
+    const messages = [{ role: 'system', content: evo.buildSystemPrompt() + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '') }, ...history];
 
     // Beyin hazır değilse: SESSIZCE 200 MB indirme başlatma — kullanıcıya seçtir
     const a = activeLLM();
@@ -259,6 +285,13 @@ async function send(text) {
       model: res.model || null, steps: (res.steps || []).map((s) => ({ tool: s.tool, ms: s.ms })),
     });
     const node = addMsg(botMsg);
+    // Araç adımları kaybolmasın: canlı baloncuktan kalıcı mesaja taşı
+    if (toolBox && toolBox.children.length && node) {
+      const ts = document.createElement('div');
+      ts.className = 'toolsteps done';
+      ts.innerHTML = toolBox.innerHTML;
+      node.prepend(ts);
+    }
     // hangi model + kaç araç adımı -> şeffaflık
     if (node && (res.model || res.steps?.length)) {
       const info = document.createElement('div');
@@ -267,6 +300,7 @@ async function send(text) {
         + `${res.model ? `<span>${esc(String(res.model).replace(':free', '').split('/').pop())}</span>` : ''}`;
       node.appendChild(info);
     }
+    renderSidebar();
 
     evo.evolveAfterTurn({ conversationId, userText: content, assistantText: reply, messageId: botMsg.id })
       .then(() => refreshStatus())
@@ -308,19 +342,50 @@ function autoGrow() {
 $('#input').addEventListener('input', autoGrow);
 $$('[data-quick]').forEach((b) => b.addEventListener('click', () => send(b.dataset.quick)));
 
-function loadChat() {
-  const convs = all('conversations');
-  if (!convs.length) return;
-  conversationId = convs[convs.length - 1].id;
+function loadChat(convId) {
+  const pid = activeProfile()?.id;
+  const convs = all('conversations')
+    .filter((c) => !pid || !c.profileId || c.profileId === pid)
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  if (convId) {
+    conversationId = convId;
+  } else if (convs.length) {
+    conversationId = convs[0].id;
+  } else { conversationId = null; return; }
   const msgs = all('messages').filter((m) => m.conversationId === conversationId);
-  if (!msgs.length) return;
+  $('#msgs').innerHTML = '';
+  if (!msgs.length) {
+    $('#welcomeCard').style.display = 'block';
+    $('#chatEmpty').style.display = 'block';
+    renderSidebar();
+    return;
+  }
   $('#welcomeCard').style.display = 'none';
   $('#chatEmpty').style.display = 'none';
-  $('#msgs').innerHTML = '';
   msgs.forEach(addMsg);
+  renderSidebar();
+  requestAnimationFrame(scrollBottom);
+}
+
+function newChat() {
+  conversationId = null;
+  $('#msgs').innerHTML = '';
+  $('#welcomeCard').style.display = 'block';
+  $('#chatEmpty').style.display = 'block';
+  go('chat');
+  renderSidebar();
+  setTimeout(() => $('#input')?.focus(), 80);
 }
 
 /* ---------------- durum ---------------- */
+function setBrainBar(text) {
+  const bar = $('#brainBar');
+  if (!bar) return;
+  if (!text) { bar.style.display = 'none'; return; }
+  const sub = $('#brainBarSub'); if (sub) sub.textContent = text;
+  bar.style.display = 'flex';
+}
+
 function refreshStatus() {
   const a = activeLLM();
   const st = evo.stats();
@@ -331,35 +396,35 @@ function refreshStatus() {
   if (a.id === 'puter') {
     pill.textContent = '☁️ Puter · anahtarsız bulut';
     pill.className = 'pill ok';
-    $('#setupCard').style.display = 'none';
+    setBrainBar(null);
   } else if (a.id === 'nano') {
     pill.textContent = '⚡ Chrome Nano · anahtarsız, sınırsız';
     pill.className = 'pill ok';
-    $('#setupCard').style.display = 'none';
+    setBrainBar(null);
   } else if (a.id === 'free') {
     pill.textContent = '🌐 ücretsiz servis · anahtarsız';
     pill.className = 'pill ok';
-    $('#setupCard').style.display = 'none';
+    closeSetupModal();
   } else if (a.id === 'local') {
     if (loc.ready) {
       pill.textContent = `🧠 ${shortName(loc.modelId)} · cihazında`;
       pill.className = 'pill ok';
-      $('#setupCard').style.display = 'none';
+      setBrainBar(null);
     } else if (loc.supported) {
       pill.textContent = loc.loading ? `indiriliyor %${loc.progress}` : '🧠 modeli başlat';
       pill.className = loc.loading ? 'pill demo' : 'pill ok';
-      $('#setupCard').style.display = currentView === 'chat' ? 'block' : 'none';
+      setBrainBar('Cihazında açık kaynak model çalışabilir — bir kez ~200 MB iner, sonra sınırsız ve çevrimdışı.');
     } else {
       pill.textContent = '⚠️ WebGPU yok';
       pill.className = 'pill demo';
-      $('#setupCard').style.display = currentView === 'chat' ? 'block' : 'none';
+      setBrainBar('Bu tarayıcıda yerel model çalışmıyor. Anahtarsız bulut modeli veya ücretsiz OpenRouter anahtarı ile devam edebilirsin.');
     }
   } else {
     pill.textContent = `${a.def.name} · ${String(a.model).split('/').pop()}`;
     pill.className = 'pill ok';
-    $('#setupCard').style.display = 'none';
+    setBrainBar(null);
   }
-  $('#subBrand').textContent = `beyin v${st.promptVersion} · ${st.memories} hafıza`;
+  const sbEl = $('#subBrand'); if (sbEl && currentView !== 'chat') sbEl.textContent = `beyin v${st.promptVersion} · ${st.memories} hafıza`;
   renderLocalBoxes();
   const pb = $('#pendingBadge');
   pb.style.display = st.pendingPatches ? 'grid' : 'none';
@@ -790,14 +855,42 @@ $('#btnInstall').addEventListener('click', async () => {
   if (!s.createdAt) setSettings({ createdAt: new Date().toISOString() });
   if (!s.localTier) setSettings({ localTier: guessTier() });
   currentPrompt();
-  refreshStatus();
+
+  /* --- yeni kabuk: giriş + kenar çubuğu + botlar --- */
+  initShell({
+    activeConversationId: () => find('conversations', conversationId) || null,
+    onNewChat: () => newChat(),
+    onGo: (v) => go(v),
+    onSelectConv: (id) => { loadChat(id); go('chat'); },
+    onDeleteConv: (id) => { if (conversationId === id) { conversationId = null; newChat(); } },
+    onPersona: (pid) => {
+      try { localStorage.setItem('evrim:persona', pid); } catch { /* gizli mod */ }
+      if (conversationId) { conversationId = null; newChat(); }
+      else go('chat');
+      const pe = getPersona(pid);
+      toast(`${pe.emoji} ${pe.name} hazır`, 'ok');
+    },
+    onRenameProfile: (id, name) => { renameProfile(id, name); },
+    onLogin: () => { bootApp(); },
+  });
+  initLogin({ onLogin: () => { bootApp(); } });
+
+  if (!isLoggedIn()) { go('chat'); return; }   // giriş bekleniyor
+  await bootApp();
+})();
+
+let booted = false;
+async function bootApp() {
   loadChat();
+  go('chat');
   renderSettings();
+  refreshStatus();
+  if (booted) return;
+  booted = true;
   // Cihaz WebGPU destekliyor mu? (yerel model mümkün mü)
   await detectWebGPU();
   refreshStatus();
   renderSettings();
-  // Anahtar yoksa: indirmesiz çalışan ücretsiz bir servis var mı diye ARKA PLANDA bak
   // ANAHTARSIZ en iyi kaynağı bul: Puter (büyük bulut) -> ücretsiz servisler -> Chrome Nano
   probeKeyless({ onProgress: (t) => { const el = $('#capBox'); if (el) el.textContent = t; } })
     .then((found) => {
@@ -807,7 +900,7 @@ $('#btnInstall').addEventListener('click', async () => {
       refreshStatus(); renderSettings(); renderLocalBoxes();
     })
     .catch(() => {});
-})();
+}
 
 /* ---------------- cihazında çalışan model ---------------- */
 function setLocalProgress(pct, text) {
@@ -954,7 +1047,7 @@ async function startLocal({ skipConfirm = false } = {}) {
     await loadLocal({ onProgress: (p, t) => { setLocalProgress(p, t); renderLocalBoxes(); refreshStatusLight(); } });
     setLocalProgress(100, 'Hazır');
     toast('Model cihazında çalışıyor 🧠', 'ok');
-    $('#setupCard').style.display = 'none';
+    closeSetupModal();
   } catch (e) {
     toast(e.message, 'bad');
   }
@@ -995,7 +1088,7 @@ function askBrainChoice(pendingText) {
       <div class="a"><button class="btn sm ghost clocal">📥 İndirmeyi başlat</button></div>
     </div>`;
   $('#msgs').appendChild(div);
-  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+  requestAnimationFrame(scrollBottom);
 
   const inp = div.querySelector('.ckey');
   div.querySelector('.cpaste').addEventListener('click', async () => {
@@ -1011,7 +1104,7 @@ function askBrainChoice(pendingText) {
     if (r.ok) {
       toast(`🎉 ${r.provider} hazır — ${r.model}`, 'ok');
       div.remove(); $('#smartCard') && ($('#smartCard').style.display = 'none');
-      $('#setupCard').style.display = 'none';
+      closeSetupModal();
       refreshStatus(); renderSettings();
       if (pendingText) send(pendingText);
     } else {
@@ -1059,7 +1152,7 @@ async function saveSmartKey() {
       if (out) out.innerHTML = `✅ <b>${esc(r.provider)} · ${esc(r.model)}</b> çalışıyor`;
       toast('🎉 Akıllı mod açık — artık büyük bulut modeli cevap veriyor', 'ok');
       $('#smartCard').style.display = 'none';
-      $('#setupCard').style.display = 'none';
+      closeSetupModal();
       refreshStatus(); renderSettings();
       btn.disabled = false;
       return;
