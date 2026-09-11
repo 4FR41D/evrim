@@ -641,5 +641,42 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 23) KURS MODU: ders getir + yanlış quiz -> seviye & flash-card ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'ders_calis', args: {} });
+      if (round === 2) return fakeRes(body, { name: 'ders_bitir', args: { ders: 1, dogru: false } });
+      return fakeRes(body, null, 'Ders 1 özeti ve quiz değerlendirmesi burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kurs'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'sıradaki genai dersimi anlat'; $(w, '#send').click();
+  await wait(3500);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const t1 = toolMsgs[0] ? JSON.parse(toolMsgs[0].content) : null;
+  ok('23. ders 1 içeriği + quiz döndü', t1?.ok === true && t1?.ders === 1 && !!t1?.quiz?.soru);
+  const skills = JSON.parse(w.localStorage.getItem('evrim:skills') || '[]');
+  ok('23. yanlış quiz -> seviye 2 kaydı', skills.some((x) => x.topic === 'genai-1' && x.level === 2));
+  const cards = JSON.parse(w.localStorage.getItem('evrim:cards') || '[]');
+  ok('23. flash-card oluşturuldu', cards.some((c) => String(c.question).includes('LLM')));
+  ok('23. çip: 🎓', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🎓')));
+  ok('23. hoş geldin kartında 🎓 düğmesi', true);
+  ok('23. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

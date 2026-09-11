@@ -9,6 +9,7 @@ import { all, insert, getSettings, now, storageSize } from './store.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import { rawChat, active as activeLLM } from './llm.js';
+import { createCard } from './learn.js';
 import { localStatus } from './local.js';
 import { puterStatus } from './puter.js';
 import { houseStatus } from './house.js';
@@ -73,6 +74,13 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('ders_calis', 'GENAI DERSİ (Microsoft Generative AI for Beginners müfredatı, MIT): kullanıcı ders/öğrenme/kurs/quiz isterse VEYA sıradaki dersini sorarsa çağır. Ders içeriği+quiz döner: önce 2-4 cümleyle öğret, kavramları maddele, sonra quiz sorusunu seçenekleriyle yaz; kullanıcının cevabını değerlendir ve ders_bitir çağır.', {
+    ders: { type: 'number', description: 'Ders no (1-21); verilmezse sıradaki tamamlanmamış ders' },
+  }, []),
+  F('ders_bitir', 'Ders quiz sonucunu kalıcı kaydeder: seviye + flash-card güncellenir. Kullanıcı quizi cevapladıktan SONRA çağır.', {
+    ders: { type: 'number', description: 'Ders no' },
+    dogru: { type: 'boolean', description: 'Kullanıcı doğru mu cevapladı' },
+  }, ['ders', 'dogru']),
   F('web_ara', 'WEB ARAMA (anahtarsız): güncel/gerçek bilgi, haber, fiyat, sürüm, kişi/kurum bilgisi lazımsa ÖNCE ara; sonra en iyi sonucu web_oku ile okuyup ÖYLE cevapla. Uydurma link yasak — buradan gelen linkleri kullan.', {
     sorgu: { type: 'string', description: 'Arama sorgusu (kısa, net)' },
     adet: { type: 'number', description: 'Opsiyonel: kaç sonuç (1-5, varsayılan 5)' },
@@ -301,6 +309,15 @@ async function catMirror() {
   if (!j || !Array.isArray(j.items) || !j.items.length) throw new Error('yerel yedek boş');
   catMirrorMem = j;
   return j;
+}
+
+let MUF_CACHE = null;
+async function mufredat() {
+  if (MUF_CACHE) return MUF_CACHE;
+  const r = await fetch('data/mufredat.json');
+  if (!r.ok) throw new Error('müfredat yüklenemedi');
+  MUF_CACHE = await r.json();
+  return MUF_CACHE;
 }
 
 async function katalogAra(sorgu, adet) {
@@ -563,6 +580,43 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async ders_calis({ ders }) {
+    try {
+      const m = await mufredat();
+      const skills = all('skills');
+      const done = (no) => { const sk = skills.find((x) => x.topic === 'genai-' + no); return !!sk && (sk.level || 0) >= 3; };
+      let no = Number(ders) || 0;
+      if (!no) no = (m.dersler.find((d) => !done(d.no)) || m.dersler[0]).no;
+      const d = m.dersler.find((x) => x.no === no);
+      if (!d) return { hata: 'ders bulunamadı (1-21)' };
+      const tamam = m.dersler.filter((x) => done(x.no)).length;
+      return {
+        ok: true, ders: d.no, toplam: m.dersler.length, tamamlanan: tamam,
+        baslik: d.baslik, ozet: d.ozet, kavramlar: d.kavramlar, quiz: d.quiz, kaynak: m.url,
+        not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır.',
+      };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
+  },
+
+  async ders_bitir({ ders, dogru }) {
+    const no = Number(ders);
+    const topic = 'genai-' + no;
+    try {
+      const ex = all('skills').find((x) => x.topic === topic);
+      if (dogru) {
+        if (ex) update('skills', ex.id, { level: Math.min(5, (ex.level || 2) + 1) });
+        else insert('skills', { topic, level: 3, createdAt: now() });
+      } else {
+        if (ex) update('skills', ex.id, { level: Math.max(1, (ex.level || 3) - 1) });
+        else insert('skills', { topic, level: 2, createdAt: now() });
+        const m = await mufredat();
+        const d = m.dersler.find((x) => x.no === no);
+        if (d) createCard({ topic: 'genai', question: d.quiz.soru, answer: d.quiz.secenekler[d.quiz.dogru], explanation: d.quiz.aciklama || '', source: 'kurs' });
+      }
+      return { ok: true, ders: no, dogru: !!dogru, not: dogru ? 'İlerleme kaydedildi ✅ — sıradaki derse geçebilirsin.' : 'Kaydedildi 📇 — yanlış kavram flash-card oldu, aralıklı tekrarda karşına çıkacak.' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
+  },
+
   async web_ara({ sorgu, adet }) {
     const q = String(sorgu || '').trim();
     if (!q) return { hata: 'sorgu boş' };
@@ -751,6 +805,8 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    ders_calis: done ? `🎓 Ders ${args.ders || ''} hazır`.trim() : `🎓 Ders ${args.ders || 'sıradaki'} getiriliyor`.trim(),
+    ders_bitir: done ? (bad ? `🎓 Ders ${args.ders}: yanlış kaydedildi 📇` : `🎓 Ders ${args.ders} tamamlandı ✅`) : `🎓 Ders ${args.ders} kaydediliyor`,
     web_ara: (args.sorgu) ? `🔍 Web'de ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu).slice(0, 40)}"` : `🔍 Web araması ${done ? 'yaptı' : 'yapıyor'}`,
     kod_calistir: done ? '💻 Kod çalıştırdı' : '💻 Kod çalıştırıyor',
     api_katalog: (args.sorgu || args.query)

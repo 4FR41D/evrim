@@ -138,6 +138,7 @@ evrim/
 │     │                 #   + web_oku: herhangi bir web sayfasını okur (r.jina.ai, anahtarsız)
 │     │                 #   + kod_calistir: JS sandbox (benim bash'imin karşılığı)
 │     │                 #   + gorsel_uret: girişsiz/anahtarsız görsel (pollinations, CORS *)
+│     ├─ data/mufredat.json # 🎓 KURS MODU: Microsoft GenAI-for-Beginners 21 ders (MIT), TR
 │     ├─ reflex.js      # REFLEKS KATMANI: beyinsiz bile anında cevap (selam, saat, matematik)
 │     ├─ wasm.js        # CİHAZ İÇİ KÜÇÜK BEYİN: transformers.js WASM (SmolLM2-135M) —
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez
