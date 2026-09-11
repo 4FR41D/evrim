@@ -222,5 +222,80 @@ function fakeRes(body, toolCall, finalText) {
   w.close?.();
 }
 
+
+/* ================= 8) EV BULUTU: sahip cihaz beyin olur, misafir sıfır girişle cevap alır ================= */
+function makeBroker() {
+  const peers = new Map();
+  class E {
+    constructor() { this.h = {}; }
+    on(n, f) { (this.h[n] = this.h[n] || []).push(f); return this; }
+    once(n, f) { const g = (...a) => { this.off(n, g); f(...a); }; return this.on(n, g); }
+    off(n, f) { if (this.h[n]) this.h[n] = this.h[n].filter((x) => x !== f); return this; }
+    emit(n, ...a) { (this.h[n] || []).slice().forEach((f) => f(...a)); }
+  }
+  class Conn extends E {
+    constructor() { super(); this.open = false; this.remote = null; }
+    send(d) { const r = this.remote; setTimeout(() => { if (r && r.open) r.emit('data', d); }, 0); }
+    close() { this.open = false; this.emit('close'); const r = this.remote; if (r && r.open) { r.open = false; r.emit('close'); } }
+  }
+  class Peer extends E {
+    constructor(id) {
+      super(); this.id = id || ('rnd' + Math.random().toString(36).slice(2)); this.destroyed = false; this.open = false;
+      setTimeout(() => {
+        if (id && peers.has(id)) { this.emit('error', { type: 'unavailable-id' }); return; }
+        peers.set(this.id, this); this.open = true; this.emit('open', this.id);
+      }, 0);
+    }
+    connect(target) {
+      const tp = peers.get(target); const a = new Conn(); const b = new Conn(); a.remote = b; b.remote = a;
+      setTimeout(() => {
+        if (!tp || tp.destroyed) { a.emit('error', new Error('peer yok')); return; }
+        a.open = true; b.open = true; a.emit('open'); b.emit('open'); tp.emit('connection', b);
+      }, 0);
+      return a;
+    }
+    reconnect() {}
+    destroy() { this.destroyed = true; peers.delete(this.id); }
+  }
+  return Peer;
+}
+{
+  const Broker = makeBroker();
+  let hostCalls = 0;
+  /* --- SAHİP: anahtarlı cihaz, ev bulutunu açar --- */
+  const wH = makeWin({ Peer: Broker, fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      hostCalls++;
+      return fakeRes(body, null, 'Ev bulutundan merhaba!');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  wH.localStorage.setItem('evrim:settings', JSON.stringify({ apiKey: 'sk-or-v1-' + 'a'.repeat(56), provider: 'openrouter', model: 'a/m:free', houseHost: true }));
+  try { wH.eval(bundle); } catch (e) { wH.errors.push('THROW: ' + e.stack); }
+  await wait(300);
+  $(wH, '#npName').value = 'Sahip'; $(wH, '#npCreate').click();
+  await wait(900);
+  ok('8. sahip: ev bulutu AÇIK', ($(wH, '#houseStat')?.textContent || '').includes('AÇIK'));
+
+  /* --- MİSAFİR: yeni cihaz, hiçbir şeyi yok --- */
+  const wG = makeWin({ Peer: Broker, fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  wG.puter = { auth: { isSignedIn: () => false, signIn: async () => { throw new Error('pop'); } }, ai: { chat: async () => { throw new Error('x'); }, models: async () => [] } };
+  try { wG.eval(bundle); } catch (e) { wG.errors.push('THROW: ' + e.stack); }
+  await wait(300);
+  $(wG, '#npName').value = 'Misafir'; $(wG, '#npCreate').click(); await wait(200);
+  $(wG, '#input').value = 'merhaba'; $(wG, '#send').click();
+  await wait(3500);
+  const gmsgs = JSON.parse(wG.localStorage.getItem('evrim:messages') || '[]');
+  ok('8. misafir: sıfır giriş + sıfır dokunuşla cevap aldı', gmsgs.some((m) => m.role === 'assistant' && String(m.content).includes('Ev bulutundan merhaba')));
+  ok('8. misafir: kart/popup gerekmedi', !$$(wG, '#msgs .card').length);
+  ok('8. beyin sahibin cihazında çalıştı', hostCalls >= 1);
+  ok('8. misafir pill: ev bulutu', ($(wG, '#statusPill')?.textContent || '').includes('ev bulutu'));
+  ok('8. hatalar yok', wH.errors.length === 0 && wG.errors.length === 0);
+  wH.close?.(); wG.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

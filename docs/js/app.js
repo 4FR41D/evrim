@@ -12,6 +12,7 @@ import {
   probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
+import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
 import { agentChat, toolLabel, TOOLS, mediaGet } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
@@ -272,11 +273,16 @@ async function send(text) {
       if (!localStatus().supported) {
         // v22: SIFIR SÜRTÜNME — gönder dokunuşu jestin kendisi; ücretsiz bulut
         // penceresini BEKLEMEDEN aç, girince soruyu otomatik sor. Kart yok, kurulum yok.
-        liveStat.textContent = '☁️ Ücretsiz buluta bağlanıyorum (ilk kez) — sorunu otomatik soracağım…';
-        beat();
         let connected = false;
-        try { connected = await puterSignIn(); } catch { connected = false; }
-        if (connected && puterStatus().ready) {
+        liveStat.textContent = '🏠 Ev bulutu aranıyor…';
+        beat();
+        try { connected = await probeHouse(2500); } catch { connected = false; }
+        if (!connected) {
+          liveStat.textContent = '☁️ Ücretsiz buluta bağlanıyorum (ilk kez) — sorunu otomatik soracağım…';
+          beat();
+          try { connected = await puterSignIn(); } catch { connected = false; }
+        }
+        if (connected && (houseStatus().ready || puterStatus().ready)) {
           refreshStatus(); renderSettings(); renderLocalBoxes();
           liveStat.textContent = '☁️ Bulut hazır — cevabını yazıyorum…';
           beat();
@@ -458,7 +464,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'puter') {
+  if (a.id === 'house') {
+    pill.textContent = '🏠 ev bulutu · anahtarsız hazır';
+    pill.className = 'pill ok';
+    setBrainBar(null);
+  } else if (a.id === 'puter') {
     pill.textContent = '☁️ Puter · anahtarsız bulut';
     pill.className = 'pill ok';
     setBrainBar(null);
@@ -803,6 +813,7 @@ function renderSettings() {
   $('#setName').value = s.userName || '';
   $('#setGhToken').value = s.githubToken || '';
   $('#setGhRepo').value = s.githubRepo || '';
+  renderHouseBox();
   const pf = $('#setPreferFree');
   if (pf) {
     pf.checked = getSettings().preferFree !== false;
@@ -946,6 +957,11 @@ $('#btnInstall').addEventListener('click', async () => {
 
 let booted = false;
 async function bootApp() {
+  if (getSettings().houseHost) {
+    startHouseHost(houseHandlers())
+      .then(() => { renderHouseBox(); refreshStatus(); })
+      .catch(() => { renderHouseBox(); });
+  }
   loadChat();
   go('chat');
   renderSettings();
@@ -1306,6 +1322,40 @@ async function tryFreeNow(full = false) {
 }
 
 let lightTimer = null;
+function houseHandlers() {
+  return { chat: (msgs, onChunk) => agentChat(msgs, { temperature: 0.7, maxTokens: 1200, onChunk }) };
+}
+function renderHouseBox() {
+  const btn = $('#houseBtn'); const stat = $('#houseStat');
+  if (!btn) return;
+  const hs = houseStatus();
+  if (hs.hosting) {
+    btn.textContent = '🏠 Ev bulutunu kapat';
+    stat.textContent = `AÇIK · ${hs.clients} bağlı cihaz`;
+  } else if (hs.ready) {
+    btn.textContent = '🏠 Ev bulutunu aç';
+    stat.textContent = 'bu cihaz ev bulutuna bağlı (misafir)';
+  } else {
+    btn.textContent = '🏠 Ev bulutunu aç';
+    stat.textContent = hs.error || 'kapalı';
+  }
+  btn.onclick = async () => {
+    if (houseStatus().hosting) {
+      stopHouseHost(); setSettings({ houseHost: false });
+      toast('🏠 Ev bulutu kapatıldı', 'ok');
+    } else {
+      btn.disabled = true; btn.textContent = 'açılıyor…';
+      try {
+        await startHouseHost(houseHandlers());
+        setSettings({ houseHost: true });
+        toast('🏠 Ev bulutu AÇIK — diğer cihazlar sıfır girişle cevap alır', 'ok');
+      } catch (e) { toast('Olamadı: ' + (e.message || e), 'err'); }
+      btn.disabled = false;
+    }
+    renderHouseBox(); refreshStatus();
+  };
+}
+
 function refreshStatusLight() {
   clearTimeout(lightTimer);
   lightTimer = setTimeout(() => { renderLocalBoxes(); }, 120);

@@ -9,6 +9,7 @@ import { detectWebGPU, loadLocal, localChat, localStatus, shortName, guessTier }
 import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './free.js';
 import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
+import { houseStatus, probeHouse } from './house.js';
 
 export const PROVIDERS = {
   puter: {
@@ -84,6 +85,10 @@ export function detectProvider(key) {
 export function active() {
   const s = getSettings();
   const key = (s.apiKey || '').trim();
+  // 0-) Ev bulutu bağlıysa (WebRTC): sıfır giriş, sıfır sunucu, sıfır anahtar
+  if (!key && houseStatus().ready) {
+    return { id: 'house', key: '', def: { name: 'Ev bulutu', format: 'house', defaultModel: 'ev-beyni' }, model: 'ev bulutu (WebRTC)' };
+  }
   // 0) Anahtar yoksa: ÖNCE anahtarsız BÜYÜK bulut modeli (Puter) — en iyi kalite
   if (!key && s.usePuter !== false && puterStatus().ready) {
     return { id: 'puter', key: '', def: PROVIDERS.puter, model: 'Puter bulut modeli' };
@@ -130,6 +135,10 @@ export function isReady() {
  */
 export async function probeKeyless({ onProgress } = {}) {
   if ((getSettings().apiKey || '').trim()) return null;
+  if (getSettings().useHouse !== false) {
+    onProgress?.('🏠 Ev bulutu kontrol ediliyor…');
+    if (await probeHouse(2500)) return 'house';
+  }
   if (getSettings().usePuter !== false) {
     // Pasif: oturum zaten varsa etkinleştir. YOKSA pencere açmayız —
     // kullanıcı "☁️ Dene" düğmesine basınca Puter kendi giriş penceresini açar.

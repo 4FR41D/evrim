@@ -131,6 +131,8 @@ evrim/
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_oku: herhangi bir web sayfasını okur (r.jina.ai, anahtarsız)
+│     └─ house.js       # EV BULUTU: sunucusuz/hesapsız WebRTC beyni (PeerJS) —
+│                       #   sahibin cihazı beyin olur, diğer tüm cihazlar sıfır girişle bağlanır
 │     ├─ data/katalog.json  # kataloğun YEREL YEDEĞİ (upstream silinse bile çalışır)
 │     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu
 │     ├─ store.js       # localStorage tabanlı veri katmanı + beyin sürümleri

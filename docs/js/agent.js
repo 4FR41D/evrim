@@ -555,6 +555,11 @@ const EXEC = {
  */
 export async function agentChat(messages, opts = {}) {
   const a = activeLLM();
+  if (a.id === 'house') {
+    const { houseChat } = await import('./house.js');
+    const out = await houseChat(messages, opts.onChunk);
+    return { content: out.content, model: out.model || 'ev bulutu', steps: [] };
+  }
   const supportsTools = a.def?.format === 'openai' && !opts.json;
 
   // Araç desteklemeyen beyin (yerel model / Nano / Puter) -> düz sohbet
