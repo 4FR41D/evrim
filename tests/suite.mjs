@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v10 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 10') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v11 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 11') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -1392,6 +1392,63 @@ function makeBroker() {
   ok('41. ders 33 (TestSprite bonusu) müfredatta', MUF.dersler.some((d) => d.no === 33 && String(d.baslik).includes('TestSprite')));
   ok('41. çip: 🧪', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🧪')));
   ok('41. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 42) hatirlatici + gider + ```grafik SVG render ================= */
+{
+  let round = 0; const calls = [];
+  const GRAFIKLI = 'İşte özet:\n\n```grafik\ntip:cizgi\nbaslik:Kayip Egrisi\n0,0.69\n1,0.31\n2,0.12\n3,0.04\n```\n\nKayıp hızla düştü.';
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'hatirlatici', args: { mesaj: 'çay iç', dakika: 5 } });
+      if (round === 2) return fakeRes(body, { name: 'gider', args: { tutar: 450, kategori: 'yakıt', aciklama: 'depoya' } });
+      if (round === 3) return fakeRes(body, { name: 'gider', args: { ozet: true } });
+      return fakeRes(body, null, GRAFIKLI);
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Asistan'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = '5 dk sonra çay hatırlat ve yakıt giderini yaz'; $(w, '#send').click();
+  await wait(4200);
+  const rem = JSON.parse(w.localStorage.getItem('evrim:reminders') || '[]');
+  const exp = JSON.parse(w.localStorage.getItem('evrim:expenses') || '[]');
+  ok('42. hatırlatıcı kaydedildi (5 dk sonra)', rem.length === 1 && rem[0].mesaj === 'çay iç' && rem[0].dueAt > Date.now() && rem[0].dueAt < Date.now() + 6 * 60000);
+  ok('42. gider kaydedildi (450 yakıt)', exp.length === 1 && exp[0].tutar === 450 && exp[0].kategori === 'yakıt');
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const ozetR = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r?.ayTablo);
+  ok('42. gider özeti tablo döndürdü', !!ozetR && ozetR.ayTablo.includes('₺') && ozetR.katTablo.includes('yakıt'));
+  const botHtml = $$(w, '#msgs .msg.bot').map((e) => e.innerHTML).join(' ');
+  ok('42. ```grafik bloğu SVG oldu', botHtml.includes('svg') && botHtml.includes('grafik') && botHtml.includes('<path'));
+  ok('42. grafik başlığı render edildi', botHtml.includes('Kayip Egrisi'));
+  ok('42. çipler: ⏰ + 💸', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('⏰')) && $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('💸')));
+  ok('42. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 43) v56 arayüz: 🎙️/📄/📷 düğmeleri + tek dosya yedek ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  ok('43. composer düğmeleri var (mic/pdf/ocr)', !!$(w, '#micBtn') && !!$(w, '#pdfBtn') && !!$(w, '#ocrBtn'));
+  ok('43. gizli dosya inputları var', !!$(w, '#pdfFile') && !!$(w, '#ocrFile'));
+  $(w, '#micBtn').click(); // SpeechRecognition yok -> zarif toast
+  await wait(100);
+  ok('43. mic API yokken çökmüyor (toast yolu)', w.errors.length === 0);
+  $(w, '#npName').value = 'Yedek'; $(w, '#npCreate').click(); await wait(250);
+  ok('43. tek dosya yedek düğmesi var', !!$(w, '#btnHtmlYedek'));
+  $(w, '#btnHtmlYedek').click(); // jsdom'da createObjectURL yok -> zarif yol
+  await wait(150);
+  ok('43. yedek düğmesi çökmüyor', w.errors.length === 0);
   w.close?.();
 }
 

@@ -35,6 +35,37 @@ export const uid = (p = 'id') => `${p}_${Date.now().toString(36)}_${Math.random(
 export const now = () => new Date().toISOString();
 
 // ---------- tekil tablolar ----------
+/** v56: günlük aktivite işareti (streak) — ders/tekrar günleri */
+export function gunIsaretle(kaynak) {
+  const bugun = new Date().toLocaleDateString('sv-SE');
+  const g = store.read('gunluk', { tarihler: [], son: {} });
+  if (!g.tarihler.includes(bugun)) {
+    g.tarihler.push(bugun);
+    if (g.tarihler.length > 120) g.tarihler = g.tarihler.slice(-120);
+  }
+  g.son[kaynak || 'genel'] = bugun;
+  store.write('gunluk', g);
+  return g.tarihler.length;
+}
+
+/** v56: kesintisiz seri gün sayısı */
+export function seriHesapla() {
+  const g = store.read('gunluk', { tarihler: [] });
+  const set = new Set(g.tarihler || []);
+  const gun = (off) => new Date(Date.now() - off * 86400000).toLocaleDateString('sv-SE');
+  if (!set.has(gun(0)) && !set.has(gun(1))) return { seri: 0, enUzun: 0 };
+  let seri = 0;
+  for (let i = set.has(gun(0)) ? 0 : 1; set.has(gun(i)); i++) seri++;
+  const sirali = [...set].sort();
+  let enUzun = 0; let cur = 0; let prev = null;
+  for (const t of sirali) {
+    cur = (prev && (new Date(t) - new Date(prev)) === 86400000) ? cur + 1 : 1;
+    if (cur > enUzun) enUzun = cur;
+    prev = t;
+  }
+  return { seri, enUzun: Math.max(enUzun, seri) };
+}
+
 export function getSettings() {
   const s = store.read('settings', {});
   const merged = { ...DEFAULT_SETTINGS, ...s };
@@ -80,7 +111,7 @@ export function remove(table, id) {
 export function find(table, id) { return rows(table).find((r) => r.id === id) || null; }
 
 // ---------- beyin (sistem promptu) sürüm geçmişi ----------
-export const BASE_PROMPT_VERSION = 10;
+export const BASE_PROMPT_VERSION = 11;
 
 export const BASE_PROMPT = `Sen EVRIM'sin — kullanıcısının işini gerçekten bitiren, onu tanıdıkça keskinleşen bir yapay zekâ asistanı.
 Sürüm: ${BASE_PROMPT_VERSION}
@@ -145,6 +176,7 @@ Uydurmak yerine araç kullan: bilmiyorsan \`wikipedia\`, hesaplayamıyorsan \`ca
 - Matematik/hesap/algoritma/veri işi → \`kod_calistir\` ile DOĞRULA, sonucu emin olarak sun.
 - Güncel/gerçek bilgi (haber, fiyat, sürüm, kişi/kurum) → ÖNCE \`web_ara\`, sonra en iyi sonucu \`web_oku\`; cevaba kaynak linki koy. Bilgin eskiyse tahmin etme, ara.
 - Kullanıcı site/URL verip tarama/inceleme/analiz isterse → \`site_tara\` (derinlik 2); raporu BLUF + tabloyla sun: ne sitesi, bölümler, önemli linkler, kısa değerlendirme.
+- Sayısal dizi/eğilim sunarken (kayıp eğrisi, histogram, yakınsama, gider dağılımı) tabloya EK olarak \`\`\`grafik bloğu üret: 1. satır "tip:cizgi" veya "tip:cubuk", 2. satır "baslik:...", sonraki satırlar "x,y" (en çok 12 nokta). Blok otomatik SVG grafiğe dönüşür.
 - SAHİP kendi Linux makinesinde sistem işi isterse (paket kur, dosya, servis, betik çalıştır) → \`linux_komut\`; geri alınamaz işlemlerde (rm -rf, servis durdurma, drop) ÖNCE onay iste. Düğüm yanıt vermezse kurulumu hatırlat (linux-node/README.md). Başkasının sitesine/sistemine izinsiz erişim veya zafiyet taraması YAPMA.
 - Uzun konuşmalarda eski kısmı özet hafızadan takip et; kaldığın yerden devam et.
 - Cevabın sonunda uygunsa TEK satırlık 'sonraki adım' önerisi ver (dayatma değil, öneri).
@@ -208,7 +240,7 @@ export function rollbackPrompt(id) {
 }
 
 // ---------- yedekleme (cihazlar arası taşımak için) ----------
-const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations', 'profiles', 'personas'];
+const TABLES = ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations', 'profiles', 'personas', 'reminders', 'expenses'];
 
 export function exportData() {
   const out = { app: 'EVRIM-web', version: 1, exportedAt: now() };

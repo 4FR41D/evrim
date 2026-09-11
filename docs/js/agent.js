@@ -5,7 +5,7 @@
 
    Bütün araçlar TARAYICIDA çalışır: sunucu yok, ek API anahtarı yok.
    Sadece `wikipedia` dışarı çıkar (CORS'u açık, anahtar istemiyor). */
-import { all, insert, getSettings, now, storageSize } from './store.js';
+import { all, insert, getSettings, now, storageSize, gunIsaretle } from './store.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import { rawChat, active as activeLLM } from './llm.js';
@@ -74,6 +74,18 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('hatirlatici', 'HATIRLATICI KUR (bildirimli): kullanıcı "X dakika/saat sonra hatırlat" derse çağır. Süre dolunca uygulama içi uyarı + telefon bildirimi gösterilir (sayfa açıkken). liste:true ile kurulu hatırlatıcıları getirir.', {
+    mesaj: { type: 'string', description: 'hatırlatılacak şey' },
+    dakika: { type: 'number', description: 'kaç dakika sonra (varsayılan 60)' },
+    saat: { type: 'string', description: '"HH:MM" — belirli saatte (bugün geçtiyse yarın)' },
+    liste: { type: 'boolean', description: 'true = kurulu hatırlatıcıları listele' },
+  }, []),
+  F('gider', 'GİDER/GELİR DEFTERİ: kullanıcı harcama söylerse ("bugün 450 lira yakıt") kaydet; "özet/rapor/ne kadar harcadım" derse ozet:true ile aylık + kategori tablosu çıkar.', {
+    tutar: { type: 'number', description: 'tutar (sayı)' },
+    kategori: { type: 'string', description: 'yakıt, yemek, kira… (serbest)' },
+    aciklama: { type: 'string', description: 'kısa açıklama' },
+    ozet: { type: 'boolean', description: 'true = kayıt ekleme, özet rapor üret' },
+  }, []),
   F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
   F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
     konu: { type: 'string', description: 'yazının konusu (kısa)' },
@@ -649,6 +661,50 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async hatirlatici({ mesaj, dakika, saat, liste }) {
+    if (liste) {
+      const rs = all('reminders').filter((r) => !r.done);
+      return { ok: true, adet: rs.length, hatirlaticilar: rs.slice(0, 20).map((r) => ({ mesaj: r.mesaj, zaman: new Date(r.dueAt).toLocaleString('tr-TR') })) };
+    }
+    const m = String(mesaj || '').trim();
+    if (!m) return { hata: 'mesaj boş' };
+    let dueAt;
+    const hhmm = /^(\d{1,2}):(\d{2})$/.exec(String(saat || '').trim());
+    if (hhmm) {
+      const d = new Date();
+      d.setHours(Number(hhmm[1]), Number(hhmm[2]), 0, 0);
+      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+      dueAt = d.getTime();
+    } else {
+      const dk = Number(dakika) > 0 ? Number(dakika) : 60;
+      dueAt = Date.now() + dk * 60000;
+    }
+    insert('reminders', { mesaj: m, dueAt, done: false, createdAt: now() });
+    return { ok: true, mesaj: m, zaman: new Date(dueAt).toLocaleString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }), not: 'Kurulumu onayla; bildirimin çalışması için sekmenin açık kalması gerektiğini, izin istenirse bildirimin de geleceğini söyle.' };
+  },
+
+  async gider({ tutar, kategori, aciklama, ozet }) {
+    if (ozet) {
+      const ex = all('expenses');
+      if (!ex.length) return { ok: true, adet: 0, not: 'Henüz kayıt yok — kullanıcı harcama söyledikçe gider aracıyla kaydet.' };
+      const aylik = {}; const kat = {};
+      for (const e of ex) {
+        const ay = new Date(e.ts || e.createdAt || Date.now()).toISOString().slice(0, 7);
+        aylik[ay] = (aylik[ay] || 0) + Number(e.tutar || 0);
+        const k = e.kategori || 'diğer';
+        kat[k] = (kat[k] || 0) + Number(e.tutar || 0);
+      }
+      const ayTablo = '| ay | toplam |\n|---|---|\n' + Object.entries(aylik).sort().map(([a, t]) => `| ${a} | ${t.toLocaleString('tr-TR')} ₺ |`).join('\n');
+      const katTablo = '| kategori | toplam |\n|---|---|\n' + Object.entries(kat).sort((a, b) => b[1] - a[1]).map(([k, t]) => `| ${k} | ${t.toLocaleString('tr-TR')} ₺ |`).join('\n');
+      const son30 = ex.filter((e) => (e.ts || 0) > Date.now() - 30 * 86400000).reduce((a, e) => a + Number(e.tutar || 0), 0);
+      return { ok: true, adet: ex.length, son30GunToplam: +son30.toFixed(2), ayTablo, katTablo, not: 'İki tabloyu sun; en yüksek 2 kategoriye 1 cümle yorum; istenirse grafik bloğuyla kategori dağılımını çiz.' };
+    }
+    const t = Number(tutar);
+    if (!isFinite(t) || t === 0) return { hata: 'tutar sayı olmalı' };
+    insert('expenses', { tutar: t, kategori: String(kategori || 'diğer').slice(0, 30), aciklama: String(aciklama || '').slice(0, 120), ts: Date.now(), createdAt: now() });
+    return { ok: true, kayit: { tutar: t, kategori: kategori || 'diğer' }, not: 'Kaydı tek satırda onayla.' };
   },
 
   async oz_test() {
@@ -1540,6 +1596,7 @@ ${kapanis}
         const d = m.dersler.find((x) => x.no === no);
         if (d) createCard({ topic: 'genai', question: d.quiz.soru, answer: d.quiz.secenekler[d.quiz.dogru], explanation: d.quiz.aciklama || '', source: 'kurs' });
       }
+      gunIsaretle('ders');
       return { ok: true, ders: no, dogru: !!dogru, not: dogru ? 'İlerleme kaydedildi ✅ — sıradaki derse geçebilirsin.' : 'Kaydedildi 📇 — yanlış kavram flash-card oldu, aralıklı tekrarda karşına çıkacak.' };
     } catch (e) { return { hata: String(e.message || e).slice(0, 120) }; }
   },
@@ -1734,6 +1791,8 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    hatirlatici: done ? (bad ? '⏰ Hatırlatıcı kurulamadı' : (args.liste ? '⏰ Hatırlatıcılar listelendi' : '⏰ Hatırlatıcı kuruldu')) : '⏰ Hatırlatıcı kuruluyor',
+    gider: done ? (bad ? '💸 Kayıt başarısız' : (args.ozet ? '💸 Gider özeti hazır' : '💸 Kaydedildi')) : '💸 Deftere işleniyor',
     oz_test: done ? (bad ? '🧪 Öz test BAŞARISIZ' : '🧪 Öz test tamam') : '🧪 Öz test çalışıyor (canlı uygulama duman testi)',
     evrak_taslak: done ? (bad ? '📄 Taslak üretilemedi' : `📄 ${args.tip === 'resmi' ? 'Resmî yazı' : 'Dilekçe'} taslağı hazır`) : '📄 Evrak taslağı üretiliyor',
     otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',

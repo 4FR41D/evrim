@@ -45,6 +45,53 @@ function busy(btn, on, label) {
   if (on) { btn.dataset.old = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spin"></span> ${label || 'Çalışıyor…'}`; }
   else { btn.disabled = false; if (btn.dataset.old) btn.innerHTML = btn.dataset.old; }
 }
+/* v56: ```grafik blok ayrıştırıcı -> SVG (cizgi/cubuk) */
+function grafikSVG(govde) {
+  try {
+    const lines = String(govde).split('\n').map((l) => l.trim()).filter(Boolean);
+    let tip = 'cizgi'; let baslik = '';
+    const pts = [];
+    for (const l of lines) {
+      if (/^tip:/i.test(l)) { tip = l.slice(4).trim().toLocaleLowerCase('tr'); continue; }
+      if (/^baslik:/i.test(l)) { baslik = l.slice(7).trim(); continue; }
+      const mcsv = /^(-?[\d.,]+)\s*[,;]\s*(-?[\d.,eE+-]+)$/.exec(l);
+      if (!mcsv) continue;
+      const x = parseFloat(mcsv[1].replace(',', '.'));
+      const y = parseFloat(mcsv[2].replace(',', '.'));
+      if (isFinite(x) && isFinite(y)) pts.push([x, y]);
+      if (pts.length >= 12) break;
+    }
+    if (pts.length < 2) return null;
+    const W = 320; const Hh = 170; const P = { l: 44, r: 10, t: 22, b: 22 };
+    const xs = pts.map((p) => p[0]); const ys = pts.map((p) => p[1]);
+    const x0 = Math.min(...xs); const x1 = Math.max(...xs);
+    let y0 = Math.min(...ys, 0); let y1 = Math.max(...ys);
+    if (y1 === y0) y1 = y0 + 1;
+    const sx = (x) => P.l + ((x - x0) / ((x1 - x0) || 1)) * (W - P.l - P.r);
+    const sy = (y) => Hh - P.b - ((y - y0) / (y1 - y0)) * (Hh - P.t - P.b);
+    const fmt = (v) => (Math.abs(v) >= 1000 ? (v / 1000).toFixed(1) + 'k' : String(+v.toFixed(3)));
+    let icerik = '';
+    // ızgara + eksen etiketleri
+    for (let i = 0; i <= 2; i++) {
+      const yv = y0 + ((y1 - y0) * i) / 2;
+      icerik += `<line x1="${P.l}" y1="${sy(yv)}" x2="${W - P.r}" y2="${sy(yv)}" stroke="#232a45" stroke-width="1"/>`
+        + `<text x="${P.l - 5}" y="${sy(yv) + 3}" text-anchor="end" font-size="9" fill="#8b93b5">${fmt(yv)}</text>`;
+    }
+    icerik += `<text x="${P.l}" y="${Hh - 6}" font-size="9" fill="#8b93b5">${fmt(x0)}</text>`
+      + `<text x="${W - P.r}" y="${Hh - 6}" text-anchor="end" font-size="9" fill="#8b93b5">${fmt(x1)}</text>`;
+    if (tip.startsWith('cubuk') || tip.startsWith('bar')) {
+      const bw = Math.max(4, ((W - P.l - P.r) / pts.length) * 0.6);
+      for (const [x, y] of pts) icerik += `<rect x="${sx(x) - bw / 2}" y="${sy(Math.max(y, 0))}" width="${bw}" height="${Math.abs(sy(y) - sy(0)) || 1}" rx="2" fill="#7c5cff"/>`;
+    } else {
+      const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ');
+      icerik += `<path d="${d}" fill="none" stroke="#7c5cff" stroke-width="2"/>`;
+      for (const [x, y] of pts) icerik += `<circle cx="${sx(x).toFixed(1)}" cy="${sy(y).toFixed(1)}" r="2.4" fill="#a78bfa"/>`;
+    }
+    const baslikSvg = baslik ? `<text x="${P.l}" y="13" font-size="10.5" fill="#dbe0f5" font-weight="600">${esc(baslik).slice(0, 60)}</text>` : '';
+    return `<svg class="grafik" viewBox="0 0 ${W} ${Hh}" xmlns="http://www.w3.org/2000/svg" role="img">${baslikSvg}${icerik}</svg>`;
+  } catch { return null; }
+}
+
 function md(src) {
   let s = esc(src);
   // üretilen görseller: ![alt](evrimimg:id) -> <img> (data-URL depodan gelir)
@@ -54,6 +101,8 @@ function md(src) {
       ? `<img class="gen" alt="${alt}" src="${src2}">`
       : `<span class="muted">[görsel bu cihazda/oturumda yok: ${id}]</span>`;
   });
+  // v56: ```grafik bloğu -> inline SVG (tabloların görsel hâli)
+  s = s.replace(/```grafik\n([\s\S]*?)```/g, (blok, govde) => grafikSVG(govde) || blok);
   s = s.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c}</code></pre>`);
   s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
@@ -708,7 +757,7 @@ function renderLearn() {
   const l = learn.learningStats();
   renderLearnStats(l);
   dueQueue = learn.dueCards();
-  $('#dueChip').textContent = `${dueQueue.length} kart hazır`;
+  $('#dueChip').textContent = `${dueQueue.length} kart hazır${l.seri > 0 ? ` · 🔥 ${l.seri} gün seri` : ''}`;
   nextCard();
   const list = learn.cards();
   $('#cardList').innerHTML = list.length ? list.map((c) => `
@@ -1081,6 +1130,133 @@ $('#btnSavePin')?.addEventListener('click', () => {
   toast(v ? 'Linux PIN kaydedildi 🔒' : 'Linux PIN kaldırıldı', 'ok');
   refreshStatus(); renderSettings();
 });
+/* ---------------- v56: 🎙️ sesli girdi (Web Speech STT) ---------------- */
+let sttRec = null;
+$('#micBtn')?.addEventListener('click', () => {
+  const btn = $('#micBtn');
+  if (sttRec) { try { sttRec.stop(); } catch {} sttRec = null; btn.classList.remove('on'); return; }
+  const SR = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
+  if (!SR) { toast('Bu tarayıcıda ses tanıma yok — Android Chrome önerilir', 'err'); return; }
+  try {
+    const r = new SR();
+    r.lang = 'tr-TR'; r.interimResults = true; r.maxAlternatives = 1; r.continuous = false;
+    let finalT = '';
+    r.onresult = (e) => {
+      let ara = '';
+      for (const res of e.results) { if (res.isFinal) finalT += res[0].transcript + ' '; else ara += res[0].transcript; }
+      $('#input').value = (finalT + ara).trim();
+      $('#input').dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    r.onend = () => { btn.classList.remove('on'); sttRec = null; };
+    r.onerror = (e) => { btn.classList.remove('on'); sttRec = null; if (e?.error !== 'aborted') toast('Mikrofon hatası (' + (e?.error || 'bilinmiyor') + ') — izin ayarlarını kontrol et', 'err'); };
+    r.start();
+    sttRec = r;
+    btn.classList.add('on');
+    toast('🎙️ Dinliyorum — konuş, bitince dur butonuna bas veya otomatik durur', 'ok');
+  } catch { toast('Ses tanıma başlatılamadı', 'err'); }
+});
+
+/* ---------------- v56: 📄 PDF metin çıkarma (pdf.js CDN) ---------------- */
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) return res();
+    const sc = document.createElement('script');
+    sc.src = src; sc.async = true; sc.onload = () => res(); sc.onerror = () => rej(new Error('CDN yüklenemedi'));
+    document.head.appendChild(sc);
+  });
+}
+$('#pdfBtn')?.addEventListener('click', () => $('#pdfFile')?.click());
+$('#pdfFile')?.addEventListener('change', async (ev) => {
+  const file = ev.target.files?.[0];
+  ev.target.value = '';
+  if (!file) return;
+  toast('📄 PDF okunuyor…', 'ok');
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    const pdfjs = globalThis.pdfjsLib;
+    if (!pdfjs) throw new Error('pdf.js yüklenemedi');
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    let metin = '';
+    const sayfaN = Math.min(doc.numPages, 25);
+    for (let i = 1; i <= sayfaN; i++) {
+      const pg = await doc.getPage(i);
+      const tc = await pg.getTextContent();
+      metin += tc.items.map((it) => it.str).join(' ') + '\n\n';
+      if (metin.length > 14000) break;
+    }
+    metin = metin.replace(/\s+/g, ' ').trim();
+    if (!metin) { toast('PDF metin katmanı boş (taranmış görüntü) — 📷 OCR düğmesini dene', 'err'); return; }
+    send(`📄 PDF: ${file.name} (${doc.numPages} sayfa) — metnini oku, özetle ve sorularımı bekle:\n\n${metin.slice(0, 12000)}`);
+  } catch (e) { toast('PDF okunamadı: ' + String(e.message || e).slice(0, 80), 'err'); }
+});
+
+/* ---------------- v56: 📷 OCR (tesseract.js CDN) ---------------- */
+$('#ocrBtn')?.addEventListener('click', () => $('#ocrFile')?.click());
+$('#ocrFile')?.addEventListener('change', async (ev) => {
+  const file = ev.target.files?.[0];
+  ev.target.value = '';
+  if (!file) return;
+  toast('📷 OCR hazırlanıyor (ilk seferde ~10 MB dil verisi iner)…', 'ok');
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+    const T = globalThis.Tesseract;
+    if (!T) throw new Error('tesseract yüklenemedi');
+    const res = await T.recognize(file, 'tur', {
+      logger: (m) => { if (m.status === 'recognizing text' && m.progress) $('#ocrBtn').title = 'OCR %' + Math.round(m.progress * 100); },
+    });
+    const metin = String(res?.data?.text || '').replace(/\n{3,}/g, '\n\n').trim();
+    if (!metin) { toast('Fotoğrafta yazı bulunamadı — daha net/aydınlık çek', 'err'); return; }
+    $('#input').value = metin.slice(0, 8000);
+    $('#input').dispatchEvent(new Event('input', { bubbles: true }));
+    toast('📷 Yazı çıkarıldı — düzenleyip gönder', 'ok');
+  } catch (e) { toast('OCR başarısız: ' + String(e.message || e).slice(0, 80), 'err'); }
+});
+
+/* ---------------- v56: ⏰ hatırlatıcı takibi (sayfa açıkken) ---------------- */
+setInterval(() => {
+  try {
+    const rs = all('reminders').filter((r) => !r.done && r.dueAt <= Date.now());
+    for (const r of rs) {
+      update('reminders', r.id, { done: true, firedAt: Date.now() });
+      toast('⏰ Hatırlatma: ' + r.mesaj, 'ok');
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        try { new Notification('EVRIM hatırlatıcı', { body: r.mesaj }); } catch {}
+      }
+    }
+  } catch {}
+}, 20000);
+
+/* ---------------- v56: 🧾 tek dosya HTML yedek ---------------- */
+$('#btnHtmlYedek')?.addEventListener('click', () => {
+  try {
+    const json = exportData();
+    const html = `<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVRIM yedek ${new Date().toISOString().slice(0, 10)}</title>
+<style>body{font-family:system-ui;background:#0a0e1a;color:#dbe0f5;margin:0;padding:18px}h1{font-size:18px}button{background:#7c5cff;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:14px}.k{background:#131a30;border:1px solid #232a45;border-radius:12px;padding:10px;margin:8px 0;font-size:13px;white-space:pre-wrap;word-break:break-word}</style>
+<h1>🧬 EVRIM tek dosya yedek</h1>
+<p>Tüm verin bu dosyanın içinde. Geri yüklemek için: EVRIM → Ayarlar → Verilerim → "JSON'u indir" düğmesiyle buradan JSON al, orada "İçe aktar".</p>
+<button onclick="indir()">⬇️ JSON'u indir</button>
+<div id="ozet"></div>
+<script type="application/json" id="veri">${json.replace(/</g, '\\u003c')}</script>
+<script>
+const d=JSON.parse(document.getElementById('veri').textContent);
+const oz=document.getElementById('ozet');
+for(const k of Object.keys(d)){const v=d[k];const n=Array.isArray(v)?v.length:'-';oz.insertAdjacentHTML('beforeend','<div class="k"><b>'+k+'</b>: '+(Array.isArray(v)?n+' kayıt':typeof v)+'</div>');}
+function indir(){const b=new Blob([document.getElementById('veri').textContent],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='evrim-yedek.json';a.click();}
+</` + `script>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    if (!URL.createObjectURL) { toast('Bu tarayıcıda indirme desteklenmiyor', 'err'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `evrim-yedek-${new Date().toISOString().slice(0, 10)}.html`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('🧾 Tek dosya yedek indirildi', 'ok');
+  } catch (e) { toast('Yedek oluşturulamadı: ' + String(e.message || e).slice(0, 80), 'err'); }
+});
+
 $('#btnSaveGh').addEventListener('click', () => {
   setSettings({ githubToken: $('#setGhToken').value.trim(), githubRepo: gh.parseRepo($('#setGhRepo').value) || $('#setGhRepo').value.trim() });
   toast('GitHub ayarları kaydedildi', 'ok');

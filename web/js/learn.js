@@ -1,5 +1,5 @@
 /* js/learn.js — ÖĞRENME KOÇU (tarayıcıda aralıklı tekrar + AI soru üretme/puanlama) */
-import { all, insert, update, remove } from './store.js';
+import { all, insert, update, remove, gunIsaretle, seriHesapla } from './store.js';
 import { chat, chatJSON, isReady } from './llm.js';
 import { upsertSkill } from './evolve.js';
 
@@ -96,7 +96,8 @@ SADECE JSON: {"correct":true|false,"score":0.0-1.0,"feedback":"2 cümlelik Türk
     : 0.5;
   upsertSkill(card.topic, Math.max(1, Math.min(5, Math.round(1 + acc * 4))), `Doğruluk %${Math.round(acc * 100)}`);
 
-  insert('reviews', { cardId, topic: card.topic, correct: !!verdict.correct, score: verdict.score ?? 0, userAnswer, nextDueAt: dueAt });
+  insert('reviews', { cardId, topic: card.topic, correct: !!verdict.correct, score: verdict.score ?? 0, userAnswer, nextDueAt: dueAt, ts: Date.now() });
+  gunIsaretle('tekrar');
   return { ...verdict, card: updated, nextInHours: hours };
 }
 
@@ -128,6 +129,8 @@ export function learningStats() {
     reviews: reviews.length,
     accuracy: reviews.length ? Math.round((correct / reviews.length) * 100) : 0,
     topics: [...new Set(c.map((x) => x.topic))].length,
+    seri: seriHesapla().seri,
+    enUzunSeri: seriHesapla().enUzun,
   };
 }
 

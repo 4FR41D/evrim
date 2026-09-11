@@ -367,6 +367,7 @@
         <div id="dataInfo" class="muted" style="font-size:12.5px;margin-bottom:10px"></div>
         <div class="row">
           <button class="btn ghost sm" id="btnExport">⬇️ Yedek al</button>
+          <button class="btn ghost sm" id="btnHtmlYedek">🧾 Tek dosya (HTML)</button>
           <button class="btn ghost sm" id="btnImport">⬆️ İçe aktar</button>
           <button class="btn danger sm" id="btnWipe">🗑 Sıfırla</button>
         </div>
@@ -388,6 +389,11 @@
 
     <div id="composer" style="display:none">
     <div class="box">
+      <button class="tool-btn" id="micBtn" title="Sesli yaz (mikrofon)">🎙️</button>
+      <button class="tool-btn" id="pdfBtn" title="PDF oku">📄</button>
+      <button class="tool-btn" id="ocrBtn" title="Fotoğraftan yazı (OCR)">📷</button>
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none">
+      <input type="file" id="ocrFile" accept="image/*" style="display:none">
       <textarea id="input" rows="1" placeholder="Bir şey sor…"></textarea>
       <button class="btn send" id="send" aria-label="Gönder">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
@@ -485,6 +491,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="js/app.js"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=55').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=56').catch(()=>{}))}</script>
 </body>
 </html>

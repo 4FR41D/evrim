@@ -29,6 +29,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   kişiliği sistem promptuna eklenir; bot değiştirince yeni sohbet açılır.
 - **Kenar çubuğu:** botlar, sohbet listesi (son etkinlik sırasıyla), profil çipi.
   Mobilde hamburger + çekmece. Alt sekme çubuğu kaldırıldı.
+- **Günlük asistan (v56):** 🎙️ sesli mesaj yazdırma (Chrome), 📄 PDF okuma (metni sohbete gönderir),
+  📷 fotoğraftan yazı okuma (OCR), ⏰ hatırlatıcı + bildirim, 💸 gider defteri, 📈 sohbet içi SVG grafik
+  (` ```grafik ` bloğu), 🔥 günlük kullanım serisi, 🧾 tek dosya HTML yedek (tüm verin tek dosyada).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
@@ -131,7 +134,7 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 29 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 31 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_ara: anahtarsız web araması (jina+ddg) → web_oku zinciri

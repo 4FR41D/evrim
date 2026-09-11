@@ -339,3 +339,9 @@ nav.tabs{display:none !important}
 .tbl th{background:rgba(124,92,255,.18);font-weight:600}
 .tbl tr:nth-child(even) td{background:rgba(255,255,255,.03)}
 .msg.bot pre{white-space:pre-wrap;word-break:break-word}
+
+/* v56: composer araç düğmeleri + grafik */
+#composer .tool-btn{border:0;background:none;font-size:17px;padding:8px 4px;cursor:pointer;opacity:.75;flex:0 0 auto;line-height:1}
+#composer .tool-btn.on{opacity:1;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+svg.grafik{display:block;max-width:100%;margin:8px 0;background:#0b1020;border:1px solid var(--line);border-radius:12px}
