@@ -74,6 +74,10 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('site_tara', 'SİTE TARAYICI: kullanıcı bir site/URL verip "tara/incele/analiz et/özetle/ne sitesi bu" derse çağır. Siteyi anahtarsız okuyucuyla tarar: başlık, açıklama, bölüm başlıkları, iç/dış linkler, kelime sayısı; derinlik=2 verilirse iç linklerden 2 alt sayfayı da okur. Raporu BLUF + tabloyla sun (ne sitesi, bölümler, önemli linkler, değerlendirme).', {
+    url: { type: 'string', description: 'tam adres, https:// ile' },
+    derinlik: { type: 'number', description: '0 = sadece ana sayfa (varsayılan); 2 = ana sayfa + 2 alt sayfa' },
+  }, ['url']),
   F('ode_coz', 'DİFERANSİYEL DENKLEM ÇÖZÜCÜ (SciML/DiffEqFlux ruhu, tarayıcıda): dy/dt = f(t,y) başlangıç değer problemini RK4 veya Euler ile sayısal çözer. Fizik/büyüme/salınım modelleri için kullan (örn. lojistik büyüme, basit sarkaç, yay-sönüm). Denklem JS ifadesi: t ve y değişkenleri + Math.* serbest.', {
     denklem: { type: 'string', description: 'f(t,y) sağ tarafı, örn. "0.5*y*(1-y/10)" veya "-9.81*Math.sin(y)"' },
     y0: { type: 'number', description: 'başlangıç değeri y(t0)' },
@@ -588,6 +592,58 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async site_tara({ url, derinlik }) {
+    const u = String(url || '').trim();
+    if (!/^https?:\/\/[^\s]+$/i.test(u)) return { hata: 'geçersiz adres (https:// ile başlamalı)' };
+    const readRaw = async (page) => {
+      const r = await fetch('https://r.jina.ai/' + page, { headers: { Accept: 'text/plain' } });
+      if (!r.ok) throw new Error(r.status === 429 ? 'okuyucu limiti dolu (20/dk) — 1 dk sonra tekrar dene' : `sayfa okunamadı (${r.status})`);
+      return r.text();
+    };
+    try {
+      const md = await readRaw(u);
+      const baslik = (md.match(/^Title:\s*(.+)/m) || [])[1] || null;
+      const aciklama = (md.match(/^Description:\s*(.+)/m) || [])[1] || null;
+      const host = u.replace(/^https?:\/\//, '').split('/')[0].toLowerCase();
+      const ic = []; const dis = [];
+      const re = /\[([^\]\n]{2,120})\]\(((?:https?:)?\/\/[^)\s]+)\)/g;
+      let m;
+      while ((m = re.exec(md)) && ic.length + dis.length < 60) {
+        let lu = m[2];
+        if (lu.startsWith('//')) lu = 'https:' + lu;
+        if (/duckduckgo\.com|jina\.ai|\.(png|jpg|jpeg|gif|css|js|ico|svg|woff2?)(\?|$)/i.test(lu)) continue;
+        const h = lu.replace(/^https?:\/\//, '').split('/')[0].toLowerCase();
+        const rec = { baslik: m[1].trim(), url: lu };
+        if (h === host) { if (!ic.some((x) => x.url === lu)) ic.push(rec); }
+        else if (!dis.some((x) => x.url === lu)) dis.push(rec);
+      }
+      const metin = md.replace(/!?\[[^\]]*\]\([^)]*\)/g, ' ').replace(/\n{3,}/g, '\n\n');
+      const kelimeSayisi = (metin.match(/[A-Za-zÇĞİÖŞÜçğıöşü0-9]+/g) || []).length;
+      const bolumBasliklari = [...md.matchAll(/^#{1,3}\s+(.+)$/gm)].map((x) => x[1].trim()).slice(0, 12);
+      const sonuc = {
+        ok: true, url: u, baslik, aciklama, kelimeSayisi, bolumBasliklari,
+        icLinkSayisi: ic.length, disLinkSayisi: dis.length,
+        icLinkler: ic.slice(0, 10), disLinkler: dis.slice(0, 5),
+        ozetMetin: metin.replace(/^Title:.*$/m, '').replace(/^Description:.*$/m, '').trim().slice(0, 900),
+      };
+      const derin = Math.max(0, Math.min(2, Number(derinlik) || 0));
+      if (derin > 0) {
+        sonuc.altSayfalar = [];
+        for (const it of ic.slice(0, derin)) {
+          try {
+            const sub = await readRaw(it.url);
+            const smd = sub.replace(/!?\[[^\]]*\]\([^)]*\)/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+            sonuc.altSayfalar.push({ url: it.url, baslik: (sub.match(/^Title:\s*(.+)/m) || [])[1] || it.baslik, ozet: smd.slice(0, 450) });
+          } catch (e) { sonuc.altSayfalar.push({ url: it.url, hata: String(e.message || e).slice(0, 80) }); }
+        }
+      }
+      sonuc.not = derin > 0
+        ? 'Ana sayfa + alt sayfalar tarandı. Rapor: BLUF, bölümler/linkler tablosu, 1 cümle değerlendirme.'
+        : 'Yalnız ana sayfa tarandı; derin inceleme istenirse derinlik=2 ile tekrar çağır.';
+      return sonuc;
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
+  },
+
   async ode_coz({ denklem, y0, t0, tBitis, adim, yontem }) {
     try {
       const src = String(denklem);
@@ -851,6 +907,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    site_tara: (() => { const h = String(args.url || '').replace(/^https?:\/\//, '').split('/')[0]; return done ? (bad ? `🌐 ${h} taranamadı` : `🌐 ${h} tarandı`) : `🌐 ${h} taranıyor`; })(),
     ode_coz: done ? (bad ? '∫ Denklem çözülemedi' : '∫ Denklem çözüldü (RK4/Euler)') : '∫ Diferansiyel denklem çözülüyor',
     ders_calis: done ? `🎓 Ders ${args.ders || ''} hazır`.trim() : `🎓 Ders ${args.ders || 'sıradaki'} getiriliyor`.trim(),
     ders_bitir: done ? (bad ? `🎓 Ders ${args.ders}: yanlış kaydedildi 📇` : `🎓 Ders ${args.ders} tamamlandı ✅`) : `🎓 Ders ${args.ders} kaydediliyor`,

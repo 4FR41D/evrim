@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v8 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 8') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v9 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 9') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -753,6 +753,44 @@ function makeBroker() {
   const lastUser = calls.filter((c) => c?.messages).flatMap((c) => c.messages.filter((m) => m.role === 'user')).map((m) => String(m.content)).pop() || '';
   ok('25. bot isteği sayfa URL’siyle gönderildi', lastUser.includes('example.com') && lastUser.includes('özetle'));
   ok('25. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 26) site_tara: ana sayfa + alt sayfa taraması ================= */
+{
+  let round = 0; const calls = []; const jinaHits = [];
+  const MAIN = `Title: Ornek Site — Ana Sayfa\nDescription: Deneme sitesi aciklamasi\n\n# Hoş geldiniz\nBu bir deneme sitesidir. Yapay zeka ile ilgili yazilar icerir.\n\n## Yazilar\n[Hakkımızda](https://ornek-site.com/hakkinda)\n[İletişim](https://ornek-site.com/iletisim)\n[Dış Kaynak](https://baska.com/yazi)\n[Logo](https://ornek-site.com/logo.png)`;
+  const SUB = `Title: Hakkımızda\n\n# Hakkımızda\nBu sayfa siteyi tanitir. Ekip ve tarihce bilgisi buradadir.`;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('r.jina.ai')) { jinaHits.push(u); return { ok: true, status: 200, headers: { get: () => 'text/plain' }, json: async () => ({}), text: async () => (u.includes('hakkinda') ? SUB : MAIN) }; }
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'site_tara', args: { url: 'https://ornek-site.com', derinlik: 2 } });
+      return fakeRes(body, null, 'Site raporu burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Tara'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'https://ornek-site.com sitesini tara'; $(w, '#send').click();
+  await wait(2600);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r && (r.ok || r.hata) && 'icLinkSayisi' in (r || {})) || toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } })[0];
+  ok('26. site okundu: başlık+açıklama', R?.ok === true && R?.baslik === 'Ornek Site — Ana Sayfa' && !!R?.aciklama);
+  ok('26. iç/dış link ayrımı', R?.icLinkSayisi === 2 && R?.disLinkSayisi === 1);
+  ok('26. görsel linki elendi', !JSON.stringify(R?.icLinkler).includes('logo.png'));
+  ok('26. derin tarama: alt sayfa okundu', Array.isArray(R?.altSayfalar) && R.altSayfalar.length === 2 && jinaHits.some((h) => h.includes('hakkinda')));
+  ok('26. bölüm başlıkları çıkarıldı', (R?.bolumBasliklari || []).some((b) => b.includes('Hoş geldiniz')));
+  const sysP = calls.filter((c) => c?.stream).map((c) => String(c.messages?.[0]?.content || '')).join(' ');
+  ok('26. beyin kuralı: site_tara', sysP.includes('site_tara'));
+  ok('26. çip: 🌐', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🌐')));
+  ok('26. hata yok', w.errors.length === 0);
   w.close?.();
 }
 
