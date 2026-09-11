@@ -392,6 +392,17 @@ export async function agentChat(messages, opts = {}) {
     }
   }
 
+  // Boş cevap koruması: model turu bitirip içerik üretmediyse araçsız son bir istek
+  if (!String(lastContent || '').trim()) {
+    try {
+      const fin = await rawChat(msgs, { ...opts, tools: undefined, onChunk: opts.onChunk });
+      lastContent = fin.content || '';
+      lastModel = fin.model || lastModel;
+    } catch (e) { console.warn('[agent] boş cevap kurtarma başarısız:', e.message); }
+  }
+  if (!String(lastContent || '').trim()) {
+    throw new Error('Model boş cevap döndürdü. Bir kez daha dene — sorun sürerse Ayarlar → Tanıla.');
+  }
   return { content: lastContent, steps, model: lastModel };
 }
 
