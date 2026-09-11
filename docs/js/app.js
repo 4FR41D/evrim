@@ -193,7 +193,7 @@ async function send(text) {
       const key = live.dataset.cur;
       const row = toolRows.get(key);
       if (row) {
-        const bad = detail && detail.error;
+        const bad = detail && (detail.error || detail.hata);
         row.className = 'toolstep ' + (bad ? 'bad' : 'ok');
         row.innerHTML = `${bad ? '⚠️' : '✅'} ${esc(toolLabel(name, args || {}, true))}`
           + `<span class="tms">${ms || 0} ms</span>`;

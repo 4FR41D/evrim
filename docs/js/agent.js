@@ -266,41 +266,97 @@ const catField = (yaml, key) => {
   return m ? m[1].trim() : '';
 };
 
+const CAT_UYARI = 'Bu modeller muapi.ai üzerinden çağrılır: ÜCRETLİDİR (kredi) ve muapi API anahtarı ister. EVRIM bunları şu an doğrudan ÇALIŞTIRMAZ; yalnızca katalogdan bulup bildirir.';
+const CAT_NOMATCH = 'Bu sorguyla eşleşme yok. İngilizce ve daha genel dene: "text to image", "video", "audio", "upscale", "background".';
+
+/* 1) YEREL YEDEK — kendi repomuzda (GitHub Pages, aynı origin, CORS derdi yok,
+      upstream repo silinse bile çalışır, SW sayesinde çevrimdışı da çalışır) */
+const CAT_MIRROR = new URL('data/katalog.json', document.baseURI).href;
+let catMirrorMem = null;
+async function catMirror() {
+  if (catMirrorMem) return catMirrorMem;
+  const r = await fetch(CAT_MIRROR);
+  if (!r.ok) throw new Error(`yerel yedek ${r.status}`);
+  const j = await r.json();
+  if (!j || !Array.isArray(j.items) || !j.items.length) throw new Error('yerel yedek boş');
+  catMirrorMem = j;
+  return j;
+}
+
 async function katalogAra(sorgu, adet) {
   const q = String(sorgu || '').trim();
   if (!q) return { found: 0, note: 'Sorgu boş.' };
-  const names = await catTree();
   const lim = Math.max(1, Math.min(5, Number(adet) || 3));
-  const ranked = names
-    .map((n) => ({ n, s: catScore(n.replace(/[-_]+/g, ' '), q) }))
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s)
-    .slice(0, lim);
-  if (!ranked.length) {
-    return { found: 0, toplam: names.length, note: 'Bu sorguyla eşleşme yok. İngilizce ve daha genel dene: "text to image", "video", "audio", "upscale", "background".' };
+
+  /* --- önce yerel yedek --- */
+  try {
+    const mir = await catMirror();
+    const ranked = mir.items
+      .map((it) => ({
+        it,
+        s: Math.max(
+          catScore(String(it.m || '').replace(/[-_]+/g, ' '), q),
+          catScore(String(it.a || ''), q),
+          catScore(String(it.c || '').replace(/[._]+/g, ' '), q),
+        ),
+      }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, lim);
+    return {
+      found: ranked.length,
+      toplam: mir.items.length,
+      kaynak: 'yerel yedek (bu repo) ← awesome-agent-apis (MIT)',
+      senkron: mir.senkron || null,
+      uyari: CAT_UYARI,
+      note: ranked.length ? undefined : CAT_NOMATCH,
+      items: ranked.map(({ it }) => ({
+        model: it.m, ad: it.a, yetenek: it.c, aciklama: it.d,
+        ucret: it.u ? `~$${it.u} / çağrı (muapi kredisi)` : 'belirtilmemiş',
+        docs: it.l,
+      })),
+    };
+  } catch { /* yerel yedek yoksa upstream'e düş */ }
+
+  /* --- sonra upstream GitHub (eski davranış) --- */
+  try {
+    const names = await catTree();
+    const ranked = names
+      .map((n) => ({ n, s: catScore(n.replace(/[-_]+/g, ' '), q) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, lim);
+    if (!ranked.length) return { found: 0, toplam: names.length, kaynak: 'upstream GitHub', note: CAT_NOMATCH };
+    const items = await Promise.all(ranked.map(async ({ n }) => {
+      try {
+        const r = await fetch(`https://raw.githubusercontent.com/${CAT_REPO}/main/models/${encodeURIComponent(n)}.yaml`);
+        if (!r.ok) return { model: n, hata: `okunamadı (${r.status})` };
+        const y = await r.text();
+        return {
+          model: n,
+          ad: catField(y, 'title') || n,
+          yetenek: catField(y, 'capability'),
+          aciklama: catField(y, 'description'),
+          ucret: catField(y, 'cost') ? `~$${catField(y, 'cost')} / çağrı (muapi kredisi)` : 'belirtilmemiş',
+          docs: catField(y, 'docs_url'),
+        };
+      } catch (e) { return { model: n, hata: e.message }; }
+    }));
+    return {
+      found: items.length,
+      toplam: names.length,
+      kaynak: 'awesome-agent-apis (MIT, github.com/Anil-matcha/awesome-agent-apis)',
+      uyari: CAT_UYARI,
+      items,
+    };
+  } catch (e) {
+    /* HİÇBİR kaynak yoksa çökme: dürüst ve yumuşak cevap */
+    return {
+      found: 0,
+      hata: e.message,
+      note: 'Katalog şu an hiçbir kaynaktan okunamadı (yerel yedek + GitHub ikisi de kapalı). Bağlantını kontrol edip tekrar dene.',
+    };
   }
-  const items = await Promise.all(ranked.map(async ({ n }) => {
-    try {
-      const r = await fetch(`https://raw.githubusercontent.com/${CAT_REPO}/main/models/${encodeURIComponent(n)}.yaml`);
-      if (!r.ok) return { model: n, hata: `okunamadı (${r.status})` };
-      const y = await r.text();
-      return {
-        model: n,
-        ad: catField(y, 'title') || n,
-        yetenek: catField(y, 'capability'),
-        aciklama: catField(y, 'description'),
-        ucret: catField(y, 'cost') ? `~$${catField(y, 'cost')} / çağrı (muapi kredisi)` : 'belirtilmemiş',
-        docs: catField(y, 'docs_url'),
-      };
-    } catch (e) { return { model: n, hata: e.message }; }
-  }));
-  return {
-    found: items.length,
-    toplam: names.length,
-    kaynak: 'awesome-agent-apis (MIT, github.com/Anil-matcha/awesome-agent-apis)',
-    uyari: 'Bu modeller muapi.ai üzerinden çağrılır: ÜCRETLİDİR (kredi) ve muapi API anahtarı ister. EVRIM bunları şu an doğrudan ÇALIŞTIRMAZ; yalnızca katalogdan bulup bildirir.',
-    items,
-  };
 }
 
 const EXEC = {

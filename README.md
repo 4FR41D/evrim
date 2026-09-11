@@ -129,6 +129,7 @@ evrim/
 │     ├─ personas.js    # hazır botlar + şablonlar
 │     ├─ agent.js       # 11 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
+│     ├─ data/katalog.json  # kataloğun YEREL YEDEĞİ (upstream silinse bile çalışır)
 │     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu
 │     ├─ store.js       # localStorage tabanlı veri katmanı + beyin sürümleri
 │     ├─ evolve.js      # hafıza + öz-gelişim + beceri haritası
@@ -142,6 +143,7 @@ evrim/
 
 > Not: `web/` dosyalarını değiştirirsen `docs/` ile senkronla
 > (`cp -r web/. docs/`) ve ikisini birlikte commit'le.
+> Katalog yedeğini tazelemek için: `node scripts/katalog-sync.js`.
 
 ## 🔒 Güvenlik notları
 
