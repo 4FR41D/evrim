@@ -4,7 +4,11 @@ import {
   currentPrompt, pushPromptVersion, rollbackPrompt,
   exportData, importData, wipeData, storageSize,
 } from './store.js';
-import { PROVIDERS, active as activeLLM, isReady, chat, testConnection, detectProvider } from './llm.js';
+import {
+  PROVIDERS, active as activeLLM, isReady, chat, testConnection, detectProvider,
+  detectWebGPU, guessTier, shortName, localStatus, loadLocal,
+} from './llm.js';
+import { MODEL_TIERS, unloadLocal } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import * as gh from './github.js';
@@ -101,8 +105,7 @@ async function send(text) {
   if (!content || sending) return;
   if (!isReady()) {
     $('#setupCard').style.display = 'block';
-    toast('Önce ücretsiz bir API anahtarı gir (Ayarlar)', 'bad');
-    go('set');
+    toast('Önce beyni başlat (aşağıdaki düğme) ya da Ayarlar’dan ücretsiz anahtar gir', 'bad');
     return;
   }
   sending = true;
@@ -119,7 +122,11 @@ async function send(text) {
       .map((m) => ({ role: m.role, content: m.content }));
     const messages = [{ role: 'system', content: evo.buildSystemPrompt() }, ...history];
 
-    const reply = await chat(messages, { temperature: 0.7, maxTokens: 1200 });
+    const reply = await chat(messages, {
+      temperature: 0.7,
+      maxTokens: 1200,
+      onProgress: (pct, text) => setLocalProgress(pct, text),
+    });
     typing(false);
     const botMsg = insert('messages', { conversationId, role: 'assistant', content: reply });
     addMsg(botMsg);
@@ -166,17 +173,29 @@ function refreshStatus() {
   const st = evo.stats();
   const ls = learn.learningStats();
   const pill = $('#statusPill');
-  if (!a.id) {
-    pill.textContent = '🔑 anahtar gerekli';
-    pill.className = 'pill demo';
-    $('#subBrand').textContent = 'ayarlar’dan ücretsiz anahtar ekle';
-    $('#setupCard').style.display = 'block';
+  const loc = localStatus();
+
+  if (a.id === 'local') {
+    if (loc.ready) {
+      pill.textContent = `🧠 ${shortName(loc.modelId)} · cihazında`;
+      pill.className = 'pill ok';
+      $('#setupCard').style.display = 'none';
+    } else if (loc.supported) {
+      pill.textContent = loc.loading ? `indiriliyor %${loc.progress}` : '🧠 modeli başlat';
+      pill.className = loc.loading ? 'pill demo' : 'pill ok';
+      $('#setupCard').style.display = currentView === 'chat' ? 'block' : 'none';
+    } else {
+      pill.textContent = '⚠️ WebGPU yok';
+      pill.className = 'pill demo';
+      $('#setupCard').style.display = currentView === 'chat' ? 'block' : 'none';
+    }
   } else {
     pill.textContent = `${a.def.name} · ${String(a.model).split('/').pop()}`;
     pill.className = 'pill ok';
-    $('#subBrand').textContent = `beyin v${st.promptVersion} · ${st.memories} hafıza`;
     $('#setupCard').style.display = 'none';
   }
+  $('#subBrand').textContent = `beyin v${st.promptVersion} · ${st.memories} hafıza`;
+  renderLocalBoxes();
   const pb = $('#pendingBadge');
   pb.style.display = st.pendingPatches ? 'grid' : 'none';
   pb.textContent = st.pendingPatches;
@@ -474,6 +493,13 @@ function renderSettings() {
   $('#setName').value = s.userName || '';
   $('#setGhToken').value = s.githubToken || '';
   $('#setGhRepo').value = s.githubRepo || '';
+  const tierSel = $('#setTier');
+  if (tierSel) {
+    const cur = s.localTier || guessTier();
+    tierSel.innerHTML = MODEL_TIERS.map((t) =>
+      `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${t.label} — ${t.hint}</option>`).join('');
+    tierSel.onchange = () => setSettings({ localTier: tierSel.value });
+  }
   const a = activeLLM();
   const st = evo.stats();
   $('#dataInfo').innerHTML = `Depolama: <b>${(storageSize() / 1024).toFixed(1)} KB</b> · ${st.memories} hafıza · ${all('messages').length} mesaj`;
@@ -484,6 +510,7 @@ function renderSettings() {
     <div class="kv"><span>Hafıza</span><b>${st.memories}</b></div>
     <div class="kv"><span>Öğrenme kartı</span><b>${st.cards}</b></div>
     <div class="kv"><span>Çalışma biçimi</span><b>%100 tarayıcı (sunucusuz)</b></div>`;
+  renderLocalBoxes();
 }
 $('#setKey').addEventListener('input', () => {
   const d = detectProvider($('#setKey').value.trim());
@@ -558,11 +585,98 @@ $('#btnInstall').addEventListener('click', async () => {
 });
 
 /* başlat */
-(function init() {
+(async function init() {
   const s = getSettings();
   if (!s.createdAt) setSettings({ createdAt: new Date().toISOString() });
+  if (!s.localTier) setSettings({ localTier: guessTier() });
   currentPrompt();
   refreshStatus();
   loadChat();
   renderSettings();
+  // Cihaz WebGPU destekliyor mu? (yerel model mümkün mü)
+  await detectWebGPU();
+  refreshStatus();
+  renderSettings();
 })();
+
+/* ---------------- cihazında çalışan model ---------------- */
+function setLocalProgress(pct, text) {
+  for (const [barId, txtId, wrapId] of [
+    ['localProgressBar', 'localProgressText', 'localProgress'],
+    ['localProgressBar2', 'localProgressText2', 'localProgress2'],
+  ]) {
+    const bar = document.getElementById(barId);
+    const txt = document.getElementById(txtId);
+    const wrap = document.getElementById(wrapId);
+    if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    if (txt) txt.textContent = text || '';
+    if (wrap) wrap.style.display = pct > 0 && pct < 100 ? 'block' : (pct >= 100 ? 'block' : wrap.style.display);
+  }
+}
+
+function renderLocalBoxes() {
+  const loc = localStatus();
+  const a = activeLLM();
+  const cap = $('#capBox');
+  const box = $('#localBox');
+
+  if (cap) {
+    cap.innerHTML = loc.checked
+      ? (loc.supported
+        ? `<span class="chip ok">✅ WebGPU var</span> ${esc(loc.adapter || '')} — model cihazında çalışabilir`
+        : `<span class="chip warn">⚠️ WebGPU yok</span> Bu tarayıcıda yerel model çalışmaz. Chrome 113+ (Android 121+) / Safari 26+ dene ya da ücretsiz anahtar gir.`)
+      : '<span class="chip">cihaz denetleniyor…</span>';
+    const btn = $('#btnStartLocal');
+    if (btn) {
+      btn.disabled = !(loc.checked && loc.supported) || loc.loading;
+      btn.textContent = loc.ready ? `✅ Hazır: ${shortName(loc.modelId)}`
+        : loc.loading ? `⬇️ İndiriliyor… %${loc.progress}`
+        : '🚀 Modeli indir ve başlat';
+    }
+  }
+
+  if (box) {
+    box.innerHTML = loc.ready
+      ? `<span class="chip ok">✅ çalışıyor</span> <b>${esc(shortName(loc.modelId))}</b> · bellekte, çevrimdışı hazır${a.id === 'local' ? '' : ' <span class="chip">(bulut anahtarı öncelikli)</span>'}`
+      : loc.loading
+        ? `<span class="chip warn">⬇️ indiriliyor %${loc.progress}</span> ${esc(loc.progressText || '')}`
+        : (loc.supported
+          ? `<span class="chip">hazır, indirilmedi</span> ${esc(loc.adapter || '')}`
+          : `<span class="chip warn">WebGPU yok</span> ${esc(loc.error || '')}`);
+  }
+}
+
+async function startLocal() {
+  const ok = await detectWebGPU();
+  if (!ok) {
+    const s = getSettings();
+    if (!s.apiKey) toast('Bu cihazda WebGPU yok — ücretsiz bir API anahtarı girmen gerekiyor', 'bad');
+    renderLocalBoxes();
+    return;
+  }
+  if (!getSettings().localTier) setSettings({ localTier: guessTier() });
+  renderLocalBoxes();
+  try {
+    await loadLocal({ onProgress: (p, t) => { setLocalProgress(p, t); renderLocalBoxes(); refreshStatusLight(); } });
+    setLocalProgress(100, 'Hazır');
+    toast('Model cihazında çalışıyor 🧠', 'ok');
+    $('#setupCard').style.display = 'none';
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+  renderLocalBoxes();
+  refreshStatus();
+}
+
+let lightTimer = null;
+function refreshStatusLight() {
+  clearTimeout(lightTimer);
+  lightTimer = setTimeout(() => { renderLocalBoxes(); }, 120);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'btnStartLocal' || e.target.id === 'btnLoadLocal') { e.preventDefault(); startLocal(); }
+  if (e.target.id === 'btnUnloadLocal') {
+    unloadLocal().then(() => { toast('Model bellekten çıkarıldı'); renderLocalBoxes(); refreshStatus(); });
+  }
+});

@@ -22,15 +22,21 @@
   </header>
 
   <main>
-    <!-- anahtar yoksa -->
-    <section class="card" id="setupCard" style="display:none;border-color:rgba(251,191,36,.45)">
-      <h3>🔑 Başlamak için ücretsiz bir anahtar</h3>
-      <p class="hint">EVRIM tamamen senin cihazında çalışır — sunucu yok, hesap yok, ücret yok.
-        Sadece yapay zekâ beyni için ücretsiz bir API anahtarı gerekiyor. <b>3 dakika</b> sürer, kredi kartı istemez.</p>
-      <div class="row">
-        <a class="btn sm" href="https://console.groq.com/keys" target="_blank" rel="noopener">1 · Groq anahtarı al</a>
-        <button class="btn sm ghost" id="gotoSettings">2 · Ayarlar’a git</button>
+    <!-- beyin hazır değilse -->
+    <section class="card" id="setupCard" style="display:none;border-color:rgba(124,92,255,.5)">
+      <h3>🧠 Beyni başlat</h3>
+      <p class="hint"><b>API anahtarı gerekmez.</b> Açık kaynak model senin cihazında çalışır —
+        sunucu yok, hesap yok, kota yok, ücret yok. Yazdıkların cihazından hiç çıkmaz.</p>
+      <div id="capBox" class="muted" style="font-size:12.5px;margin-bottom:10px">cihaz denetleniyor…</div>
+      <button class="btn" style="width:100%" id="btnStartLocal">🚀 Modeli indir ve başlat</button>
+      <div id="localProgress" style="display:none;margin-top:10px">
+        <div class="muted" style="font-size:12px" id="localProgressText">hazırlanıyor…</div>
+        <div class="bar"><i id="localProgressBar" style="width:0%"></i></div>
       </div>
+      <hr>
+      <p class="hint" style="margin:0">💡 <b>Daha yüksek kalite istersen (opsiyonel):</b> ücretsiz bir API anahtarı gir,
+        70B+ bulut modelleri kullanılır. Cihazında çalışan model 1-2B boyutunda olduğu için daha basittir.</p>
+      <button class="btn sm ghost" id="gotoSettings" style="margin-top:8px">⚙️ Ayarlar’a git</button>
     </section>
 
     <!-- ============ SOHBET ============ -->
@@ -151,7 +157,26 @@
     <!-- ============ AYARLAR ============ -->
     <section class="view" id="v-set">
       <div class="card">
-        <h3>🔑 AI beyni</h3>
+        <h3>🧠 Cihazında çalışan model <span class="chip acc">anahtar gerekmez</span></h3>
+        <p class="hint">Açık kaynak model (Qwen / Llama / SmolLM) senin cihazında çalışır.
+          Bir kez iner, önbelleğe alınır, sonra <b>çevrimdışı bile</b> çalışır. Kota ve ücret yok.</p>
+        <div id="localBox" class="muted" style="font-size:12.5px">denetleniyor…</div>
+        <label>Model boyutu</label>
+        <select id="setTier"></select>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btnLoadLocal">⬇️ İndir ve başlat</button>
+          <button class="btn ghost" id="btnUnloadLocal">Durdur</button>
+        </div>
+        <div id="localProgress2" style="display:none;margin-top:10px">
+          <div class="muted" style="font-size:12px" id="localProgressText2">hazırlanıyor…</div>
+          <div class="bar"><i id="localProgressBar2" style="width:0%"></i></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔑 Bulut AI <span class="chip">opsiyonel</span></h3>
+        <p class="hint">Boş bırakırsan yukarıdaki <b>cihazında çalışan model</b> kullanılır.
+          Anahtar girersen daha büyük ve daha akıllı bulut modelleri devreye girer.</p>
         <p class="hint">Anahtar yalnızca <b>bu cihazda</b> saklanır, hiçbir sunucuya gönderilmez.
           Ücretsiz al: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> ·
           <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">OpenRouter</a> ·
