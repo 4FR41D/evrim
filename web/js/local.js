@@ -15,10 +15,10 @@ const CDNS = [
 
 /** İndirme bütçeleri (yaklaşık). Kullanıcı Ayarlar'dan seçer. */
 export const MODEL_TIERS = [
-  { id: 'tiny',    label: 'Küçük & hızlı',          hint: '~150-250 MB · en az yer',      maxMB: 300  },
-  { id: 'phone',   label: 'Dengeli (önerilen)',      hint: '~400-600 MB · hız/kalite',     maxMB: 700  },
-  { id: 'desktop', label: 'Yüksek kalite',           hint: '~1-2 GB · güçlü cihaz',          maxMB: 4000 },
-  { id: 'max',     label: 'En büyük (güçlü PC)',      hint: '~2-4 GB · en akıllı yerel model', maxMB: 12000 },
+  { id: 'tiny',    label: '📱 En hafif (telefon)',   hint: '~200 MB · basit ama çalışır',   maxMB: 320  },
+  { id: 'phone',   label: '📱 Dengeli (iyi telefon)', hint: '~600 MB · hız/kalite dengesi',  maxMB: 750  },
+  { id: 'desktop', label: '💻 Yüksek kalite',        hint: '~1-2 GB · bilgisayar',          maxMB: 4000 },
+  { id: 'max',     label: '💻 En akıllı (güçlü PC)',  hint: '~2-4 GB · yerelde en iyisi',    maxMB: 12000 },
 ];
 
 /** Model adından parametre sayısını (milyon) tahmin et: "0.5B"->500, "360M"->360 */
@@ -211,6 +211,33 @@ export async function netCheck() {
   return state.net;
 }
 
+/** Telefon tipi cihazlar: profil + gerçekçi VRAM tavanı */
+export function deviceProfile() {
+  const ua = navigator.userAgent || '';
+  const phone = /Android.*(Mobile)|iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && !/Tablet|SM-X|GT-|Nexus 7|Nexus 9|Nexus 10/i.test(ua));
+  const tablet = !phone && (/iPad|Tablet|SM-X|Nexus (7|9|10)/i.test(ua));
+  const mem = navigator.deviceMemory || 0;
+  const android = /Android/i.test(ua);
+  const chromeVer = Number((ua.match(/Chrome\/(\d+)/) || [])[1] || 0);
+  return {
+    kind: phone ? 'phone' : tablet ? 'tablet' : 'desktop',
+    mem, android, chromeVer,
+    ios: /iPhone|iPad|iPod/i.test(ua),
+    mobileData: /(^|[^-])\b(4g|3g|lte|slow-2g|2g)\b/i.test((navigator.connection?.effectiveType || '').toLowerCase()),
+    saveData: navigator.connection?.saveData === true,
+  };
+}
+
+/** Telefon GPU'ları paylaşımlı bellek kullanır -> tavan düşük tutulmalı, yoksa çöker */
+export function vramCap() {
+  const d = deviceProfile();
+  // Ölçüldü: 900 MB tavan -> Llama-3.2-1B (v879) ve gemma3-1b (v711) açılıyor.
+  // 700'ün altına inmek telefonda sadece SmolLM2-360M bırakıyor (çok zayıf).
+  if (d.kind === 'phone') return d.mem >= 8 ? 1500 : (d.mem >= 4 ? 1400 : 900);
+  if (d.kind === 'tablet') return d.mem >= 8 ? 1800 : 1400;
+  return d.mem >= 16 ? 2600 : (d.mem >= 8 ? 1800 : 1200);
+}
+
 function tierMaxMB() {
   const s = getSettings();
   const t = MODEL_TIERS.find((x) => x.id === (s.localTier || 'tiny')) || MODEL_TIERS[0];
@@ -254,7 +281,13 @@ export async function loadLocal({ onProgress, forceModel, maxModels = 4 } = {}) 
 
   const ok = await detectWebGPU();
   if (!ok) {
-    state.error = 'Bu cihazda/tarayıcıda WebGPU yok. Chrome 113+ (Android 121+) veya Safari 26+ gerekir. Alternatif: ücretsiz bulut anahtarı.';
+    const d = deviceProfile();
+    state.error = d.android
+      ? `Bu telefonda WebGPU kapalı. Çözüm: Play Store'dan **Chrome**'u güncelle (Android 10+, Chrome 121+ gerekir). `
+        + `Tarayıcı sürümün: ${d.chromeVer || '?'}. Alternatif: ücretsiz bulut anahtarı (indirme yok).`
+      : d.ios
+        ? 'iPhone/iPad\'de WebGPU için Safari 26+ gerekir. Alternatif: ücretsiz bulut anahtarı (indirme yok).'
+        : 'Bu cihazda/tarayıcıda WebGPU yok. Chrome 113+ gerekir. Alternatif: ücretsiz bulut anahtarı.';
     throw new Error(state.error);
   }
 
@@ -271,7 +304,7 @@ export async function loadLocal({ onProgress, forceModel, maxModels = 4 } = {}) 
     report(2, 'Model listesi doğrulanıyor…');
     const f16 = state.f16 === true;
     const memGB = navigator.deviceMemory || 0;
-    const vramCapMB = memGB >= 8 ? 2600 : (memGB >= 4 ? 1500 : 1100);
+    const vramCapMB = vramCap();
     let budgetMB = tierMaxMB();
 
     // Depolama kotası bütçeyi kısabilir (Cache.add hatasının 2. sebebi)
@@ -288,7 +321,18 @@ export async function loadLocal({ onProgress, forceModel, maxModels = 4 } = {}) 
       : buildCatalog(W.prebuiltAppConfig, { maxMB: budgetMB, f16, vramCapMB });
 
     chain = chain.filter((c) => c.rec);
-    if (!chain.length) chain = all.slice(-3).reverse();   // bütçe çok kısıtlıysa en küçüğü
+    if (!chain.length) {
+      // Telefonda VRAM/bütçe çok kısıtlı olabilir -> en küçükleri zorla dene
+      const smallest = (W.prebuiltAppConfig?.model_list || [])
+        .filter((r) => /SmolLM2-135M-Instruct-q0f32-MLC|SmolLM2-360M-Instruct-q4f(16_1|32_1)-MLC|Qwen2\.5-0\.5B-Instruct-q4f16_1-MLC/.test(r.model_id || ''))
+        .filter((r) => !(r.required_features || []).includes('shader-f16') || f16)
+        .map((r) => ({ id: r.model_id, rec: r, mb: estMB(r.model_id), vram: r.vram_required_MB || 0, size: paramSize(r.model_id), fam: 70 }));
+      chain = (smallest.length ? smallest : all.slice(-3)).sort((a, b) => a.vram - b.vram);
+      if (!chain.length) {
+        state.error = 'Bu cihazın belleği en küçük modeli bile çalıştıramıyor. Çözüm: ücretsiz bulut anahtarı (Ayarlar → Akıllı mod) — indirme gerektirmez.';
+        throw new Error(state.error);
+      }
+    }
 
     // Aynı modelin farklı niceleme sürümlerinden sadece en iyisini bırak
     const seen = new Set(); const uniq = [];
@@ -384,6 +428,28 @@ export function availableModels() {
   return state.catalog || [];
 }
 
+/** İndirmeden ÖNCE: hangi model kaç MB? (gerçek boyutlar ölçülür) */
+export async function previewModels() {
+  await detectWebGPU();
+  const W = await loadLib();
+  const f16 = state.f16 === true;
+  const cap = vramCap();
+  const cand = buildCatalog(W.prebuiltAppConfig, { maxMB: tierMaxMB(), f16, vramCapMB: cap });
+  const seen = new Set(); const uniq = [];
+  for (const c of cand) {
+    const base = c.id.replace(/-q\df\d+(_\d)?-MLC$/, '');
+    if (seen.has(base)) continue;
+    seen.add(base); uniq.push(c);
+  }
+  const top = uniq.slice(0, 3);
+  const sized = await Promise.all(top.map(async (c) => {
+    const real = await measureMB(c.rec);
+    return { id: c.id, mb: real || null, est: c.mb, vram: c.vram };
+  }));
+  sized.f16 = f16;
+  return sized;
+}
+
 export function shortName(id) {
   return String(id || '').replace(/-q[04]f(16|32)(_1)?-MLC$/, '').replace(/-Instruct$/, '');
 }
@@ -458,11 +524,11 @@ export async function clearModelCache() {
 
 /** Cihaz tahmini: varsayılan en küçük bütçe */
 export function guessTier() {
-  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
-  const mem = navigator.deviceMemory || 0;
-  if (!mobile && mem >= 16) return 'desktop';
-  if (!mobile && mem >= 8) return 'phone';
-  if (mobile && mem >= 6) return 'phone';
+  const d = deviceProfile();
+  if (d.kind === 'phone') return d.mem >= 8 ? 'phone' : 'tiny';
+  if (d.kind === 'tablet') return d.mem >= 8 ? 'phone' : 'tiny';
+  if (d.mem >= 16) return 'desktop';
+  if (d.mem >= 8) return 'phone';
   return 'tiny';
 }
 

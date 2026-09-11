@@ -11,7 +11,7 @@ import {
   probeNano, nanoStatus, createNano, hasNanoAPI,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
-import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache } from './local.js';
+import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache, deviceProfile, vramCap, previewModels } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import * as gh from './github.js';
@@ -771,13 +771,17 @@ function renderSmartCard() {
 function renderLocalBoxes() {
   const loc = localStatus();
   const a = activeLLM();
+  const d = deviceProfile();
   const cap = $('#capBox');
   const box = $('#localBox');
 
   if (cap) {
     cap.innerHTML = loc.checked
       ? (loc.supported
-        ? `<span class="chip ok">✅ WebGPU var</span> ${esc(loc.adapter || '')} — açık kaynak model cihazında çalışabilir`
+        ? `<span class="chip ok">✅ WebGPU var</span> ${esc(loc.adapter || '')}`
+        + `<div class="muted" style="font-size:12px;margin-top:4px">Cihaz: ${d.kind === 'phone' ? '📱 telefon' : d.kind === 'tablet' ? '📱 tablet' : '💻 bilgisayar'}`
+        + `${d.mem ? ' · ' + d.mem + ' GB RAM' : ''} · Chrome ${d.chromeVer || '?'} · GPU tavanı ${vramCap()} MB</div>`
+        + `<div class="muted" style="font-size:12px">Açık kaynak model cihazında çalışabilir</div>`
         + (hasNanoAPI() ? (nanoStatus().availability === 'available'
           ? ' · <span class="chip ok">⚡ Chrome Nano da hazır</span>' : ' · <span class="chip">Chrome Nano: ' + esc(String(nanoStatus().availability || '?')) + '</span>') : '')
         : `<span class="chip warn">⚠️ WebGPU yok</span> Bu tarayıcıda yerel model çalışmaz. Chrome 113+ (Android 121+) / Safari 26+ dene ya da ücretsiz anahtar gir.`)
@@ -803,6 +807,12 @@ function renderLocalBoxes() {
 }
 
 async function startLocal() {
+  // Telefonda mobil veri uyarısı (indirme 200 MB+)
+  const d = deviceProfile();
+  if ((d.mobileData || d.saveData) && d.kind !== 'desktop') {
+    const yes = confirm('📶 Mobil veridesin. Model ~200 MB indirecek (bir kez, sonra çevrimdışı çalışır).\n\nDevam edilsin mi?\n\nİpucu: Wi-Fi\'a geçersen daha hızlı ve ücretsiz olur.');
+    if (!yes) { toast('İndirme iptal — Wi-Fi\'a geçince tekrar dene', 'warn'); return; }
+  }
   const ok = await detectWebGPU();
   if (!ok) {
     const s = getSettings();
@@ -888,6 +898,23 @@ async function saveQuickKey() {
   btn.disabled = false;
 }
 
+async function runPreview() {
+  const out = $('#previewOut'); const btn = $('#btnPreview');
+  if (!out) return;
+  btn.disabled = true; out.textContent = '📏 ölçülüyor… (gerçek indirme boyutları sunucudan alınıyor, ~10 sn)';
+  try {
+    const d = deviceProfile();
+    const r = await previewModels();
+    if (!r.length) { out.textContent = '❌ Bu cihaz için uygun model bulunamadı. Ücretsiz bulut anahtarı kullan.'; return; }
+    out.innerHTML = `<b>${d.kind === 'phone' ? '📱 Telefon' : d.kind === 'tablet' ? '📱 Tablet' : '💻 Bilgisayar'}</b>`
+      + ` · ${d.mem ? d.mem + ' GB RAM' : 'RAM bilinmiyor'} · GPU tavanı ${vramCap()} MB · shader-f16 ${r.f16 === false ? 'yok' : 'var'}<br><br>`
+      + `<b>Sırayla denenecek modeller:</b><br>`
+      + r.map((x, i) => `${i + 1}. ${esc(shortName(x.id))} — <b>${x.mb ? x.mb + ' MB' : 'boyut ölçülemedi'}</b> · VRAM ${Math.round(x.vram)} MB`).join('<br>')
+      + `<br><br>İlki başarısız olursa otomatik olarak sıradakine geçer. İndirme <b>bir kez</b> yapılır, sonra çevrimdışı çalışır.`;
+  } catch (e) { out.textContent = '❌ ' + e.message; }
+  btn.disabled = false;
+}
+
 async function runDiag() {
   const out = $('#diagOut'); const btn = $('#btnDiag');
   if (!out) return;
@@ -949,6 +976,7 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'btnStartLocal' || e.target.id === 'btnLoadLocal') { e.preventDefault(); startLocal(); }
   if (e.target.id === 'btnTryFree') { e.preventDefault(); tryFreeNow(); }
   if (e.target.id === 'btnDiag') { e.preventDefault(); runDiag(); }
+  if (e.target.id === 'btnPreview') { e.preventDefault(); runPreview(); }
   if (e.target.id === 'btnShowKey') {
     e.preventDefault();
     const k = $('#keyBox');
