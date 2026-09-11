@@ -104,9 +104,32 @@ function typing(on) {
   } else $('#typing')?.remove();
 }
 
+const KEY_RE = /^(sk-or-v1-[A-Za-z0-9-]{20,}|gsk_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{20,})$/;
+
 async function send(text) {
   const content = (text ?? $('#input').value).trim();
   if (!content || sending) return;
+
+  // Anahtarı yanlışlıkla sohbet kutusuna yapıştırdıysa -> mesaj gönderme, kaydet
+  if (KEY_RE.test(content)) {
+    $('#input').value = ''; autoGrow();
+    setSettings({ apiKey: content, model: '' });
+    toast('🔑 Anahtar algılandı, test ediliyor…', 'ok');
+    const r = await testConnection().catch((e) => ({ ok: false, error: e.message }));
+    if (r.ok) {
+      addMsg({ role: 'assistant', createdAt: new Date().toISOString(),
+        content: `✅ **Anahtar çalışıyor!** ${esc(r.provider)} · \`${esc(r.model)}\`\n\nArtık büyük bulut modeli **2 saniyede** cevap veriyor. Bir şey sor.` });
+      $('#smartCard') && ($('#smartCard').style.display = 'none');
+      $('#setupCard').style.display = 'none';
+    } else {
+      setSettings({ apiKey: '' });
+      addMsg({ role: 'assistant', error: true, createdAt: new Date().toISOString(),
+        content: `❌ Anahtar çalışmadı: ${esc(r.error || 'bilinmeyen hata')}\n\nAnahtarı kontrol edip tekrar yapıştır.` });
+    }
+    refreshStatus(); renderSettings();
+    return;
+  }
+
   sending = true;
   $('#input').value = ''; autoGrow();
   addMsg({ role: 'user', content });
@@ -155,11 +178,15 @@ async function send(text) {
       .map((m) => ({ role: m.role, content: m.content }));
     const messages = [{ role: 'system', content: evo.buildSystemPrompt() }, ...history];
 
-    // Model hazır değilse OTOMATİK başlat (kullanıcıdan düğmeye basmasını bekleme)
+    // Beyin hazır değilse: SESSIZCE 200 MB indirme başlatma — kullanıcıya seçtir
     const a = activeLLM();
-    if (a.id === 'local' && !localStatus().ready) {
-      liveStat.textContent = '🧠 Beyin başlatılıyor… (ilk seferde model iner)';
-      beat();
+    if (a.id === 'local' && !localStatus().ready && !puterStatus().ready) {
+      clearInterval(watchdog);
+      live.remove();
+      busy($('#send'), false);
+      sending = false;
+      askBrainChoice(content);
+      return;
     }
 
     const reply = await chat(messages, {
@@ -848,12 +875,14 @@ function renderLocalBoxes() {
   }
 }
 
-async function startLocal() {
-  // Telefonda mobil veri uyarısı (indirme 200 MB+)
+async function startLocal({ skipConfirm = false } = {}) {
   const d = deviceProfile();
-  if ((d.mobileData || d.saveData) && d.kind !== 'desktop') {
-    const yes = confirm('📶 Mobil veridesin. Model ~200 MB indirecek (bir kez, sonra çevrimdışı çalışır).\n\nDevam edilsin mi?\n\nİpucu: Wi-Fi\'a geçersen daha hızlı ve ücretsiz olur.');
-    if (!yes) { toast('İndirme iptal — Wi-Fi\'a geçince tekrar dene', 'warn'); return; }
+  // Sessiz indirme YOK — kullanıcı her zaman onaylar
+  if (!skipConfirm) {
+    const msg = d.mobileData || d.saveData
+      ? '📶 Mobil veridesin! Model 200-660 MB indirecek ve telefonda cevaplar 10-40 sn sürer.\n\nBunun yerine 🔑 ücretsiz anahtar yapıştırırsan 2 saniyede cevap alırsın.\n\nYine de indirmek istiyor musun?'
+      : 'Model 200-660 MB indirecek (bir kez). Cevaplar cihazında üretilir.\n\nDevam?';
+    if (!confirm(msg)) { toast('İndirme iptal', 'warn'); return; }
   }
   const ok = await detectWebGPU();
   if (!ok) {
@@ -874,6 +903,78 @@ async function startLocal() {
   }
   renderLocalBoxes();
   refreshStatus();
+}
+
+/** Beyin hazır değilse: büyük indirme yerine kullanıcıya 3 net seçenek sun */
+function askBrainChoice(pendingText) {
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = `
+    <b>⚡ Hızlı cevap için bulut modeli gerekiyor</b>
+    <div class="muted" style="font-size:12.5px;margin:6px 0 10px">
+      Cihazındaki açık kaynak model <b>200-660 MB iner</b> ve telefonda yavaştır.
+      Bulut modeli ise <b>0 MB, ~2 saniyede cevap</b>. Birini seç:
+    </div>
+    <div class="item" style="padding:10px;margin-bottom:8px;border:1px solid rgba(124,92,255,.45);border-radius:12px">
+      <div class="t">🔑 1 · Anahtarımı yapıştır <span class="chip acc">2 sn cevap · ÖNERİLEN</span></div>
+      <div class="s">OpenRouter/Groq anahtarını buraya yapıştır. Kredi kartı yok, günde ~50 ücretsiz istek.</div>
+      <div class="row" style="margin-top:8px;gap:8px">
+        <input type="password" class="ckey" placeholder="sk-or-v1-... veya gsk_..." style="flex:1;min-width:0;padding:9px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit">
+        <button class="btn sm ghost cpaste">📋</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn sm csave" style="flex:1">✅ Kaydet ve sorumu sor</button>
+        <a class="btn sm ghost" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Anahtar al</a>
+      </div>
+    </div>
+    <div class="item" style="padding:10px;margin-bottom:8px">
+      <div class="t">☁️ 2 · Puter ile anahtarsız dene <span class="chip ok">0 MB</span></div>
+      <div class="s">Puter penceresi açılır, e-posta/GitHub ile ücretsiz girersin. Anahtar gerekmez.</div>
+      <div class="a"><button class="btn sm cputer">☁️ Puter'ı başlat</button></div>
+    </div>
+    <div class="item" style="padding:10px">
+      <div class="t">📥 3 · Cihazıma model indir <span class="chip">yavaş, ama sınırsız</span></div>
+      <div class="s">Açık kaynak model iner (bir kez). Telefonda cevaplar 10-40 sn sürer ve kalite düşüktür.</div>
+      <div class="a"><button class="btn sm ghost clocal">📥 İndirmeyi başlat</button></div>
+    </div>`;
+  $('#msgs').appendChild(div);
+  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+
+  const inp = div.querySelector('.ckey');
+  div.querySelector('.cpaste').addEventListener('click', async () => {
+    try { const t = await navigator.clipboard.readText(); if (t?.trim()) { inp.value = t.trim(); toast('Panodan yapıştırıldı', 'ok'); } }
+    catch { toast('Pano izni yok — anahtarı elle yapıştır', 'warn'); inp.focus(); }
+  });
+  div.querySelector('.csave').addEventListener('click', async () => {
+    const k = (inp.value || '').trim();
+    if (!k) { toast('Önce anahtarı yapıştır', 'warn'); return; }
+    setSettings({ apiKey: k, model: '' });
+    const btn = div.querySelector('.csave'); btn.disabled = true; btn.textContent = '🔎 test ediliyor…';
+    const r = await testConnection().catch((e) => ({ ok: false, error: e.message }));
+    if (r.ok) {
+      toast(`🎉 ${r.provider} hazır — ${r.model}`, 'ok');
+      div.remove(); $('#smartCard') && ($('#smartCard').style.display = 'none');
+      $('#setupCard').style.display = 'none';
+      refreshStatus(); renderSettings();
+      if (pendingText) send(pendingText);
+    } else {
+      setSettings({ apiKey: '' });
+      btn.disabled = false; btn.textContent = '✅ Kaydet ve sorumu sor';
+      toast('Anahtar çalışmadı: ' + (r.error || ''), 'bad');
+    }
+  });
+  div.querySelector('.cputer').addEventListener('click', async () => {
+    div.querySelector('.cputer').disabled = true;
+    toast('Puter penceresi açılıyor — ücretsiz giriş yap', 'ok');
+    const ok = await probePuter({ force: true }).catch(() => false);
+    if (ok) { div.remove(); refreshStatus(); renderSettings(); if (pendingText) send(pendingText); }
+    else toast('Puter çalışmadı: ' + (puterStatus().error || ''), 'warn'), (div.querySelector('.cputer').disabled = false);
+  });
+  div.querySelector('.clocal').addEventListener('click', async () => {
+    div.remove();
+    await startLocal({ skipConfirm: true });
+    if (localStatus().ready && pendingText) send(pendingText);
+  });
 }
 
 async function pasteInto(sel) {
