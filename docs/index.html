@@ -48,6 +48,11 @@
       <h3>🧠 Beyni başlat — 3 yol var, hiçbiri ücretli değil</h3>
       <div id="capBox" class="muted" style="font-size:12.5px;margin-bottom:10px">denetleniyor…</div>
       <div class="item" style="padding:10px;margin-bottom:8px">
+        <div class="t">⚡ 0 · Chrome'un kendi modeli <span class="chip ok">0 MB · SINIRSIZ</span></div>
+        <div class="s">Chrome 148+ masaüstünde Gemini Nano yerleşik. Anahtar yok, indirme yok, kota yok.</div>
+        <div class="a"><button class="btn sm ghost" id="btnNanoTop">Dene</button></div>
+      </div>
+      <div class="item" style="padding:10px;margin-bottom:8px">
         <div class="t">🌐 1 · Ücretsiz servis <span class="chip ok">en kolayı</span></div>
         <div class="s">Anahtar yok, indirme yok. Sayfa açılırken otomatik denenir; çalışırsa hazır.</div>
         <div class="a"><button class="btn sm ghost" id="btnTryFree">Şimdi dene</button></div>
@@ -217,7 +222,14 @@
       </div>
 
       <div class="card">
-        <h3>🧠 Cihazında çalışan model <span class="chip acc">anahtar gerekmez</span></h3>
+        <h3>⚡ Chrome Nano (cihazının içindeki model) <span class="chip acc">0 MB · sınırsız</span></h3>
+        <p class="hint">Chrome'un kendi yerleşik modeli. Anahtar yok, hesap yok, kota yok, indirme yok.</p>
+        <div id="nanoBox" style="margin-bottom:8px"></div>
+        <button class="btn ghost" style="width:100%;display:none" id="btnNanoStart">⬇️ Nano'yu indir ve başlat</button>
+      </div>
+
+      <div class="card">
+        <h3>🧠 Cihazında çalışan AÇIK KAYNAK model <span class="chip acc">anahtar gerekmez · sınırsız</span></h3>
         <p class="hint">Açık kaynak model (Qwen / Llama / SmolLM) senin cihazında çalışır.
           Bir kez iner, önbelleğe alınır, sonra <b>çevrimdışı bile</b> çalışır. Kota ve ücret yok.</p>
         <div id="localBox" class="muted" style="font-size:12.5px">denetleniyor…</div>

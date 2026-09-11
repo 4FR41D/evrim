@@ -8,6 +8,7 @@ import {
   PROVIDERS, active as activeLLM, isReady, chat, testConnection, detectProvider,
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
   fetchFreeModels, bestFreeModel,
+  probeNano, nanoStatus, createNano, hasNanoAPI,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { MODEL_TIERS, unloadLocal, diagnose, clearModelCache } from './local.js';
@@ -242,7 +243,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'free') {
+  if (a.id === 'nano') {
+    pill.textContent = '⚡ Chrome Nano · anahtarsız, sınırsız';
+    pill.className = 'pill ok';
+    $('#setupCard').style.display = 'none';
+  } else if (a.id === 'free') {
     pill.textContent = '🌐 ücretsiz servis · anahtarsız';
     pill.className = 'pill ok';
     $('#setupCard').style.display = 'none';
@@ -610,6 +615,7 @@ function renderSettings() {
     <div class="kv"><span>Çalışma biçimi</span><b>%100 tarayıcı (sunucusuz)</b></div>`;
   renderLocalBoxes();
   renderSmartCard();
+  renderNanoBox();
 }
 $('#setKey').addEventListener('input', () => {
   const d = detectProvider($('#setKey').value.trim());
@@ -697,6 +703,8 @@ $('#btnInstall').addEventListener('click', async () => {
   refreshStatus();
   renderSettings();
   // Anahtar yoksa: indirmesiz çalışan ücretsiz bir servis var mı diye ARKA PLANDA bak
+  // Chrome'un içindeki hazır model var mı? (0 indirme, sınırsız)
+  probeNano().then((av) => { renderNanoBox(); renderLocalBoxes(); if (av === 'available') refreshStatus(); }).catch(() => {});
   probeFree({ onProgress: (t) => { const el = $('#capBox'); if (el) el.textContent = t; } })
     .then((freeId) => {
       if (freeId) toast('🌐 Ücretsiz servis bulundu — indirme yapmadan kullanabilirsin', 'ok');
@@ -720,6 +728,39 @@ function setLocalProgress(pct, text) {
   }
 }
 
+function renderNanoBox() {
+  const el = $('#nanoBox'); if (!el) return;
+  const n = nanoStatus();
+  const btn = $('#btnNanoStart');
+  const map = {
+    available: '<span class="chip ok">✅ hazır</span> Chrome modeli zaten indirmiş — 0 MB, sınırsız',
+    downloadable: '<span class="chip acc">⬇️ indirilebilir</span> Chrome modeli kendisi indirecek (~2 GB, arka planda)',
+    downloading: `<span class="chip warn">⬇️ iniyor %${n.progress || 0}</span>`,
+    unavailable: '<span class="chip warn">❌ kullanılamıyor</span> cihaz/tarayıcı desteklemiyor',
+  };
+  let html = hasNanoAPI()
+    ? (map[n.availability] || `<span class="chip">durum: ${esc(String(n.availability || 'bilinmiyor'))}</span>`)
+    : '<span class="chip warn">❌ API yok</span> Chrome 148+ <b>masaüstü</b> gerekir (Android/iOS desteklemiyor)';
+  html += '<div class="muted" style="font-size:12px;margin-top:6px">⚠️ Nano ağırlıklı olarak İngilizce eğitildi → Türkçe cevapları zayıf olabilir. '
+    + 'Kapalı kaynak ağırlıklar; <b>açık kaynak + sınırsız</b> istiyorsan aşağıdaki WebLLM modellerini kullan.</div>';
+  el.innerHTML = html;
+  if (btn) {
+    btn.style.display = (hasNanoAPI() && n.availability !== 'available') ? 'inline-flex' : 'none';
+    btn.disabled = n.availability === 'unavailable';
+  }
+}
+
+async function startNano() {
+  const btn = $('#btnNanoStart'); const el = $('#nanoBox');
+  if (btn) btn.disabled = true;
+  try {
+    await createNano({ onProgress: (p, t) => { if (el) el.querySelector('.chip') && (el.querySelector('.chip').textContent = `⬇️ %${p}`); setLocalProgress(p, t); renderNanoBox(); } });
+    toast('⚡ Chrome Nano hazır — anahtarsız, sınırsız, 0 indirme', 'ok');
+  } catch (e) { toast(e.message, 'bad'); }
+  if (btn) btn.disabled = false;
+  renderNanoBox(); refreshStatus(); renderSettings();
+}
+
 function renderSmartCard() {
   const card = $('#smartCard'); if (!card) return;
   const s = getSettings();
@@ -736,7 +777,9 @@ function renderLocalBoxes() {
   if (cap) {
     cap.innerHTML = loc.checked
       ? (loc.supported
-        ? `<span class="chip ok">✅ WebGPU var</span> ${esc(loc.adapter || '')} — model cihazında çalışabilir`
+        ? `<span class="chip ok">✅ WebGPU var</span> ${esc(loc.adapter || '')} — açık kaynak model cihazında çalışabilir`
+        + (hasNanoAPI() ? (nanoStatus().availability === 'available'
+          ? ' · <span class="chip ok">⚡ Chrome Nano da hazır</span>' : ' · <span class="chip">Chrome Nano: ' + esc(String(nanoStatus().availability || '?')) + '</span>') : '')
         : `<span class="chip warn">⚠️ WebGPU yok</span> Bu tarayıcıda yerel model çalışmaz. Chrome 113+ (Android 121+) / Safari 26+ dene ya da ücretsiz anahtar gir.`)
       : '<span class="chip">cihaz denetleniyor…</span>';
     const btn = $('#btnStartLocal');
@@ -914,6 +957,7 @@ document.addEventListener('click', (e) => {
   }
   if (e.target.id === 'btnQuickKey') { e.preventDefault(); saveQuickKey(); }
   if (e.target.id === 'btnSmartKey') { e.preventDefault(); saveSmartKey(); }
+  if (e.target.id === 'btnNanoStart' || e.target.id === 'btnNanoTop') { e.preventDefault(); startNano(); }
   if (e.target.id === 'btnPasteKey') { e.preventDefault(); pasteInto('#smartKey'); }
   if (e.target.id === 'btnSmartLater') {
     e.preventDefault();

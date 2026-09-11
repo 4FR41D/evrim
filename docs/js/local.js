@@ -17,7 +17,8 @@ const CDNS = [
 export const MODEL_TIERS = [
   { id: 'tiny',    label: 'Küçük & hızlı',          hint: '~150-250 MB · en az yer',      maxMB: 300  },
   { id: 'phone',   label: 'Dengeli (önerilen)',      hint: '~400-600 MB · hız/kalite',     maxMB: 700  },
-  { id: 'desktop', label: 'Yüksek kalite',           hint: '~1 GB+ · güçlü cihaz',          maxMB: 4000 },
+  { id: 'desktop', label: 'Yüksek kalite',           hint: '~1-2 GB · güçlü cihaz',          maxMB: 4000 },
+  { id: 'max',     label: 'En büyük (güçlü PC)',      hint: '~2-4 GB · en akıllı yerel model', maxMB: 12000 },
 ];
 
 /** Model adından parametre sayısını (milyon) tahmin et: "0.5B"->500, "360M"->360 */

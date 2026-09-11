@@ -7,8 +7,17 @@
 import { getSettings, setSettings } from './store.js';
 import { detectWebGPU, loadLocal, localChat, localStatus, shortName, guessTier } from './local.js';
 import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './free.js';
+import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
 
 export const PROVIDERS = {
+  nano: {
+    name: 'Chrome Nano (cihazında)',
+    defaultModel: 'Gemini Nano',
+    models: [],
+    signup: null,
+    prefix: null,
+    format: 'nano',
+  },
   free: {
     name: 'Ücretsiz servis',
     defaultModel: 'topluluk',
@@ -70,6 +79,10 @@ export function active() {
   if (!key && hasWorkingFree()) {
     return { id: 'free', key: '', def: PROVIDERS.free, model: 'halka açık ücretsiz servis' };
   }
+  // 0b) Chrome'un içindeki Gemini Nano hazırsa (0 indirme, sınırsız)
+  if (!key && s.useNano !== false && nanoStatus().availability === 'available') {
+    return { id: 'nano', key: '', def: PROVIDERS.nano, model: 'Gemini Nano (Chrome)' };
+  }
 
   // 1) Kullanıcı açıkça bir sağlayıcı seçtiyse
   if (s.provider && s.provider !== 'auto' && s.provider !== 'local') {
@@ -93,7 +106,15 @@ export function isReady() {
   const a = active();
   if (a.id !== 'local') return true;
   if (hasWorkingFree()) return true;
+  if (nanoStatus().availability === 'available') return true;
   return localStatus().supported === true;   // WebGPU varsa hazır (model ilk mesajda iner)
+}
+
+/** Nano'yu dene: varsa 'available'/'downloadable' döner */
+export async function probeNano() {
+  if (!hasNanoAPI()) return null;
+  const ok = await detectNano();
+  return ok ? nanoStatus().availability : null;
 }
 
 /** İlk açılışta: ücretsiz servis var mı diye bak (kısa zaman aşımıyla) */
@@ -201,6 +222,17 @@ function errText(status, data, id) {
  */
 export async function chat(messages, opts = {}) {
   let a = active();
+
+  // --- CHROME GEMINI NANO (anahtarsız + sınırsız, 0 indirme) ---
+  if (a.id === 'nano') {
+    try {
+      return await nanoChat(messages, opts);
+    } catch (e) {
+      console.warn('[llm] Nano başarısız, cihazdaki açık kaynak modele geçiliyor:', e.message);
+      opts.onProgress?.(0, 'Nano yanıt vermedi, açık kaynak model başlatılıyor…');
+      a = { id: 'local', def: PROVIDERS.local };
+    }
+  }
 
   // --- ÜCRETSİZ HALKA AÇIK SERVİS (anahtarsız + indirmesiz) ---
   if (a.id === 'free') {
@@ -316,4 +348,7 @@ export async function testConnection() {
   }
 }
 
-export { detectWebGPU, guessTier, shortName, localStatus, loadLocal, FREE_ENDPOINTS };
+export {
+  detectWebGPU, guessTier, shortName, localStatus, loadLocal, FREE_ENDPOINTS,
+  detectNano, nanoStatus, createNano, destroyNano, hasNanoAPI,
+};

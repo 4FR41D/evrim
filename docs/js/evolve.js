@@ -59,7 +59,7 @@ export function recordFeedback({ messageId, value, comment }) {
 export function buildSystemPrompt() {
   const a = activeLLM();
   // Küçük cihaz-içi model: uzun prompt onu boğar -> sade sürüm + az hafıza
-  const tiny = a.id === 'local';
+  const tiny = a.id === 'local' || a.id === 'nano';
   const base = tiny ? { text: COMPACT_PROMPT } : currentPrompt();
   const s = getSettings();
   const active = memories().slice(0, tiny ? 8 : MAX_ACTIVE_MEMORIES);
