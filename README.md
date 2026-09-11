@@ -2,6 +2,7 @@
 
 > 🇹 **[turkiye-acik-kaynak-platformu](https://github.com/topics/turkiye-acik-kaynak-platformu)** konusunda listeli — Türkçe açık kaynak yapay zeka topluluğunun parçası.
 > Canlı demo: **https://4fr41d.github.io/evrim/** · anahtarsız · ücretsiz · ajan döngülü
+> 🛠 **Kendin geliştirmek istersen:** [GELISTIRME.md](GELISTIRME.md) — bilgisayarsız, tamamen telefondan: kodsuz kurallar → GitHub web editörü → Termux'ta testli geliştirme.
 
 
 Mobil öncelikli bir web uygulaması (PWA). Dört modül tek çatı altında:
