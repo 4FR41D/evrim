@@ -14,6 +14,25 @@ Anahtar yoksa **demo modu** devreye girer, arayüz ve GitHub okuma yine çalış
 
 ---
 
+## 🖥 Arayüz (v15 — Claude benzeri kabuk)
+
+Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
+
+- **Giriş / profiller:** cihaz içi çoklu profil, isteğe bağlı PIN. Her profilin sohbet
+  geçmişi ayrıdır. Sunucu olmadığı için "giriş" yalnızca bu cihazda geçerlidir.
+- **Sohbet botları:** 7 hazır kişilik (EVRIM, Kod Uzmanı, Öğrenme Koçu, Yazı Editörü,
+  Araştırmacı, Planlayıcı, Sohbet Arkadaşı) + kendi botunu oluşturma. Seçili botun
+  kişiliği sistem promptuna eklenir; bot değiştirince yeni sohbet açılır.
+- **Kenar çubuğu:** botlar, sohbet listesi (son etkinlik sırasıyla), profil çipi.
+  Mobilde hamburger + çekmece. Alt sekme çubuğu kaldırıldı.
+- **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih…). Adımlar
+  mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
+- **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
+  (anahtarsız bulut) → ücretsiz servisler → Chrome Nano → cihazında açık kaynak model.
+  Hiçbiri yoksa sohbet kilitlenmez: engelleyici olmayan bir uyarı şeridi çıkar.
+
+---
+
 ## 🚀 5 dakikada çalıştır
 
 ```bash
@@ -99,17 +118,29 @@ kullanıcı mesajı ──► sistem promptu (beyin vN) + hafıza + beceri harit
 
 ```
 evrim/
-├─ server.js            # Express API + statik sunucu
-├─ src/
-│  ├─ db.js             # JSON veri katmanı + prompt sürüm geçmişi
-│  ├─ llm.js            # Groq / OpenRouter / Gemini / demo sağlayıcıları
-│  ├─ evolve.js         # hafıza + öz-gelişim döngüsü + beceri haritası
-│  ├─ learn.js          # aralıklı tekrar, soru üretme, puanlama, plan
-│  ├─ github.js         # GitHub REST API (okuma + commit)
-│  └─ agent.js          # repo analizi + "kendi kodunu yazan" ajan
-├─ public/              # mobil öncelikli arayüz (PWA)
+├─ web/                 # CANLI statik uygulama (GitHub Pages buradan yayınlanır)
+│  ├─ index.html        # giriş + kabuk + görünümler
+│  ├─ style.css
+│  ├─ sw.js             # service worker (çevrimdışı kabuk)
+│  └─ js/
+│     ├─ app.js         # UI + mesaj akışı + ajan bağlantısı
+│     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
+│     ├─ profile.js     # cihaz içi profiller + PIN
+│     ├─ personas.js    # hazır botlar + şablonlar
+│     ├─ agent.js       # 10 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu
+│     ├─ store.js       # localStorage tabanlı veri katmanı + beyin sürümleri
+│     ├─ evolve.js      # hafıza + öz-gelişim + beceri haritası
+│     ├─ learn.js       # aralıklı tekrar, soru üretme, plan
+│     ├─ github.js      # GitHub REST (okuma + commit)
+│     └─ local.js / nano.js / puter.js / free.js   # beyin katmanları
+├─ docs/                # web/'in birebir kopyası (Pages bu klasörü servis eder)
+├─ server.js + src/     # (eski) Node backend — artık gerekli değil
 └─ data/                # yerel veri (git'e girmez)
 ```
+
+> Not: `web/` dosyalarını değiştirirsen `docs/` ile senkronla
+> (`cp -r web/. docs/`) ve ikisini birlikte commit'le.
 
 ## 🔒 Güvenlik notları
 
