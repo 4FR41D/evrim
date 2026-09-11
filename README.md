@@ -25,7 +25,7 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   kişiliği sistem promptuna eklenir; bot değiştirince yeni sohbet açılır.
 - **Kenar çubuğu:** botlar, sohbet listesi (son etkinlik sırasıyla), profil çipi.
   Mobilde hamburger + çekmece. Alt sekme çubuğu kaldırıldı.
-- **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih…). Adımlar
+- **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
   (anahtarsız bulut) → ücretsiz servisler → Chrome Nano → cihazında açık kaynak model.
@@ -127,7 +127,8 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 10 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 11 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     ├─ llm.js         # sağlayıcılar, akış, model rotasyonu
 │     ├─ store.js       # localStorage tabanlı veri katmanı + beyin sürümleri
 │     ├─ evolve.js      # hafıza + öz-gelişim + beceri haritası

@@ -59,6 +59,11 @@ export const TOOLS = [
     rule: { type: 'string', description: 'Tek cümlelik kural, Türkçe, emir kipinde' },
     reason: { type: 'string', description: 'Bu kuralın nedeni' },
   }, ['rule']),
+
+  F('api_katalog', 'AÇIK API KATALOĞU (660+ üretici medya modeli + üçüncü taraf araçlar): kullanıcı görsel/video/ses/3D üretim modeli, arka plan kaldırma, upscale, SEO, scraping, veri zenginleştirme gibi DIŞ API/model araçları sorarsa burada ara. Kendin model adı UYDURMA — katalogdan getir ve ücret/anahtar gereksinimini mutlaka söyle.', {
+    sorgu: { type: 'string', description: 'Aranacak yetenek (İngilizce terim daha iyi eşleşir): "text to image", "video upscale", "background removal", "text to speech"...' },
+    adet: { type: 'integer', description: 'Kaç sonuç istensin (1-5, varsayılan 3)' },
+  }, ['sorgu']),
 ];
 
 /* ------------------------------------------------------------------ */
@@ -215,6 +220,89 @@ async function wiki(query, lang = 'tr') {
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* AÇIK API KATALOĞU — awesome-agent-apis (MIT)                        */
+/* Anahtar YOK, ücret YOK: yalnızca herkese açık GitHub verisi okunur. */
+/* CORS: api.github.com ve raw.githubusercontent.com -> *              */
+/* ------------------------------------------------------------------ */
+const CAT_REPO = 'Anil-matcha/awesome-agent-apis';
+const CAT_CACHE_KEY = 'evrim:catTree';
+const CAT_TTL = 6 * 60 * 60 * 1000;   // 6 saat
+let catTreeMem = null;
+
+const CAT_ASCII = { ı: 'i', İ: 'i', ş: 's', Ş: 's', ğ: 'g', Ğ: 'g', ü: 'u', Ü: 'u', ö: 'o', Ö: 'o', ç: 'c', Ç: 'c' };
+const catNorm = (s) => String(s || '').replace(/[ıİşŞğĞüÜöÖçÇ]/g, (c) => CAT_ASCII[c]).toLowerCase();
+function catScore(hay, needle) {
+  const h = catNorm(hay), n = catNorm(needle);
+  if (!n) return 0;
+  if (h.includes(n)) return 3;
+  const words = n.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  return words.filter((w) => h.includes(w)).length;
+}
+
+async function catTree() {
+  if (catTreeMem) return catTreeMem;
+  try {
+    const c = JSON.parse(localStorage.getItem(CAT_CACHE_KEY) || 'null');
+    if (c && Array.isArray(c.names) && c.names.length && Date.now() - c.t < CAT_TTL) {
+      catTreeMem = c.names; return c.names;
+    }
+  } catch { /* önbellek yok */ }
+  const res = await fetch(`https://api.github.com/repos/${CAT_REPO}/git/trees/main?recursive=1`,
+    { headers: { Accept: 'application/vnd.github+json' } });
+  if (!res.ok) throw new Error(`katalog listesine ulaşılamadı (${res.status})`);
+  const j = await res.json();
+  const names = (j.tree || [])
+    .filter((x) => x.path.startsWith('models/') && x.path.endsWith('.yaml'))
+    .map((x) => x.path.slice('models/'.length, -5));
+  if (!names.length) throw new Error('katalog boş geldi');
+  catTreeMem = names;
+  try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify({ t: Date.now(), names })); } catch { /* kota */ }
+  return names;
+}
+
+const catField = (yaml, key) => {
+  const m = yaml.match(new RegExp(`^${key}:\\s*"?([^"#\\n]*)"?`, 'm'));
+  return m ? m[1].trim() : '';
+};
+
+async function katalogAra(sorgu, adet) {
+  const q = String(sorgu || '').trim();
+  if (!q) return { found: 0, note: 'Sorgu boş.' };
+  const names = await catTree();
+  const lim = Math.max(1, Math.min(5, Number(adet) || 3));
+  const ranked = names
+    .map((n) => ({ n, s: catScore(n.replace(/[-_]+/g, ' '), q) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, lim);
+  if (!ranked.length) {
+    return { found: 0, toplam: names.length, note: 'Bu sorguyla eşleşme yok. İngilizce ve daha genel dene: "text to image", "video", "audio", "upscale", "background".' };
+  }
+  const items = await Promise.all(ranked.map(async ({ n }) => {
+    try {
+      const r = await fetch(`https://raw.githubusercontent.com/${CAT_REPO}/main/models/${encodeURIComponent(n)}.yaml`);
+      if (!r.ok) return { model: n, hata: `okunamadı (${r.status})` };
+      const y = await r.text();
+      return {
+        model: n,
+        ad: catField(y, 'title') || n,
+        yetenek: catField(y, 'capability'),
+        aciklama: catField(y, 'description'),
+        ucret: catField(y, 'cost') ? `~$${catField(y, 'cost')} / çağrı (muapi kredisi)` : 'belirtilmemiş',
+        docs: catField(y, 'docs_url'),
+      };
+    } catch (e) { return { model: n, hata: e.message }; }
+  }));
+  return {
+    found: items.length,
+    toplam: names.length,
+    kaynak: 'awesome-agent-apis (MIT, github.com/Anil-matcha/awesome-agent-apis)',
+    uyari: 'Bu modeller muapi.ai üzerinden çağrılır: ÜCRETLİDİR (kredi) ve muapi API anahtarı ister. EVRIM bunları şu an doğrudan ÇALIŞTIRMAZ; yalnızca katalogdan bulup bildirir.',
+    items,
+  };
+}
+
 const EXEC = {
   memory_search({ query }) {
     const mems = all('memories').filter((m) => !m.archived);
@@ -297,6 +385,10 @@ const EXEC = {
       calismaSekli: 'ajan döngüsü (araç çağırabilen)',
       kullaniciAdi: s.userName || null,
     };
+  },
+
+  async api_katalog({ sorgu, adet }) {
+    return katalogAra(sorgu, adet);
   },
 
   improve_self({ rule, reason }) {
@@ -420,6 +512,9 @@ export function toolLabel(name, args = {}, done = false) {
     create_flashcard: done ? '🃏 Tekrar kartı oluşturuldu' : '🃏 Tekrar kartı oluşturuyor',
     self_status: done ? '🔍 Kendi durumu incelendi' : '🔍 Kendi durumunu inceliyor',
     improve_self: `⚙️ ${done ? 'Kendini geliştirdi' : 'Kendini geliştiriyor'}${args.rule ? `: "${String(args.rule).slice(0, 50)}"` : ''}`,
+    api_katalog: (args.sorgu || args.query)
+      ? `📚 API kataloğunda ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu || args.query).slice(0, 40)}"`
+      : `📚 API kataloğuna ${done ? 'baktı' : 'bakıyor'}`,
   };
   return map[name] || `🔧 ${name}`;
 }
