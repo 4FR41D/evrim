@@ -356,7 +356,7 @@ function loadChat(convId) {
   $('#msgs').innerHTML = '';
   if (!msgs.length) {
     $('#welcomeCard').style.display = 'block';
-    $('#chatEmpty').style.display = 'block';
+    $('#chatEmpty').style.display = 'none';
     renderSidebar();
     return;
   }
@@ -371,7 +371,7 @@ function newChat() {
   conversationId = null;
   $('#msgs').innerHTML = '';
   $('#welcomeCard').style.display = 'block';
-  $('#chatEmpty').style.display = 'block';
+  $('#chatEmpty').style.display = 'none';
   go('chat');
   renderSidebar();
   setTimeout(() => $('#input')?.focus(), 80);

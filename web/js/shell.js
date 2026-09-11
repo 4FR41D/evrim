@@ -32,10 +32,12 @@ function renderLoginList() {
 }
 
 function showLoginPane(which) {
+  const hasProfiles = profiles().length > 0;
   $('#loginList').style.display = which === 'list' ? 'block' : 'none';
   $('#loginNew').style.display = which === 'new' ? 'block' : 'none';
   $('#loginPin').style.display = which === 'pin' ? 'block' : 'none';
   $('#btnAddProfile').style.display = which === 'list' ? 'block' : 'none';
+  const nc = $('#npCancel'); if (nc) nc.style.display = (which === 'new' && hasProfiles) ? 'block' : 'none';
   if (which === 'new') setTimeout(() => $('#npName')?.focus(), 60);
   if (which === 'pin') setTimeout(() => $('#pinInput')?.focus(), 60);
 }
