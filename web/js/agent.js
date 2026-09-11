@@ -74,6 +74,14 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
+    konu: { type: 'string', description: 'yazının konusu (kısa)' },
+    muhatap: { type: 'string', description: 'hitap edilen kurum/kişi, örn. "ŞAHİNBEY BELEDİYE BAŞKANLIĞINA"' },
+    icerik: { type: 'string', description: 'anlatılacaklar (cümleler veya maddeler; \\n ile ayır)' },
+    tip: { type: 'string', description: 'dilekce (varsayılan) | resmi' },
+    yon: { type: 'string', description: 'ust (varsayılan) | denk | alt — arz/rica seçimini belirler' },
+    ilgi: { type: 'string', description: 'resmi tipinde ilgi tutulan yazı (opsiyonel)' },
+  }, ['konu', 'muhatap', 'icerik']),
   F('otomatik_turev', 'OTOMATİK TÜREV / AUTOGRAD (JAX grad() ruhu, tarayıcıda): matematik ifadenin değerini + gradyanını TERS MOD otomatik türevle (işlem bandı/backprop) hesaplar ve sayısal farkla DOĞRULAR. İfade doğal matematik: sin(x)*x + exp(-x^2), ^ üs, fonksiyonlar sin/cos/tan/exp/log/sqrt/abs, sabitler pi/e. Türev/gradyan/marjinal değişim sorularında çağır.', {
     ifade: { type: 'string', description: 'f(x,y,...) doğal matematik, örn. "sin(x)*x" veya "x^2*y + sin(y)"' },
     degiskenler: { type: 'string', description: 'JSON nokta: {"x":1.5} veya {"x":1,"y":2} (verilmezse x=1)' },
@@ -634,6 +642,62 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async evrak_taslak({ konu, muhatap, icerik, tip, yon, ilgi }) {
+    try {
+      const k = String(konu || '').trim(); const muh = String(muhatap || '').trim().toLocaleUpperCase('tr');
+      const ic = String(icerik || '').trim();
+      if (!k || !muh || !ic) return { hata: 'konu, muhatap ve icerik zorunlu' };
+      const t = String(tip || 'dilekce').toLocaleLowerCase('tr') === 'resmi' ? 'resmi' : 'dilekce';
+      const y = ['ust', 'denk', 'alt'].includes(String(yon || '').toLocaleLowerCase('tr')) ? String(yon).toLocaleLowerCase('tr') : 'ust';
+      const kapanis = y === 'ust' ? 'Gereğini saygılarımla arz ederim.'
+        : y === 'alt' ? 'Gereğini rica ederim.'
+        : 'Bilgilerinizi ve gereğini rica ederim.';
+      const bugun = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+      const paragraflar = ic.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((p) => p.replace(/^- /, '')).join('\n\n');
+      let taslak;
+      if (t === 'dilekce') {
+        taslak = `${muh}
+
+**Konu:** ${k}
+
+${paragraflar}
+
+${kapanis}
+
+<div align=right>
+
+Tarih: ${bugun}
+Ad Soyad: [adınız soyadınız]
+T.C. Kimlik No: [..............]
+Adres: [adresiniz]
+Telefon: [telefonunuz]
+İmza
+
+</div>`;
+      } else {
+        const sayi = `EV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
+        taslak = `**Sayı:** ${sayi}
+**Konu:** ${k}
+${ilgi ? `**İlgi:** ${String(ilgi).trim()}
+` : ''}
+${muh}
+
+${paragraflar}
+
+${kapanis}
+
+<div align=right>
+
+[Ünvan]
+[Ad Soyad]
+[İmza]
+
+</div>`;
+      }
+      return { ok: true, tip: t, yon: y, muhatap: muh, kapanis, taslakMarkdown: taslak, not: 'Taslağı AYNEN markdown olarak sun; köşeli parantezli alanları kullanıcının dolduracağını belirt; resmî yazışmada üst makama "arz", alt/denk makama "rica" kuralını hatırlat.' };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
   },
 
   async otomatik_turev({ ifade, degiskenler }) {
@@ -1586,6 +1650,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    evrak_taslak: done ? (bad ? '📄 Taslak üretilemedi' : `📄 ${args.tip === 'resmi' ? 'Resmî yazı' : 'Dilekçe'} taslağı hazır`) : '📄 Evrak taslağı üretiliyor',
     otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',
     oto_model: (args.gorev) ? `🤖 AutoML ${done ? (bad ? 'arama başarısız' : 'en iyi modeli buldu') : 'model arıyor'}: ${String(args.gorev).slice(0, 10)}` : `🤖 AutoML ${done ? 'tamam' : 'çalışıyor'}`,
     gizli_ogren: (args.gorev) ? `🔐 Gizli öğrenme ${done ? (bad ? 'başarısız' : 'çalıştı') : 'çalışıyor'}: ${String(args.gorev).slice(0, 16)}` : `🔐 Gizli öğrenme ${done ? 'çalıştı' : 'çalışıyor'}`,

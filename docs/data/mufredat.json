@@ -683,6 +683,30 @@
     "dogru": 1,
     "aciklama": "Milyonlarca parametre × 1 kayıp: ters mod, maliyeti ileri geçişin ~2 katında tutar (backprop'un ta kendisi)."
    }
+  },
+  {
+   "no": 32,
+   "baslik": "Bonus: Çok-Ajanlı Sistemler ve Resmî Evrak Otomasyonu (KACHOW Vakası)",
+   "ozet": "KACHOW (TEKNOFEST 2026 Dil Ajanları 1. Senaryo, Apache-2.0): kamu evrakını analiz edip taslak üreten, doğrulayan ve doğru birime yönlendiren çok-ajanlı SaaS. Mimari dersleri: (1) LangGraph orkestrasyonu — ajanlar graf olarak tanımlanır, durum (state) düğümler arasında akar; tek dev prompt yerine uzman ajanlar (sınıflandırıcı, analizci, taslakçı, doğrulayıcı). (2) İnsan döngüde (human-in-the-loop) — kritik kararlar YÜRÜTÜLMEDEN önce insan onayına sunulur; kamu otomasyonunda zorunlu tasarım. (3) Hibrit arama — BM25 (kelime) + yoğun vektör (anlam) birleşimi mevzuat RAG'inde tek başına ikisinden iyi. (4) Groundedness doğrulama — üretilen taslağın her iddiası kaynağa bağlanır, uydurma ayıklanır. (5) Çok kiracılı izolasyon — PostgreSQL RLS ile her kurumun verisi ayrı. (6) OCR hattı — Tesseract + vision model yedeği. 2995 backend testi: üretim kalitesinin ölçüsü test sayısıdır.",
+   "kavramlar": [
+    "LangGraph",
+    "çok-ajan",
+    "human-in-the-loop",
+    "hibrit arama (BM25+vektör)",
+    "groundedness",
+    "RLS"
+   ],
+   "quiz": {
+    "soru": "Kamu evrak otomasyonunda 'human-in-the-loop' neden zorunlu bir tasarımdır?",
+    "secenekler": [
+     "Daha hızlı olduğu için",
+     "Kritik kararlar yürütülmeden önce insan onayından geçmesi için",
+     "Maliyeti düşürdüğü için",
+     "Model eğitimi gerektiği için"
+    ],
+    "dogru": 1,
+    "aciklama": "Resmî işlem hataları geri alınamaz; ajan taslar/önerir, insan onaylar — sorumluluk zinciri korunur."
+   }
   }
  ]
 }

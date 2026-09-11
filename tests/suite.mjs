@@ -1213,5 +1213,42 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 37) evrak_taslak: dilekçe arz / resmî rica + ders 32 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'evrak_taslak', args: { konu: 'Ruhsat başvurusu', muhatap: 'şahinbey belediye başkanlığına', icerik: 'İşyeri açmak istiyorum.\nBelgeler ektedir.' } });
+      if (round === 2) return fakeRes(body, { name: 'evrak_taslak', args: { konu: 'Araç listesi', muhatap: 'Müdürlüğümüze', icerik: 'Liste gönderilsin.', tip: 'resmi', yon: 'alt', ilgi: '12.08.2026 tarihli yazınız' } });
+      return fakeRes(body, null, 'Taslak hazır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Evrak'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'belediyeye dilekçe yaz'; $(w, '#send').click();
+  await wait(3200);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const dil = R.find((r) => r?.ok && r.tip === 'dilekce');
+  const res = R.find((r) => r?.ok && r.tip === 'resmi');
+  ok('37. dilekçe: muhatap BÜYÜK + "arz ederim"', !!dil && dil.taslakMarkdown.includes('ŞAHİNBEY BELEDİYE BAŞKANLIĞINA') && dil.taslakMarkdown.includes('arz ederim'));
+  ok('37. dilekçe: paragraflar + tarih alanı', !!dil && dil.taslakMarkdown.includes('Belgeler ektedir.') && dil.taslakMarkdown.includes('Tarih:'));
+  ok('37. resmî: sayı + ilgi + "rica ederim"', !!res && /Sayı:\*\* EV-\d{4}-\d{3}/.test(res.taslakMarkdown) && res.taslakMarkdown.includes('12.08.2026') && res.taslakMarkdown.includes('rica ederim'));
+  ok('37. ders 32 (KACHOW vakası) müfredatta', MUF.dersler.some((d) => d.no === 32 && String(d.baslik).includes('KACHOW')));
+  ok('37. çip: 📄', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('📄')));
+  ok('37. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
