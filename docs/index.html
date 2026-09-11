@@ -22,6 +22,27 @@
   </header>
 
   <main>
+    <!-- akıllı mod (büyük bulut modeli) hızlı kurulum -->
+    <section class="card" id="smartCard" style="display:none;border-color:rgba(124,92,255,.5)">
+      <h3>⚡ Akıllı moda geç — 30 saniye, ücretsiz</h3>
+      <p class="hint">Cihazındaki küçük model (~360M) basit cevaplar verir. <b>Büyük bulut modeli (70B+) bağlanınca asistan gerçekten akıllı ve hızlı olur.</b> Kredi kartı yok, ücret yok.</p>
+      <div class="steps">
+        <div class="step"><b>1</b><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">OpenRouter anahtar sayfasını aç</a> <span class="muted">(Google/GitHub ile giriş)</span></div>
+        <div class="step"><b>2</b><span>"Create API Key" → isim yaz → <b>Create</b> → <code>sk-or-...</code> kopyala</span></div>
+        <div class="step"><b>3</b><span>Aşağıya yapıştır → <b>Kaydet</b>. Bitti.</span></div>
+      </div>
+      <div class="row" style="gap:8px">
+        <input type="password" id="smartKey" placeholder="sk-or-... veya gsk_..." style="flex:1;min-width:0;padding:11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit">
+        <button class="btn ghost" id="btnPasteKey" title="Panodan yapıştır">📋</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" style="flex:1" id="btnSmartKey">✅ Kaydet ve test et</button>
+        <button class="btn ghost" id="btnSmartLater">Şimdilik küçük model</button>
+      </div>
+      <div class="muted" id="smartOut" style="font-size:12.5px;margin-top:8px"></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Anahtarın yalnızca senin tarayıcında saklanır (localStorage). Sunucuya gönderilmez, biz göremeyiz.</div>
+    </section>
+
     <!-- beyin hazır değilse -->
     <section class="card" id="setupCard" style="display:none;border-color:rgba(124,92,255,.5)">
       <h3>🧠 Beyni başlat — 3 yol var, hiçbiri ücretli değil</h3>

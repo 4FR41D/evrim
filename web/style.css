@@ -154,3 +154,10 @@ hr{border:0;border-top:1px solid var(--line);margin:12px 0}
 .keybox{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;background:rgba(255,255,255,.02)}
 .keybox ol{margin:6px 0 10px 18px;padding:0;font-size:13px;line-height:1.65}
 .keybox ol li{margin-bottom:4px}
+
+/* --- akıllı mod kurulum şeridi --- */
+.steps{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.steps .step{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.5}
+.steps .step b{flex:0 0 20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:11.5px}
+.steps code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px;font-size:12px}

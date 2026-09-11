@@ -2,8 +2,9 @@
    Her yanıttan sonra: hafıza çıkarır, beynin kuralını yamalar, beceri haritasını günceller. */
 import {
   all, insert, update, remove, getSettings, currentPrompt, pushPromptVersion, now,
+  BASE_PROMPT, COMPACT_PROMPT,
 } from './store.js';
-import { chatJSON, isReady } from './llm.js';
+import { chatJSON, isReady, active as activeLLM } from './llm.js';
 
 const MAX_ACTIVE_MEMORIES = 40;
 const KINDS = ['fact', 'preference', 'skill', 'mistake', 'rule'];
@@ -56,12 +57,23 @@ export function recordFeedback({ messageId, value, comment }) {
 
 /** O anki kişilik + hafıza + beceriler -> tam sistem promptu */
 export function buildSystemPrompt() {
-  const base = currentPrompt();
+  const a = activeLLM();
+  // Küçük cihaz-içi model: uzun prompt onu boğar -> sade sürüm + az hafıza
+  const tiny = a.id === 'local';
+  const base = tiny ? { text: COMPACT_PROMPT } : currentPrompt();
   const s = getSettings();
-  const active = memories().slice(0, MAX_ACTIVE_MEMORIES);
+  const active = memories().slice(0, tiny ? 8 : MAX_ACTIVE_MEMORIES);
   const by = (k) => active.filter((m) => m.kind === k);
 
   const out = [base.text, ''];
+  if (tiny) {
+    // sadece en kritik öğrenilmiş kurallar
+    const rules = by('rule').slice(0, 4).map((r) => r.content);
+    if (rules.length) out.push('', '## EK KURALLAR', ...rules.map((r) => `- ${r}`));
+    if (s.userName) out.push(`Kullanıcının adı: ${s.userName}.`);
+    out.push('', 'Kısa tut. Doğrudan cevap ver.');
+    return out.join('\n');
+  }
   if (s.userName) out.push(`Kullanıcının adı: ${s.userName}.`);
   out.push(`Bugünün tarihi: ${new Date().toLocaleDateString('tr-TR', { dateStyle: 'full' })}`);
 

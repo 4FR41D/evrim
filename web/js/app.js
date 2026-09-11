@@ -609,6 +609,7 @@ function renderSettings() {
     <div class="kv"><span>Öğrenme kartı</span><b>${st.cards}</b></div>
     <div class="kv"><span>Çalışma biçimi</span><b>%100 tarayıcı (sunucusuz)</b></div>`;
   renderLocalBoxes();
+  renderSmartCard();
 }
 $('#setKey').addEventListener('input', () => {
   const d = detectProvider($('#setKey').value.trim());
@@ -719,6 +720,13 @@ function setLocalProgress(pct, text) {
   }
 }
 
+function renderSmartCard() {
+  const card = $('#smartCard'); if (!card) return;
+  const s = getSettings();
+  const show = !(s.apiKey || '').trim() && !s.smartDismissed;
+  card.style.display = show ? 'block' : 'none';
+}
+
 function renderLocalBoxes() {
   const loc = localStatus();
   const a = activeLLM();
@@ -770,6 +778,46 @@ async function startLocal() {
     toast(e.message, 'bad');
   }
   renderLocalBoxes();
+  refreshStatus();
+}
+
+async function pasteInto(sel) {
+  const el = $(sel); if (!el) return;
+  try {
+    const t = await navigator.clipboard.readText();
+    if (t && t.trim()) { el.value = t.trim(); el.dispatchEvent(new Event('input')); toast('Panodan yapıştırıldı', 'ok'); }
+    else toast('Pano boş', 'warn');
+  } catch {
+    toast('Tarayıcı pano izni vermedi — anahtarı elle yapıştır (Ctrl+V)', 'warn');
+    el.focus();
+  }
+}
+
+async function saveSmartKey() {
+  const inp = $('#smartKey'); const out = $('#smartOut'); const btn = $('#btnSmartKey');
+  const key = (inp?.value || '').trim();
+  if (!key) { if (out) out.textContent = '⚠️ Önce anahtarı yapıştır (📋 düğmesi panodan alır)'; return; }
+  btn.disabled = true; if (out) out.textContent = '🔎 anahtar deneniyor…';
+  const prev = getSettings().apiKey;
+  setSettings({ apiKey: key, model: '' });
+  try {
+    const r = await testConnection();
+    if (r.ok) {
+      if (out) out.innerHTML = `✅ <b>${esc(r.provider)} · ${esc(r.model)}</b> çalışıyor`;
+      toast('🎉 Akıllı mod açık — artık büyük bulut modeli cevap veriyor', 'ok');
+      $('#smartCard').style.display = 'none';
+      $('#setupCard').style.display = 'none';
+      refreshStatus(); renderSettings();
+      btn.disabled = false;
+      return;
+    }
+    if (out) out.textContent = '❌ ' + (r.error || 'bağlanamadı');
+    setSettings({ apiKey: prev || '' });
+  } catch (e) {
+    if (out) out.textContent = '❌ ' + e.message;
+    setSettings({ apiKey: prev || '' });
+  }
+  btn.disabled = false;
   refreshStatus();
 }
 
@@ -865,6 +913,14 @@ document.addEventListener('click', (e) => {
     if (k.style.display === 'block') $('#quickKey')?.focus();
   }
   if (e.target.id === 'btnQuickKey') { e.preventDefault(); saveQuickKey(); }
+  if (e.target.id === 'btnSmartKey') { e.preventDefault(); saveSmartKey(); }
+  if (e.target.id === 'btnPasteKey') { e.preventDefault(); pasteInto('#smartKey'); }
+  if (e.target.id === 'btnSmartLater') {
+    e.preventDefault();
+    setSettings({ smartDismissed: true });
+    $('#smartCard').style.display = 'none';
+    toast('Tamam — cihazındaki modelle devam ediyoruz. İstediğin an Ayarlar\'dan anahtar girebilirsin');
+  }
   if (e.target.id === 'btnClearCache') {
     e.preventDefault();
     clearModelCache().then((d) => toast(d.length ? `Temizlendi: ${d.join(', ')}` : 'Temizlenecek model önbelleği yok', 'ok'));
