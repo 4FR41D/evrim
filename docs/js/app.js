@@ -255,15 +255,25 @@ async function send(text) {
     const pers = personaPrompt(currentPersonaId());
     const messages = [{ role: 'system', content: evo.buildSystemPrompt() + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '') }, ...history];
 
-    // Beyin hazır değilse: SESSIZCE 200 MB indirme başlatma — kullanıcıya seçtir
+    // Beyin hazır değilse: SESSIZCE indirme başlatma; önce anahtarsız kaynağı ARA,
+    // bulamazsan KULLANICIDAN ANAHTAR İSTEME — tek dokunuşluk ücretsiz bağlantı sun.
     const a = activeLLM();
     if (a.id === 'local' && !localStatus().ready && !puterStatus().ready) {
-      clearInterval(watchdog);
-      live.remove();
-      busy($('#send'), false);
-      sending = false;
-      askBrainChoice(content);
-      return;
+      liveStat.textContent = '☁️ Ücretsiz bulut modeli aranıyor…';
+      beat();
+      const found = await Promise.race([
+        probeKeyless({ onProgress: (t) => { liveStat.textContent = t; beat(); } }),
+        new Promise((r) => setTimeout(() => r(null), 6000)),
+      ]).catch(() => null);
+      if (!found) {
+        clearInterval(watchdog);
+        live.remove();
+        busy($('#send'), false);
+        sending = false;
+        askBrain(content);
+        return;
+      }
+      refreshStatus();
     }
 
     const res = await agentChat(messages, {
@@ -316,14 +326,27 @@ async function send(text) {
     clearInterval(watchdog);
     live.remove();
     typing(false);
+    const msg = String(err?.message || err);
+    // Bayat/geçersiz anahtar kullanıcıyı kilitlemesin: temizle + ücretsiz yola geç
+    if (/geçersiz|invalid|401|unauthorized/i.test(msg) && (getSettings().apiKey || '').trim()) {
+      setSettings({ apiKey: '', model: '' });
+      refreshStatus(); renderSettings();
+      sending = false;
+      addMsg({
+        role: 'assistant', error: true, createdAt: new Date().toISOString(),
+        content: '🔑 Bu cihazda kayıtlı bulut anahtarı geçersiz görünüyor — sildim, kimse senden anahtar istemeyecek. Şimdi ücretsiz bağlantıyı kuralım:',
+      });
+      askBrain(content);
+      return;
+    }
     const st = localStatus();
     const a = activeLLM();
     let extra = '';
     if (a.id === 'local') {
       extra = '\n\n**Ne yapabilirsin?**\n'
-        + '1. 🩺 Ayarlar → "Tanıla" ile hangi sunucunun kapalı olduğunu gör\n'
-        + '2. 🔑 Ayarlar → ücretsiz OpenRouter/Groq anahtarı gir (indirme yok, anında çalışır)\n'
-        + '3. 🌐 Ayarlar → "Ücretsiz servisleri test et"';
+        + '1. ☁️ Ücretsiz bulut bağlantısı: sohbetteki "Ücretsiz bağlan" düğmesi (ANAHTAR İSTEMEZ)\n'
+        + '2. 🩺 Ayarlar → "Tanıla" ile hangi kaynağın kapalı olduğunu gör\n'
+        + '3. 📥 Ayarlar → açık kaynak modeli cihazında çalıştır';
     }
     addMsg({
       role: 'assistant',
@@ -1063,69 +1086,52 @@ async function startLocal({ skipConfirm = false } = {}) {
 }
 
 /** Beyin hazır değilse: büyük indirme yerine kullanıcıya 3 net seçenek sun */
-function askBrainChoice(pendingText) {
+function askBrain(pendingText) {
   const div = document.createElement('div');
   div.className = 'msg bot pick';
   div.innerHTML = `
-    <b>⚡ Hızlı cevap için bulut modeli gerekiyor</b>
+    <b>⚡ Cevap verebilmem için ücretsiz bulut modeline bağlanmam lazım</b>
     <div class="muted" style="font-size:12.5px;margin:6px 0 10px">
-      Cihazındaki açık kaynak model <b>200-660 MB iner</b> ve telefonda yavaştır.
-      Bulut modeli ise <b>0 MB, ~2 saniyede cevap</b>. Birini seç:
+      <b>API anahtarı YOK, ücret YOK, kart YOK.</b> Tek dokunuşla ücretsiz Puter oturumu
+      açılır (e-posta veya GitHub ile ~10 sn). Bir kez yaparsın, bu cihazda aylarca kalır.
     </div>
-    <div class="item" style="padding:10px;margin-bottom:8px;border:1px solid rgba(124,92,255,.45);border-radius:12px">
-      <div class="t">🔑 1 · Anahtarımı yapıştır <span class="chip acc">2 sn cevap · ÖNERİLEN</span></div>
-      <div class="s">OpenRouter/Groq anahtarını buraya yapıştır. Kredi kartı yok, günde ~50 ücretsiz istek.</div>
-      <div class="row" style="margin-top:8px;gap:8px">
-        <input type="password" class="ckey" placeholder="sk-or-v1-... veya gsk_..." style="flex:1;min-width:0;padding:9px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit">
-        <button class="btn sm ghost cpaste">📋</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button class="btn sm csave" style="flex:1">✅ Kaydet ve sorumu sor</button>
-        <a class="btn sm ghost" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Anahtar al</a>
-      </div>
+    <div class="item" style="border-color:rgba(124,92,255,.5)">
+      <div class="t">☁️ Ücretsiz bulut modeli <span class="chip acc">0 MB · ~2 sn · ANAHTAR YOK</span></div>
+      <div class="s">Giriş penceresi açılır → ücretsiz girersin → sorunu ben otomatik yeniden sorarım.</div>
+      <div class="a"><button class="btn sm cconn" style="flex:1">☁️ Ücretsiz bağlan ve sorumu sor</button></div>
     </div>
-    <div class="item" style="padding:10px;margin-bottom:8px">
-      <div class="t">☁️ 2 · Puter ile anahtarsız dene <span class="chip ok">0 MB</span></div>
-      <div class="s">Puter penceresi açılır, e-posta/GitHub ile ücretsiz girersin. Anahtar gerekmez.</div>
-      <div class="a"><button class="btn sm cputer">☁️ Puter'ı başlat</button></div>
+    <div class="item">
+      <div class="t">📥 Cihazımda çalıştır <span class="chip">~194 MB · bir kez · sınırsız</span></div>
+      <div class="s">Açık kaynak model telefonuna iner; cevaplar yavaştır (10-40 sn) ama veri tamamen sende kalır.</div>
+      <div class="a"><button class="btn sm ghost clocal">📥 İndir ve başlat</button></div>
     </div>
-    <div class="item" style="padding:10px">
-      <div class="t">📥 3 · Cihazıma model indir <span class="chip">yavaş, ama sınırsız</span></div>
-      <div class="s">Açık kaynak model iner (bir kez). Telefonda cevaplar 10-40 sn sürer ve kalite düşüktür.</div>
-      <div class="a"><button class="btn sm ghost clocal">📥 İndirmeyi başlat</button></div>
+    <div class="muted" style="font-size:11.5px;margin-top:8px">
+      İleri düzey (zorunlu değil): kendi bulut anahtarın varsa Ayarlar → 🔑 bölümünden ekleyebilirsin.
     </div>`;
   $('#msgs').appendChild(div);
   requestAnimationFrame(scrollBottom);
 
-  const inp = div.querySelector('.ckey');
-  div.querySelector('.cpaste').addEventListener('click', async () => {
-    try { const t = await navigator.clipboard.readText(); if (t?.trim()) { inp.value = t.trim(); toast('Panodan yapıştırıldı', 'ok'); } }
-    catch { toast('Pano izni yok — anahtarı elle yapıştır', 'warn'); inp.focus(); }
-  });
-  div.querySelector('.csave').addEventListener('click', async () => {
-    const k = (inp.value || '').trim();
-    if (!k) { toast('Önce anahtarı yapıştır', 'warn'); return; }
-    setSettings({ apiKey: k, model: '' });
-    const btn = div.querySelector('.csave'); btn.disabled = true; btn.textContent = '🔎 test ediliyor…';
-    const r = await testConnection().catch((e) => ({ ok: false, error: e.message }));
-    if (r.ok) {
-      toast(`🎉 ${r.provider} hazır — ${r.model}`, 'ok');
-      div.remove(); $('#smartCard') && ($('#smartCard').style.display = 'none');
-      closeSetupModal();
-      refreshStatus(); renderSettings();
+  div.querySelector('.cconn').addEventListener('click', async () => {
+    const btn = div.querySelector('.cconn');
+    btn.disabled = true; btn.textContent = '☁️ Bağlanılıyor… pencereye izin ver';
+    try {
+      await puterSignIn();
+    } catch { /* durum aşağıda okunur */ }
+    if (puterStatus().ready) {
+      div.remove();
+      toast('☁️ Ücretsiz bulut hazır — anahtar gerekmedi', 'ok');
+      refreshStatus(); renderSettings(); renderLocalBoxes();
       if (pendingText) send(pendingText);
     } else {
-      setSettings({ apiKey: '' });
-      btn.disabled = false; btn.textContent = '✅ Kaydet ve sorumu sor';
-      toast('Anahtar çalışmadı: ' + (r.error || ''), 'bad');
+      btn.disabled = false; btn.textContent = '☁️ Ücretsiz bağlan ve sorumu sor';
+      const err = puterStatus().error || 'pencere engellenmiş olabilir';
+      const note = div.querySelector('.cnote') || (() => {
+        const d = document.createElement('div');
+        d.className = 'muted cnote'; d.style.cssText = 'font-size:12px;margin-top:8px;color:var(--bad)';
+        div.appendChild(d); return d;
+      })();
+      note.textContent = `Olamadı: ${err}. Açılan pencereyi kapatmadıysan tekrar dene — ya da aşağıdan cihaz modeli.`;
     }
-  });
-  div.querySelector('.cputer').addEventListener('click', async () => {
-    div.querySelector('.cputer').disabled = true;
-    toast('Puter penceresi açılıyor — ücretsiz giriş yap', 'ok');
-    const ok = await probePuter({ force: true }).catch(() => false);
-    if (ok) { div.remove(); refreshStatus(); renderSettings(); if (pendingText) send(pendingText); }
-    else toast('Puter çalışmadı: ' + (puterStatus().error || ''), 'warn'), (div.querySelector('.cputer').disabled = false);
   });
   div.querySelector('.clocal').addEventListener('click', async () => {
     div.remove();
