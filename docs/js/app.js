@@ -6,8 +6,9 @@ import {
 } from './store.js';
 import {
   PROVIDERS, active as activeLLM, isReady, chat, testConnection, detectProvider,
-  detectWebGPU, guessTier, shortName, localStatus, loadLocal,
+  detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
 } from './llm.js';
+import { testAllFree, freeCacheSnapshot } from './free.js';
 import { MODEL_TIERS, unloadLocal } from './local.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
@@ -175,7 +176,11 @@ function refreshStatus() {
   const pill = $('#statusPill');
   const loc = localStatus();
 
-  if (a.id === 'local') {
+  if (a.id === 'free') {
+    pill.textContent = '🌐 ücretsiz servis · anahtarsız';
+    pill.className = 'pill ok';
+    $('#setupCard').style.display = 'none';
+  } else if (a.id === 'local') {
     if (loc.ready) {
       pill.textContent = `🧠 ${shortName(loc.modelId)} · cihazında`;
       pill.className = 'pill ok';
@@ -493,6 +498,18 @@ function renderSettings() {
   $('#setName').value = s.userName || '';
   $('#setGhToken').value = s.githubToken || '';
   $('#setGhRepo').value = s.githubRepo || '';
+  const pf = $('#setPreferFree');
+  if (pf) {
+    pf.checked = getSettings().preferFree !== false;
+    pf.onchange = () => { setSettings({ preferFree: pf.checked }); refreshStatus(); };
+  }
+  const freeBox = $('#freeBox');
+  if (freeBox) {
+    const snap = freeCacheSnapshot();
+    freeBox.innerHTML = snap.length
+      ? snap.map((c) => `<span class="chip ${c.ok ? 'ok' : 'warn'}">${c.ok ? '✅' : '❌'} ${esc(c.name)}</span>`).join(' ')
+      : '<span class="chip">henüz test edilmedi</span>';
+  }
   const tierSel = $('#setTier');
   if (tierSel) {
     const cur = s.localTier || guessTier();
@@ -597,6 +614,13 @@ $('#btnInstall').addEventListener('click', async () => {
   await detectWebGPU();
   refreshStatus();
   renderSettings();
+  // Anahtar yoksa: indirmesiz çalışan ücretsiz bir servis var mı diye ARKA PLANDA bak
+  probeFree({ onProgress: (t) => { const el = $('#capBox'); if (el) el.textContent = t; } })
+    .then((freeId) => {
+      if (freeId) toast('🌐 Ücretsiz servis bulundu — indirme yapmadan kullanabilirsin', 'ok');
+      refreshStatus(); renderSettings(); renderLocalBoxes();
+    })
+    .catch(() => {});
 })();
 
 /* ---------------- cihazında çalışan model ---------------- */
@@ -668,6 +692,34 @@ async function startLocal() {
   refreshStatus();
 }
 
+async function tryFreeNow(full = false) {
+  const out = $('#freeOut') || $('#capBox');
+  const btn = $('#btnTestFree'); const b2 = $('#btnTryFree');
+  if (btn) btn.disabled = true; if (b2) b2.disabled = true;
+  if (out) out.textContent = '🔎 ücretsiz servisler deneniyor… (birkaç saniye)';
+  try {
+    if (full) {
+      const rs = await testAllFree((name, st) => { if (out) out.textContent = `${name}: ${st}`; });
+      const ok = rs.filter((r) => r.ok).length;
+      if (out) out.innerHTML = rs.map((r) => `${r.ok ? '✅' : '❌'} ${esc(r.name)}`).join(' &nbsp;·&nbsp; ');
+      toast(ok ? `🌐 ${ok} ücretsiz servis çalışıyor — indirme gerekmiyor` : 'Hiçbiri çalışmıyor: cihazında model ya da ücretsiz anahtar kullan', ok ? 'ok' : 'warn');
+    } else {
+      const id = await probeFree({ force: true, onProgress: (t) => { if (out) out.textContent = t; } });
+      if (id) {
+        if (out) out.textContent = `✅ çalışıyor: ${id}`;
+        toast('🌐 Ücretsiz servis çalışıyor! Ayarlar\'dan anahtar girmeden sohbet edebilirsin', 'ok');
+      } else {
+        if (out) out.textContent = '❌ şu an çalışan ücretsiz servis yok — cihazında modeli başlat ya da ücretsiz anahtar gir';
+        toast('Ücretsiz servisler şu an kapalı (bu normal, garanti edilmiyor)', 'warn');
+      }
+    }
+  } catch (e) {
+    if (out) out.textContent = '❌ ' + e.message;
+  }
+  if (btn) btn.disabled = false; if (b2) b2.disabled = false;
+  refreshStatus(); renderSettings();
+}
+
 let lightTimer = null;
 function refreshStatusLight() {
   clearTimeout(lightTimer);
@@ -676,6 +728,8 @@ function refreshStatusLight() {
 
 document.addEventListener('click', (e) => {
   if (e.target.id === 'btnStartLocal' || e.target.id === 'btnLoadLocal') { e.preventDefault(); startLocal(); }
+  if (e.target.id === 'btnTryFree') { e.preventDefault(); tryFreeNow(); }
+  if (e.target.id === 'btnTestFree') { e.preventDefault(); tryFreeNow(true); }
   if (e.target.id === 'btnUnloadLocal') {
     unloadLocal().then(() => { toast('Model bellekten çıkarıldı'); renderLocalBoxes(); refreshStatus(); });
   }

@@ -82,7 +82,7 @@ export async function detectWebGPU() {
 
 function tierChain() {
   const s = getSettings();
-  const tier = MODEL_TIERS.find((t) => t.id === (s.localTier || 'phone')) || MODEL_TIERS[1];
+  const tier = MODEL_TIERS.find((t) => t.id === (s.localTier || 'tiny')) || MODEL_TIERS[2];
   return tier.chain;
 }
 
@@ -203,10 +203,11 @@ export async function unloadLocal() {
 
 /** Cihaz tahmini: mobil + düşük bellek -> küçük model */
 export function guessTier() {
+  // Varsayılan bilinçli olarak EN KÜÇÜK model: ilk açılışta ~200 MB insin, hızlı çalışsın.
+  // Kullanıcı Ayarlar'dan kaliteyi artırabilir.
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
   const mem = navigator.deviceMemory || 0;   // Chrome'da var (GB)
-  if (!mobile) return mem && mem < 6 ? 'phone' : 'desktop';
-  if (mem && mem >= 8) return 'phone';
-  if (mem && mem <= 3) return 'tiny';
-  return 'phone';
+  if (!mobile && mem && mem >= 16) return 'phone';   // güçlü masaüstü -> orta model
+  if (!mobile) return 'tiny';
+  return 'tiny';
 }

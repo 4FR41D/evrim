@@ -1,13 +1,22 @@
-/* js/llm.js — AI yönlendirici
-   Öncelik sırası:
-     1) Kullanıcının kendi anahtarı varsa  -> Groq / OpenRouter / Gemini (en yüksek kalite)
-     2) Anahtar yoksa + WebGPU varsa       -> CİHAZINDA açık kaynak model (anahtarsız, sınırsız)
-     3) İkisi de yoksa                     -> çevrimdışı rehber modu
-   Yani anahtar ZORUNLU DEĞİL. */
+/* js/llm.js — AI yönlendirici (4 katman, otomatik düşüş)
+     1) Kendi anahtarın varsa   -> Groq / OpenRouter / Gemini   (en yüksek kalite)
+     2) Anahtar yoksa           -> çalışan ÜCRETSİZ halka açık servis (varsa: indirme de yok)
+     3) O da yoksa + WebGPU     -> CİHAZINDA açık kaynak model (~200 MB, sınırsız, çevrimdışı)
+     4) Hiçbiri                 -> net hata + çözüm önerileri
+   Yani ne anahtar ne indirme ZORUNLU. */
 import { getSettings, setSettings } from './store.js';
 import { detectWebGPU, loadLocal, localChat, localStatus, shortName, guessTier } from './local.js';
+import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './free.js';
 
 export const PROVIDERS = {
+  free: {
+    name: 'Ücretsiz servis',
+    defaultModel: 'topluluk',
+    models: [],
+    signup: null,
+    prefix: null,
+    format: 'free',
+  },
   local: {
     name: 'Cihazın (açık kaynak)',
     defaultModel: 'auto',
@@ -56,6 +65,10 @@ export function detectProvider(key) {
 export function active() {
   const s = getSettings();
   const key = (s.apiKey || '').trim();
+  // 0) Anahtar yok ama çalışan ücretsiz servis tespit edilmişse
+  if (!key && hasWorkingFree()) {
+    return { id: 'free', key: '', def: PROVIDERS.free, model: 'halka açık ücretsiz servis' };
+  }
 
   // 1) Kullanıcı açıkça bir sağlayıcı seçtiyse
   if (s.provider && s.provider !== 'auto' && s.provider !== 'local') {
@@ -74,12 +87,19 @@ export function active() {
   return { id: 'local', key: '', def: PROVIDERS.local, model: s.localModel || 'cihazında' };
 }
 
-/** Sohbet edilebilir durumda mıyız? (anahtar YOKSA bile yerel model varsa evet) */
+/** Sohbet edilebilir durumda mıyız? (anahtar YOKSA bile ücretsiz servis ya da yerel model varsa evet) */
 export function isReady() {
   const a = active();
   if (a.id !== 'local') return true;
-  const st = localStatus();
-  return st.supported === true;   // WebGPU tespit edildiyse hazır sayılır (model ilk mesajda iner)
+  if (hasWorkingFree()) return true;
+  return localStatus().supported === true;   // WebGPU varsa hazır (model ilk mesajda iner)
+}
+
+/** İlk açılışta: ücretsiz servis var mı diye bak (kısa zaman aşımıyla) */
+export async function probeFree({ onProgress, force = false } = {}) {
+  if ((getSettings().apiKey || '').trim()) return null;
+  if (getSettings().preferFree === false) return null;
+  return findWorkingFree({ onProgress, force });
 }
 
 export function readyReason() {
@@ -111,10 +131,29 @@ function errText(status, data, id) {
  * @param {{temperature?:number,maxTokens?:number,json?:boolean,onProgress?:Function}} opts
  */
 export async function chat(messages, opts = {}) {
-  const a = active();
+  let a = active();
+
+  // --- ÜCRETSİZ HALKA AÇIK SERVİS (anahtarsız + indirmesiz) ---
+  if (a.id === 'free') {
+    try {
+      return await freeChat(messages, opts);
+    } catch (e) {
+      // Servis öldüyse yerel modele düş
+      console.warn('[llm] ücretsiz servis başarısız, yerel modele geçiliyor:', e.message);
+      opts.onProgress?.(0, 'Ücretsiz servis yanıt vermedi, cihazında model başlatılıyor…');
+      a = { id: 'local', def: PROVIDERS.local };
+    }
+  }
 
   // --- CİHAZINDA ÇALIŞAN MODEL (anahtarsız) ---
   if (a.id === 'local') {
+    // Belki bu arada bir ücretsiz servis çalışır hale gelmiştir
+    if (getSettings().preferFree !== false && !(getSettings().apiKey || '').trim()) {
+      const id = await findWorkingFree({ onProgress: opts.onProgress });
+      if (id) {
+        try { return await freeChat(messages, opts); } catch {}
+      }
+    }
     if (!localStatus().ready) {
       await loadLocal({ onProgress: opts.onProgress });
     }
@@ -193,4 +232,4 @@ export async function testConnection() {
   }
 }
 
-export { detectWebGPU, guessTier, shortName, localStatus, loadLocal };
+export { detectWebGPU, guessTier, shortName, localStatus, loadLocal, FREE_ENDPOINTS };

@@ -1,67 +1,42 @@
-# 🧬 EVRIM — kendini geliştiren AI (sunucusuz sürüm)
+# Evrim — kendini geliştiren AI (statik web, GitHub Pages)
 
-Tamamen **tarayıcında** çalışan, ücretsiz ve sınırsız kişisel AI uygulaması.
-Sunucu yok, hesap yok, abonelik yok. Verilerin yalnızca kendi cihazında.
+**Kayıt yok, API anahtarı yok, ücret yok.** https://4fr41d.github.io/evrim/
 
-## 🔑 Tek gereken: ücretsiz bir AI anahtarı
+## Nasıl çalışıyor? (4 katman, otomatik düşüş)
 
-1. https://console.groq.com/keys → **Create API Key** → `gsk_...` kopyala
-2. Uygulamada **⚙️ Ayarlar → API anahtarı** → yapıştır → **Kaydet** → **Test et**
+| # | Kaynak | Anahtar | İndirme | Kalite | Durum |
+|---|--------|---------|---------|--------|-------|
+| 1 | **Kendi ücretsiz anahtarın** (Groq/OpenRouter/Gemini) | var | yok | ⭐⭐⭐⭐⭐ 70B-120B | her zaman çalışır |
+| 2 | **Ücretsiz halka açık servisler** | yok | yok | ⭐⭐⭐ | değişken, garanti yok |
+| 3 | **Cihazında açık kaynak model** (WebLLM) | yok | ~200 MB bir kez | ⭐⭐ | her zaman çalışır, çevrimdışı |
+| 4 | Çevrimdışı rehber | – | – | – | son çare |
 
-Alternatifler: [OpenRouter](https://openrouter.ai/settings/keys) · [Google AI Studio](https://aistudio.google.com/app/apikey)
+Uygulama sırayla dener; üstteki çalışıyorsa alttakine hiç dokunmaz.
+Ayarlar'da her katmanın durumunu görüp tek tek test edebilirsin.
 
-> Anahtarın `localStorage`'da, sadece senin tarayıcında durur. Hiçbir sunucuya gönderilmez.
-> Bu yüzden **herkes kendi anahtarını** girer — başkasının kotası tüketilmez.
+## Cihazında çalışan modeller (boyutlar ölçüldü)
 
-## ✨ Özellikler
+| Katman | Model | İndirme |
+|---|---|---|
+| **tiny (varsayılan)** | SmolLM2-360M-q4f16_1-MLC | ~197 MB |
+| phone | Qwen2.5-0.5B-q4f16_1-MLC | ~276 MB |
+| laptop | Qwen3.5-0.8B-q4f16_1-MLC | ~426 MB |
+| desktop | Qwen2.5-1.5B-q4f16_1-MLC | ~839 MB |
+| max | Qwen3.5-2B-q4f16_1-MLC | ~1032 MB |
 
-| Modül | Ne yapar |
-|---|---|
-| 💬 Sohbet | Hafızalı asistan — seni tanır, tercihlerini hatırlar |
-| 🧬 Evrim | Her yanıttan sonra kendini geliştirir: hafıza çıkarır, **kendi sistem promptunu yamalar**, sürüm geçmişi tutar, tek tıkla geri alınabilir |
-| 📚 Öğren | Aralıklı tekrar (spaced repetition). AI soru üretir, cevabını puanlar; yanlışına göre hem tekrar aralığını hem zorluğu otomatik ayarlar |
-| 🐙 GitHub | Herhangi bir repoyu okur, AI ile analiz eder, günlük özet çıkarır |
-| 💾 Yedek | Verilerini JSON olarak dışa/içe aktar — cihaz değiştirirken taşı |
+İlk indirimden sonra önbelleğe alınır (IndexedDB) → sonraki açılışlarda **çevrimdışı** çalışır.
+Gereksinim: WebGPU (Chrome/Edge 113+, Android Chrome 121+, Safari 26+, Firefox 141+).
 
-## 🔄 Kendini nasıl geliştiriyor?
+## Dürüst not
+- Küçük yerel modeller Türkçe'de bulut 70B kadar iyi değildir. En iyi ücretsiz kalite = **Groq anahtarı** (3 dk, kredi kartı yok).
+- "Anahtarsız + indirmesiz + garantili" diye bir seçenek 2026'da internette yok. Ücretsiz halka açık servisler çalıştığında harika, çalışmadığında uygulama otomatik olarak cihazındaki modele geçer.
 
-```
-mesajın ──► beyin vN + hafıza + beceri haritası ──► yanıt
-                                                  │
-        arka planda META-ÖĞRENME (JSON) ◄─────────┘
-          • memories[]    → kalıcı bilgi / tercih / hata / kural
-          • promptPatch   → beynin yeni kuralı
-          • confidence    → güven skoru
-          • skills[]      → beceri haritası
-                    │
-     confidence ≥ eşik ──► otomatik uygulanır  → beyin vN+1
-     confidence <  eşik ──► "bekleyen yama"    → sen onaylarsın
-```
+## Klasör
+- `js/llm.js` — 4 katmanlı yönlendirici
+- `js/free.js` — anahtarsız halka açık servisler + sağlık kontrolü
+- `js/local.js` — WebLLM ile cihazda çalışan model (3 CDN yedeği)
+- `js/evolve.js`, `js/learn.js`, `js/github.js`, `js/app.js`, `js/store.js` — özellikler
+- `sw.js` — PWA önbelleği (`evrim-web-v3`)
 
-👍/👎 geri bildirimin doğrudan hafızaya ve gelişim günlüğüne işlenir.
-
-## 📱 Telefona kur
-
-- **iPhone:** Safari → Paylaş → **Ana Ekrana Ekle**
-- **Android:** Chrome → ⋮ → **Uygulamayı yükle**
-
-PWA olduğu için tam ekran, uygulama gibi açılır ve çevrimdışı kabuğu çalışır.
-
-## ⚠️ Sınırlar
-
-- Veriler **bu tarayıcının** deposunda: başka cihazda görünmez (Yedek al → İçe aktar ile taşı)
-- Tarayıcı verilerini temizlersen silinir — arada bir **Ayarlar → 💾 Verilerim → Yedek al**
-- Bu sürümde GitHub'a **yazma yok** (commit atma sunucu gerektirir). Onun için repo kökündeki sunuculu sürüme bak: [`../README.md`](../README.md)
-
-## 🛠 Geliştirme
-
-Statik dosyalar — herhangi bir sunucuyla çalışır:
-
-```bash
-cd web && python3 -m http.server 4000
-# → http://localhost:4000
-```
-
-## 📄 Lisans
-
-MIT — istediğin gibi kullan, değiştir, dağıt.
+## Yayınlama
+`web/` → `docs/` kopyalanır, `main` dalına push edilir, GitHub Pages kaynağı `main /docs`.
