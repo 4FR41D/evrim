@@ -781,6 +781,29 @@
     "aciklama": "Resmî işlem hataları geri alınamaz; ajan taslar/önerir, insan onaylar — sorumluluk zinciri korunur."
    },
    "link": "https://github.com/chyp3r/KACHOW-Teknofest-2026"
+  },
+  {
+   "no": 33,
+   "baslik": "Bonus: Ajanik Kodlama Çağında Doğrulama Katmanı (TestSprite)",
+   "ozet": "AI kodu dakikalar içinde üretiyor; doğrulama ise geride kaldı. TestSprite (Apache 2.0, 3k+ yıldız) çözümü: ajanın gönderdiği HER davranışı canlı uygulamada, gerçek kullanıcı gibi test etmek — mock'larla değil. Kırılan şey 'tek tutarlı paket' olarak ajana geri döner, ajan kendi işini kendisi düzeltir. Kanıt: doğrulama döngüsüyle en ucuz model, açık liderlik tablosunda en pahalıyı geçip %89 doğrulukla birinci oldu — doğrulama, model boyutunu yener. İlkeler: (1) mock entegrasyon hatalarını gizler, canlı ürüne test et; (2) başarısızlığı ajanın EYLEME geçebileceği biçimde paketle; (3) doğrulamayı gönderim öncesi döngüye koy (CI gibi). EVRIM'in karşılığı: oz_test aracı (çalışan uygulamanın duman testi) + 200+ kontrollü tests/suite.mjs.",
+   "kavramlar": [
+    "doğrulama katmanı",
+    "canlı uygulamaya test",
+    "mock vs gerçek",
+    "kendi kendini düzeltme",
+    "duman testi"
+   ],
+   "quiz": {
+    "soru": "TestSprite neden mock'lar yerine canlı uygulamayı test eder?",
+    "secenekler": [
+     "Daha hızlı olduğu için",
+     "Mock'lar entegrasyon hatalarını gizler; gerçek kullanıcı davranışı önemlidir",
+     "Mock kurulumu pahalıdır",
+     "Bulut gerektiği için"
+    ],
+    "dogru": 1,
+    "aciklama": "Mock'lar doğru görünürken canlı sistem kırılabilir; doğrulama gerçek ürüne karşı yapılmalıdır."
+   }
   }
  ]
 }

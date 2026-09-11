@@ -1357,5 +1357,43 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 41) oz_test: canlı uygulamanın duman testi kendinden geçmeli ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const KAT = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('katalog.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => KAT, text: async () => JSON.stringify(KAT) };
+    if (u.includes('data/dersler/')) return { ok: true, status: 200, headers: { get: () => 'text/markdown' }, json: async () => ({}), text: async () => '# arşiv' };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'oz_test', args: {} });
+      return fakeRes(body, null, 'Öz test raporu burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Denetçi'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'kendini test et'; $(w, '#send').click();
+  await wait(2800);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } }).find((r) => r && 'gecen' in r);
+  ok('41. öz test çalıştı ve rapor üretti', !!R && R.toplam >= 14);
+  ok('41. tüm kritik kontroller geçti (kalan 0)', !!R && R.ok === true && R.kalan === 0);
+  ok('41. geçen kontrol ≥ 13', !!R && R.gecen >= 13);
+  ok('41. tabloda şema + depo + arşiv satırları', !!R && R.tabloMarkdown.includes('Groq-uyumlu') && R.tabloMarkdown.includes('Yerel depolama') && R.tabloMarkdown.includes('Ders arşivi'));
+  ok('41. ders 33 (TestSprite bonusu) müfredatta', MUF.dersler.some((d) => d.no === 33 && String(d.baslik).includes('TestSprite')));
+  ok('41. çip: 🧪', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🧪')));
+  ok('41. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

@@ -74,6 +74,7 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
   F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
     konu: { type: 'string', description: 'yazının konusu (kısa)' },
     muhatap: { type: 'string', description: 'hitap edilen kurum/kişi, örn. "ŞAHİNBEY BELEDİYE BAŞKANLIĞINA"' },
@@ -648,6 +649,66 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async oz_test() {
+    const checks = [];
+    const add = (ad, gecti, detay) => checks.push({ kontrol: ad, sonuc: gecti === 'atlandi' ? '⏭ atlandı' : gecti ? '✅' : '❌', detay: detay || '' });
+    const q = (sel) => { try { return !!document.querySelector(sel); } catch { return false; } };
+    add('Konuşma girişi (#input, #send)', q('#input') && q('#send'));
+    add('Mesaj alanı (#msgs)', q('#msgs'));
+    let navCount = 0; try { navCount = document.querySelectorAll('.sb-nav button').length; } catch {}
+    add('Menü bölümleri (≥5)', navCount >= 5, navCount + ' düğme');
+    let quick = 0; try { quick = document.querySelectorAll('[data-quick]').length; } catch {}
+    add('Hoş geldin kısayolları (≥3)', quick >= 3, quick + ' düğme');
+    add('Arama bölümü (#wsInput, #wsBtn)', q('#wsInput') && q('#wsBtn'));
+    add('Öğrenme koçu (#btnGen)', q('#btnGen'));
+    add('Linux PIN alanı (#setLinuxPin)', q('#setLinuxPin'));
+    add('Araç sayısı (≥29)', TOOLS.length >= 29, TOOLS.length + ' araç');
+    let schemaOk = true; let schemaBad = '';
+    for (const t of TOOLS) {
+      const f = t?.function || t; const prm = f?.parameters || {};
+      if (!f?.name || typeof f?.description !== 'string' || typeof prm?.properties !== 'object' || prm.properties === null || !Array.isArray(prm?.required || [])) { schemaOk = false; schemaBad = String(f?.name); break; }
+      for (const k of Object.keys(prm.properties)) {
+        const pv = prm.properties[k];
+        if (pv && typeof pv === 'object' && 'required' in pv) { schemaOk = false; schemaBad = f?.name + '.' + k; }
+      }
+    }
+    add('Groq-uyumlu araç şeması', schemaOk, schemaBad ? 'bozuk: ' + schemaBad : '');
+    const eksik = [];
+    for (const t of TOOLS) { const nm = (t?.function || t)?.name; if (nm && typeof EXEC[nm] !== 'function') eksik.push(nm); }
+    add('Tüm araçların yürütücüsü var', eksik.length === 0, eksik.join(','));
+    let lsOk = true;
+    try { localStorage.setItem('__oztest', '1'); if (localStorage.getItem('__oztest') !== '1') lsOk = false; localStorage.removeItem('__oztest'); } catch { lsOk = false; }
+    add('Yerel depolama okunur/yazılır', lsOk);
+    let convOk = true; let convN = 0;
+    try { const c = all('conversations'); convOk = Array.isArray(c); convN = c ? c.length : 0; } catch { convOk = false; }
+    add('Sohbet deposu geçerli', convOk, convN + ' konuşma');
+    try {
+      const kr = await fetch('data/katalog.json');
+      const kj = kr.ok ? await kr.json() : null;
+      const n1 = kj ? Number(kj.adet || (Array.isArray(kj.yetenekler) ? kj.yetenekler.length : 0)) : 0;
+      add('API kataloğu yüklü', kr.ok && n1 > 0, n1 + ' kayıt');
+    } catch { add('API kataloğu yüklü', false, 'okunamadı'); }
+    try {
+      const mr = await fetch('data/mufredat.json');
+      const mj = mr.ok ? await mr.json() : null;
+      const dl = mj?.dersler || [];
+      const bad = dl.find((d) => !d.baslik || !d.ozet || !d.quiz || !d.quiz.soru || !Array.isArray(d.quiz.secenekler) || d.quiz.secenekler.length !== 4 || typeof d.quiz.dogru !== 'number');
+      add('Müfredat sağlam (≥33 ders, quizli)', mr.ok && dl.length >= 33 && !bad, dl.length + ' ders' + (bad ? ', bozuk: ' + bad.no : ''));
+    } catch { add('Müfredat sağlam', false, 'okunamadı'); }
+    try { const ar = await fetch('data/dersler/17.md'); add('Ders arşivi yerinde (link-ölümüne dayanıklı)', ar.ok); } catch { add('Ders arşivi yerinde', false, 'okunamadı'); }
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker?.getRegistrations) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        add('ServiceWorker kayıtlı (çevrimdışı kabuk)', (regs && regs.length > 0) || !!navigator.serviceWorker.controller, (regs ? regs.length : 0) + ' kayıt');
+      } catch { add('ServiceWorker kayıtlı', 'atlandi'); }
+    } else add('ServiceWorker kayıtlı', 'atlandi');
+    const kalan = checks.filter((c) => c.sonuc === '❌').length;
+    const gecen = checks.filter((c) => c.sonuc === '✅').length;
+    const atlanan = checks.filter((c) => c.sonuc.includes('atlandı')).length;
+    const tabloMarkdown = '| kontrol | sonuç | detay |\n|---|---|---|\n' + checks.map((c) => `| ${c.kontrol} | ${c.sonuc} | ${c.detay || '—'} |`).join('\n');
+    return { ok: kalan === 0, gecen, kalan, atlanan, toplam: checks.length, tabloMarkdown, not: kalan ? 'Tabloyu AYNEN sun; kalan maddeleri dürüstçe raporla, olası neden + düzeltme öner.' : 'Tabloyu sun; tüm kritik kontroller geçti — BLUF: sistem sağlıklı.' };
   },
 
   async evrak_taslak({ konu, muhatap, icerik, tip, yon, ilgi }) {
@@ -1673,6 +1734,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    oz_test: done ? (bad ? '🧪 Öz test BAŞARISIZ' : '🧪 Öz test tamam') : '🧪 Öz test çalışıyor (canlı uygulama duman testi)',
     evrak_taslak: done ? (bad ? '📄 Taslak üretilemedi' : `📄 ${args.tip === 'resmi' ? 'Resmî yazı' : 'Dilekçe'} taslağı hazır`) : '📄 Evrak taslağı üretiliyor',
     otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',
     oto_model: (args.gorev) ? `🤖 AutoML ${done ? (bad ? 'arama başarısız' : 'en iyi modeli buldu') : 'model arıyor'}: ${String(args.gorev).slice(0, 10)}` : `🤖 AutoML ${done ? 'tamam' : 'çalışıyor'}`,
