@@ -611,6 +611,30 @@
     "dogru": 1,
     "aciklama": "Federe öğrenmede veri cihazda kalır; sunucu yalnız ağırlık güncellemelerini toplayıp ortalar (FedAvg)."
    }
+  },
+  {
+   "no": 29,
+   "baslik": "Bonus: AutoML ve Otomatik Model Arama (AutoKeras)",
+   "ozet": "AutoML, model kurma işini otomatikleştirir: AutoKeras (Keras ekibi, Apache 2.0) mimariyi ve hiperparametreleri kendisi arar. Temel kavramlar: (1) Arama uzayı — denenecek yapılandırmalar (gizli nöron sayısı, öğrenme oranı, derinlik). (2) Arama stratejisi — ızgara (tüm kombinasyonlar), rastgele (genelde daha verimli), Bayesian (geçmiş denemelerden öğrenir). (3) Doğrulama bölmesi — her aday VERİLMEMİŞ veride puanlanır; en düşük val kaybı kazanır, böylece aşırı öğrenme (overfitting) ayıklanır. (4) Erken durdurma — kötüleşen adayı kes. (5) Seçilen yapılandırma tam veriyle yeniden eğitilir. EVRIM'in oto_model aracı bu döngüyü tarayıcıda çalıştırır: rastgele arama + doğrulama + en iyiyi yeniden eğit.",
+   "kavramlar": [
+    "AutoML",
+    "arama uzayı",
+    "rastgele arama",
+    "doğrulama bölmesi",
+    "overfitting",
+    "erken durdurma"
+   ],
+   "quiz": {
+    "soru": "AutoML'de doğrulama (validation) bölmesi neden şarttır?",
+    "secenekler": [
+     "Eğitimi hızlandırmak için",
+     "Aday yapılandırmaların GENELLEME başarısını ölçüp aşırı öğrenmeyi elemek için",
+     "Veriyi büyütmek için",
+     "Rastgelelik katmak için"
+    ],
+    "dogru": 1,
+    "aciklama": "Eğitim verisinde herkes iyi puan alır; asıl marifet görülmemiş veride — val bölmesi bunu ölçer."
+   }
   }
  ]
 }

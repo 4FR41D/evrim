@@ -74,6 +74,10 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('oto_model', 'OTOMATİK MODEL ARAMA / AutoML (AutoKeras ruhu, tarayıcıda): sinir ağı hiperparametrelerini (gizli nöron 3-12, öğrenme oranı 0.05-0.5) OTOMATİK arar — rastgele arama + doğrulama bölmesi (overfitting elemesi), en iyi yapılandırmayı seçer ve tam veriyle yeniden eğitir. gorev: xor | daire | sinus. Kullanıcı "en iyi modeli bul/otomatik dene/hiperparametre ara" derse çağır.', {
+    gorev: { type: 'string', description: 'xor | daire | sinus' },
+    deneme: { type: 'number', description: 'denenecek yapılandırma 3-12 (varsayılan 6)' },
+  }, ['gorev']),
   F('gizli_ogren', 'GİZLİLİK KORUYAN ÖĞRENME (PySyft ruhu, tarayıcıda): "federe" — FedAvg simülasyonu: 2-5 istemci veriyi PAYLAŞMADAN yerel eğitir, ağırlıklar merkezde ortalanır (tur tur kayıp/doğruluk tablosu); "farkli_gizlilik" — ε bütçeli Laplace gürültülü istatistik: gerçek vs gürültülü ortalama, gizlilik-kullanışlılık dengesi tablosu. Federated learning/diferansiyel gizlilik/gizli veri analizi isteklerinde çağır.', {
     gorev: { type: 'string', description: 'federe | farkli_gizlilik' },
     istemci: { type: 'number', description: 'federe: istemci sayısı 2-5 (varsayılan 3)' },
@@ -626,6 +630,95 @@ const EXEC = {
       } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
     }
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
+  },
+
+  async oto_model({ gorev, deneme }) {
+    try {
+      const g = String(gorev || '').toLocaleLowerCase('tr');
+      if (!['xor', 'daire', 'sinus'].includes(g)) return { hata: 'görev xor | daire | sinus olmalı' };
+      let seed = 20240101;
+      const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      const X = []; const Y = [];
+      if (g === 'xor') { X.push([0, 0], [0, 1], [1, 0], [1, 1]); Y.push([0], [1], [1], [0]); }
+      else if (g === 'daire') {
+        while (X.length < 120) {
+          const ic = X.length < 60;
+          const r = ic ? 0.25 + rnd() * 0.65 : 1.4 + rnd() * 0.6;
+          const a = rnd() * Math.PI * 2;
+          X.push([+(r * Math.cos(a)).toFixed(4), +(r * Math.sin(a)).toFixed(4)]);
+          Y.push([ic ? 1 : 0]);
+        }
+      } else {
+        for (let i = 0; i < 64; i++) { const x = (i / 63) * 2 * Math.PI; X.push([+(x / Math.PI - 1).toFixed(5)]); Y.push([+Math.sin(x).toFixed(5)]); }
+      }
+      const N = X.length;
+      const idxAll = Array.from({ length: N }, (_, i) => i);
+      for (let i = idxAll.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idxAll[i], idxAll[j]] = [idxAll[j], idxAll[i]]; }
+      const valN = g === 'xor' ? 4 : Math.max(8, Math.round(N * 0.2));
+      const valIdx = idxAll.slice(0, valN);
+      const trIdx = g === 'xor' ? idxAll : idxAll.slice(valN);
+      const E = g === 'xor' ? 1200 : 700;
+      const trainModel = (H, lr, trI) => {
+        const W1 = []; const b1 = []; const W2 = []; const b2 = [0];
+        for (let i = 0; i < H; i++) { W1.push(Array.from({ length: X[0].length }, () => (rnd() * 2 - 1) * 1.5)); b1.push(rnd() * 2 - 1); }
+        W2.push(Array.from({ length: H }, () => (rnd() * 2 - 1) / Math.sqrt(H)));
+        const M = trI.length;
+        for (let e = 0; e < E; e++) {
+          const dW1 = W1.map((w) => w.map(() => 0)); const db1 = b1.map(() => 0); const dW2 = W2[0].map(() => 0); let db2 = 0;
+          for (const s of trI) {
+            const x = X[s];
+            const hp = W1.map((w, i) => w.reduce((a, wi, j) => a + wi * x[j], 0) + b1[i]);
+            const h = hp.map(Math.tanh);
+            const o = W2[0].reduce((a, wi, i) => a + wi * h[i], 0) + b2[0];
+            const d = o - Y[s][0];
+            for (let i = 0; i < H; i++) dW2[i] += 2 * d * h[i];
+            db2 += 2 * d;
+            for (let i = 0; i < H; i++) {
+              const dp = 2 * d * W2[0][i] * (1 - h[i] * h[i]);
+              db1[i] += dp;
+              for (let j = 0; j < x.length; j++) dW1[i][j] += dp * x[j];
+            }
+          }
+          for (let i = 0; i < H; i++) { for (let j = 0; j < X[0].length; j++) W1[i][j] -= lr * dW1[i][j] / M; b1[i] -= lr * db1[i] / M; W2[0][i] -= lr * dW2[i] / M; }
+          b2[0] -= lr * db2 / M;
+        }
+        return { W1, b1, W2, b2 };
+      };
+      const evaluate = (m, idx) => {
+        let L = 0; let dogru = 0;
+        for (const s of idx) {
+          const x = X[s];
+          const h = m.W1.map((w, i) => Math.tanh(w.reduce((a, wi, j) => a + wi * x[j], 0) + m.b1[i]));
+          const o = m.W2[0].reduce((a, wi, i) => a + wi * h[i], 0) + m.b2[0];
+          L += (o - Y[s][0]) ** 2;
+          if ((o > 0.5 ? 1 : 0) === Y[s][0]) dogru++;
+        }
+        return { kayip: L / idx.length, dogruluk: Math.round((dogru / idx.length) * 100) };
+      };
+      const trials = Math.max(3, Math.min(12, Math.round(Number(deneme) || 6)));
+      const hs = [3, 4, 6, 8, 12]; const lrs = [0.05, 0.1, 0.15, 0.3, 0.5];
+      const results = [];
+      for (let t = 0; t < trials; t++) {
+        const H = hs[Math.floor(rnd() * hs.length)];
+        const lr = lrs[Math.floor(rnd() * lrs.length)];
+        const m = trainModel(H, lr, trIdx);
+        const ev = evaluate(m, valIdx);
+        results.push({ H, lr, valKayip: +ev.kayip.toFixed(5), valDogruluk: ev.dogruluk });
+      }
+      const enIyi = results.slice().sort((a, b) => a.valKayip - b.valKayip)[0];
+      const final = evaluate(trainModel(enIyi.H, enIyi.lr, idxAll), idxAll);
+      const tabloMarkdown = '| # | gizli | lr | val kayıp |' + (g !== 'sinus' ? ' val doğruluk |' : '\n')
+        + (g !== 'sinus' ? '\n|---|---|---|---|---|\n' : '|---|---|---|---|\n')
+        + results.map((r, i) => `| ${i + 1} | ${r.H} | ${r.lr} | ${r.valKayip} |` + (g !== 'sinus' ? ` ${r.valDogruluk}% |` : '')).join('\n');
+      return {
+        ok: true, gorev: 'oto_model (rastgele arama)', denenen: trials,
+        enIyi: { gizli: enIyi.H, ogrenmeOrani: enIyi.lr, valKayip: enIyi.valKayip, valDogruluk: g !== 'sinus' ? enIyi.valDogruluk + '%' : undefined },
+        finalTamVeri: { kayip: +final.kayip.toFixed(5), dogruluk: g !== 'sinus' ? final.dogruluk + '%' : undefined },
+        dogrulamaNotu: g === 'xor' ? 'XOR 4 örnekli olduğu için val=tüm veri (istisna)' : `Val bölmesi: ${valN} örnek (verilmedi)`,
+        tabloMarkdown,
+        not: 'Tabloyu koy; en iyi yapılandırmayı ve neden kazandığını (en düşük val kaybı) belirt; final tam-veri metriğini raporla.',
+      };
+    } catch (e) { return { hata: String(e.message || e).slice(0, 140) }; }
   },
 
   async gizli_ogren({ gorev, istemci, turlar, epsilon, veri }) {
@@ -1374,6 +1467,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    oto_model: (args.gorev) ? `🤖 AutoML ${done ? (bad ? 'arama başarısız' : 'en iyi modeli buldu') : 'model arıyor'}: ${String(args.gorev).slice(0, 10)}` : `🤖 AutoML ${done ? 'tamam' : 'çalışıyor'}`,
     gizli_ogren: (args.gorev) ? `🔐 Gizli öğrenme ${done ? (bad ? 'başarısız' : 'çalıştı') : 'çalışıyor'}: ${String(args.gorev).slice(0, 16)}` : `🔐 Gizli öğrenme ${done ? 'çalıştı' : 'çalışıyor'}`,
     olasilik: (args.gorev) ? `🎲 Olasılık ${done ? (bad ? 'hesaplanamadı' : 'hesaplandı') : 'hesaplanıyor'}: ${String(args.gorev).slice(0, 14)}` : `🎲 Olasılık ${done ? 'hesaplandı' : 'hesaplanıyor'}`,
     sinir_agi: (args.gorev) ? `🧮 Sinir ağı ${done ? (bad ? 'eğitilemedi' : 'eğitildi (' + args.gorev + ')') : 'eğitiliyor (' + args.gorev + ')'}` : `🧮 Sinir ağı ${done ? 'eğitildi' : 'eğitiliyor'}`,

@@ -1095,5 +1095,43 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 34) oto_model: AutoML araması + en iyi seçimi + ders 29 ================= */
+{
+  let round = 0; const calls = [];
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'oto_model', args: { gorev: 'daire', deneme: 4 } });
+      if (round === 2) return fakeRes(body, { name: 'oto_model', args: { gorev: 'xor' } });
+      return fakeRes(body, null, 'AutoML sonuçları burada.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'AutoML'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'daire için en iyi modeli otomatik bul'; $(w, '#send').click();
+  await wait(4500);
+  const toolMsgs = calls.filter((c) => c?.stream).flatMap((c) => c.messages.filter((m) => m.role === 'tool'));
+  const R = toolMsgs.map((m) => { try { return JSON.parse(m.content); } catch { return null; } });
+  const daire = R.find((r) => r?.ok && r.gorev?.includes('oto_model') && r.denenen === 4);
+  const xor = R.find((r) => r?.ok && r.enIyi && r.denenen === 6);
+  ok('34. daire: 4 deneme, en iyi val doğruluk ≥ %85', !!daire && parseInt(daire.enIyi.valDogruluk) >= 85);
+  ok('34. daire: arama tablosu 4 satır', !!daire && (daire.tabloMarkdown.match(/\| \d+ \|/g) || []).length === 4);
+  ok('34. daire: final tam-veri ≥ %90', !!daire && parseInt(daire.finalTamVeri.dogruluk) >= 90);
+  ok('34. xor: varsayılan 6 deneme, %100 bulundu', !!xor && xor.denenen === 6 && xor.finalTamVeri.dogruluk === '100%');
+  ok('34. ders 29 (AutoKeras bonusu) müfredatta', MUF.dersler.some((d) => d.no === 29 && String(d.baslik).includes('AutoML')));
+  ok('34. çip: 🤖 AutoML', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🤖')));
+  ok('34. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
