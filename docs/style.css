@@ -309,3 +309,12 @@ nav.tabs{display:none !important}
 .brainbar .bb-s{flex:1;min-width:160px;color:var(--mut);font-size:12px}
 #statusPill{cursor:pointer;font:inherit}
 #statusPill:hover{filter:brightness(1.15)}
+
+/* dokunmatik: hover yok -> sohbet silme düğmesi her zaman görünür, daha büyük */
+@media (hover:none), (max-width:900px){
+  .conv{padding-right:34px}
+  .conv .cx{opacity:.5;font-size:15px;padding:6px 9px;right:2px}
+  .conv .cx:active{opacity:1;background:rgba(251,113,133,.25)}
+  .persona .pt{max-width:170px}
+  #sbOpen{padding:9px}
+}

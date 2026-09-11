@@ -184,7 +184,7 @@ function renderConvs() {
     const pe = getPersona(c.personaId || 'evrim').emoji || '💬';
     return `<button class="conv ${c.id === cur ? 'on' : ''}" data-conv="${esc(c.id)}">
       <span>${pe}</span><span class="ct">${esc(c.title || 'Yeni sohbet')}</span>
-      <span class="cx" data-del="${esc(c.id)}">✕</span></button>`;
+      <span class="cx" role="button" aria-label="Sohbeti sil" data-del="${esc(c.id)}">✕</span></button>`;
   }).join('');
   box.querySelectorAll('[data-conv]').forEach((b) => b.addEventListener('click', (e) => {
     if (e.target.dataset.del) return;
