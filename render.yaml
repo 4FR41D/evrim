@@ -1,0 +1,34 @@
+# render.yaml — Render Blueprint
+# İki yol var:
+#   A) Render → New → Web Service → repoyu seç (elle, aşağıdaki DEPLOY.md adımları)
+#   B) Render → New → Blueprint → repoyu seç (bu dosyayı okuyup otomatik kurar)
+services:
+  - type: web
+    name: evrim
+    runtime: node
+    plan: free
+    region: frankfurt              # Türkiye'ye en yakın ücretsiz bölge
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true               # main'e her push'ta otomatik yayınla
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.0
+      - key: HOST
+        value: 0.0.0.0
+      # --- VERİ KALICILIĞI (ücretsiz planda disk geçici, bu yüzden şart) ---
+      - key: PERSIST
+        value: "1"
+      - key: DATA_BRANCH
+        value: evrim-data
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
+      # --- AŞAĞIDAKİLERİ PANELDEN "SECRET" OLARAK GİR, BURAYA YAZMA ---
+      # GITHUB_TOKEN : classic token (repo scope)  -> yedekleme + commit için
+      # GROQ_API_KEY : gsk_...                     -> AI beyni
+      # APP_PIN      : uygulamayı açmak için PIN    -> URL herkese açık olacağı için şart
+      # DATA_KEY     : yedekleri şifreleyen parola  -> bir kez belirle, DEĞİŞTİRME
+      #
+      # Not: DATA_KEY'i sonradan değiştirirsen eski yedekler çözülemez.
+      # Aynı değeri koru; değiştireceksen önce "⬇️ Geri yükle" sonra değiştir.

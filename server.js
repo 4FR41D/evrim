@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import {
   all, insert, update, remove, find, getSettings, updateSettings,
   currentPrompt, pushPromptVersion, rollbackPrompt, DATA_DIR,
+  flushAll, onWrite,
 } from './src/db.js';
+import * as persist from './src/persist.js';
 import * as llm from './src/llm.js';
 import * as evo from './src/evolve.js';
 import * as learn from './src/learn.js';
@@ -17,6 +19,25 @@ import * as agent from './src/agent.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: '4mb' }));
+
+// ---------- Erişim koruması (PIN) ----------
+// Bulutta (ör. Render) URL herkese açık olur; APP_PIN tanımlıysa API'yi kilitler.
+const APP_PIN = (process.env.APP_PIN || '').trim();
+const pinOk = (req) => !APP_PIN || String(req.get('x-evrim-pin') || req.query.pin || '') === APP_PIN;
+app.post('/api/unlock', (req, res) => {
+  const pin = String(req.body?.pin || '');
+  if (APP_PIN && pin !== APP_PIN) return res.status(401).json({ error: 'PIN hatalı' });
+  res.json({ ok: true });
+});
+app.get('/api/health', (req, res) => res.json({
+  ok: true, pin: !!APP_PIN, persist: persist.persistStatus(), uptime: Math.round(process.uptime()),
+}));
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path === '/unlock') return next();
+  if (!pinOk(req)) return res.status(401).json({ error: 'pin-required' });
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = Number(process.env.PORT || 3000);
@@ -48,6 +69,8 @@ app.get('/api/status', wrap(async (req, res) => {
       user: ghUser?.ok ? { login: ghUser.login, name: ghUser.name } : null,
     },
     dataDir: DATA_DIR,
+    persist: persist.persistStatus(),
+    protected: !!APP_PIN,
     time: new Date().toISOString(),
   });
 }));
@@ -88,6 +111,18 @@ app.post('/api/settings', wrap(async (req, res) => {
 }));
 
 app.get('/api/providers', wrap(async (req, res) => res.json(llm.providerList())));
+
+// ---------------- Veri kalıcılığı (bulut için) ----------------
+app.get('/api/persist', wrap(async (req, res) => res.json(persist.persistStatus())));
+app.post('/api/persist/save', wrap(async (req, res) => {
+  await flushAll();
+  res.json(await persist.push());
+}));
+app.post('/api/persist/restore', wrap(async (req, res) => {
+  const r = await persist.pull();
+  // Önbelleği tazele: dosyalar diskten yeniden okunsun
+  res.json(r);
+}));
 
 // ---------------- Sohbet ----------------
 app.get('/api/conversations', wrap(async (req, res) => {
@@ -299,8 +334,36 @@ function mask(s) {
   return `${s.slice(0, 4)}••••${s.slice(-4)}`;
 }
 
-app.listen(PORT, HOST, () => {
+// Her yazmada yedeği "kirlenmiş" işaretle
+onWrite(() => persist.markDirty());
+
+const server = app.listen(PORT, HOST, async () => {
   console.log(`\n🧬 EVRIM çalışıyor → http://${HOST}:${PORT}`);
   console.log(`   Sağlayıcı: ${llm.activeProvider().id} | Model: ${llm.resolveModel()}`);
-  console.log(`   Veri klasörü: ${DATA_DIR}\n`);
+  console.log(`   Veri klasörü: ${DATA_DIR}`);
+  console.log(`   PIN koruması: ${APP_PIN ? 'AÇIK' : 'kapalı'}\n`);
+  const p = await persist.initPersist();
+  if (p.enabled) {
+    const enc = p.encrypted ? ' (şifreli)' : '';
+    console.log('   Kalıcılık: ✅ ' + p.repo + '@' + p.branch + enc);
+    console.log('   Yedekler GitHub’a otomatik yazılır (3 dk arayla + kapanışta).\n');
+  } else {
+    console.log('   Kalıcılık: ⚠️  ' + (p.reason || 'kapalı') + '\n');
+  }
 });
+
+// Yeniden başlatmada veri kaybı olmasın diye önce diske, sonra GitHub'a yaz
+async function shutdown(signal) {
+  console.log(`\n[persist] ${signal} alındı, veri kaydediliyor…`);
+  try {
+    await flushAll();
+    const r = await persist.push();
+    console.log('[persist] yedek:', JSON.stringify(r));
+  } catch (e) {
+    console.error('[persist] kaydetme hatası:', e.message);
+  }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 8000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -6,7 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+// DATA_DIR: bulutta (Render) kalıcı/yazılabilir bir yol ver, yoksa proje içi data/
+export const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname, '..', 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const cache = new Map();
@@ -34,7 +37,12 @@ export function load(table) {
 }
 
 let writeQueue = Promise.resolve();
+let dirtyHook = null;
+/** persist.js bu kancayı kayıt eder; her yazmada yedek "kirlenmiş" işaretlenir */
+export function onWrite(fn) { dirtyHook = fn; }
+
 export function save(table) {
+  if (dirtyHook) { try { dirtyHook(); } catch {} }
   const data = load(table);
   // Yazmaları sıraya al -> bozuk JSON riskini azalt
   writeQueue = writeQueue.then(() => {
@@ -43,6 +51,19 @@ export function save(table) {
     fs.renameSync(tmp, fileFor(table));
   }).catch((err) => console.error('[db] yazma hatası', table, err.message));
   return writeQueue;
+}
+
+/** Bekleyen tüm yazmaları bitir (graceful shutdown için) */
+export function flushAll() {
+  return writeQueue.then(() => writeQueue);
+}
+
+/** Tüm tabloları diskten yeniden oku (geri yükleme sonrası önbellek bayatlar) */
+export function reloadAll() {
+  cache.clear();
+  for (const t of ['settings', 'memories', 'prompts', 'evolutions', 'skills', 'cards', 'reviews', 'messages', 'conversations']) {
+    try { load(t); } catch {}
+  }
 }
 
 export function uid(prefix = 'id') {
@@ -63,6 +84,7 @@ const SETTINGS_DEFAULTS = {
   language: 'tr',
   selfEvolution: true,       // öz-gelişim döngüsü açık mı
   autoCommit: false,         // AI kodu otomatik commit etsin mi (varsayılan: kapalı, güvenli)
+  dataRepo: '',              // veri yedeğinin tutulacağı repo (boşsa otomatik seçilir)
   evolveThreshold: 0.6,      // yamaların uygulanması için gereken güven eşiği
   createdAt: null,
 };

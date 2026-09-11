@@ -3,12 +3,37 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// PIN koruması: bulutta (Render vb.) URL herkese açık olduğu için APP_PIN istenebilir
+let PIN = localStorage.getItem('evrim_pin') || '';
+async function unlock() {
+  try {
+    const r = await fetch('/api/health');
+    const h = await r.json();
+    if (!h.pin) return true;
+  } catch { /* health yoksa devam */ }
+  for (let i = 0; i < 5; i++) {
+    const pin = prompt('🔒 Bu EVRIM örneği PIN ile korunuyor. PIN gir:');
+    if (pin === null) return false;
+    const res = await fetch('/api/unlock', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }),
+    });
+    if (res.ok) { PIN = pin; localStorage.setItem('evrim_pin', pin); return true; }
+    toast('PIN hatalı', 'bad');
+  }
+  return false;
+}
+
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     method: opts.method || (opts.body ? 'POST' : 'GET'),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(PIN ? { 'x-evrim-pin': PIN } : {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
+  if (res.status === 401) {
+    const unlocked = await unlock();
+    if (!unlocked) throw new Error('PIN doğrulanamadı');
+    return api(path, opts);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
@@ -563,6 +588,7 @@ async function loadSettings() {
     $('#thrLabel').textContent = Number(s.evolveThreshold).toFixed(2);
     $('#setName').value = s.userName || '';
     const st = window.__status;
+    renderPersist(st?.persist);
     $('#sysInfo').innerHTML = `
       <div class="kv"><span>Sağlayıcı</span><b>${esc(st?.providerName || '-')}</b></div>
       <div class="kv"><span>Model</span><b>${esc(st?.model || '-')}</b></div>
@@ -671,7 +697,42 @@ $('#btnInstall').addEventListener('click', async () => {
 
 /* başlat */
 (async function init() {
+  await unlock();
   await loadStatus();
   await loadChat();
   setInterval(loadStatus, 20000);
 })();
+
+function renderPersist(p) {
+  const box = $('#persistBox');
+  if (!box) return;
+  if (!p) { box.textContent = 'bilgi alınamadı'; return; }
+  if (!p.enabled) {
+    box.innerHTML = `<span class="chip warn">kapalı</span> Veriler yalnızca bu sunucunun diskinde. ` +
+      `Bulutta çalıştırıyorsan <code>PERSIST=1</code> ortam değişkenini aç.`;
+    return;
+  }
+  box.innerHTML = `<span class="chip ok">açık</span> <b class="mono">${esc(p.repo)}@${esc(p.branch || '')}</b>` +
+    `${p.encrypted ? ' <span class="chip ok">🔐 şifreli</span>' : ' <span class="chip warn">şifresiz — DATA_KEY önerilir</span>'}<br>` +
+    `<span class="muted">Son yedek: ${p.lastSync ? new Date(p.lastSync).toLocaleString('tr-TR') : 'henüz yok'} · ` +
+    `${p.files} dosya${p.pending ? ' · <b>bekleyen değişiklik var</b>' : ''}</span>` +
+    (p.lastError ? `<br><span style="color:var(--bad)">⚠️ ${esc(p.lastError)}</span>` : '');
+}
+
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'btnSaveNow') {
+    busy(e.target, true, 'Yedekleniyor…');
+    try { const r = await api('/api/persist/save', { body: {} });
+      toast(r.error ? '⚠️ ' + r.error : `✅ ${r.files} dosya yedeklendi`, r.error ? 'bad' : 'ok');
+      loadStatus().then(() => renderPersist(window.__status?.persist));
+    } catch (err) { toast(err.message, 'bad'); } finally { busy(e.target, false); }
+  }
+  if (e.target.id === 'btnRestore') {
+    if (!confirm('GitHub’daki yedek bu sunucuya indirilecek. Devam?')) return;
+    busy(e.target, true, 'Geri yükleniyor…');
+    try { const r = await api('/api/persist/restore', { body: {} });
+      toast(`⬇️ ${r.restored ?? 0} dosya geri yüklendi`, 'ok');
+      setTimeout(() => location.reload(), 900);
+    } catch (err) { toast(err.message, 'bad'); } finally { busy(e.target, false); }
+  }
+});

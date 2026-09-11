@@ -52,6 +52,15 @@ Sağlayıcı otomatik algılanır (anahtarın önekinden).
 
 ## ☁️ Ücretsiz yayınlama (telefondan her yerden erişim)
 
+> 📘 **Adım adım tam rehber: [DEPLOY.md](DEPLOY.md)** — Render kurulumu, ortam değişkenleri,
+> veri kalıcılığı, sorun giderme tablosu ve güvenlik notları orada.
+
+**Önemli:** ücretsiz bulut planlarında disk geçicidir. EVRIM bu yüzden `data/` klasörünü
+GitHub'daki **özel** bir repoda (`evrim-data`) şifreli yedekler ve açılışta geri yükler.
+`PERSIST=1` ile açılır; `GITHUB_TOKEN`, `GROQ_API_KEY`, `APP_PIN`, `DATA_KEY` ortam değişkenleri yeterlidir.
+
+
+
 ### Seçenek A — Render / Railway (Node sunucusu, en kolay)
 1. Repoyu GitHub'a push et
 2. Render → **New → Web Service** → repoyu seç
