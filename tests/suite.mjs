@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v6 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 6') && sys.includes('AJAN ÇALIŞMA BİÇİMİM'));
+  ok('1. beyin v7 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 7') && sys.includes('AJAN ÇALIŞMA BİÇİMİM') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -553,6 +553,41 @@ function makeBroker() {
   ok('18. kod sandbox çıktısı 42', !!toolMsg && toolMsg.content.includes('42'));
   ok('18. araç çipi: Kod çalıştırdı', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Kod çalıştırdı')));
   ok('18. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 19) WEB ARAMA zinciri + Groq şema geçerliliği ================= */
+{
+  let round = 0; const calls = [];
+  const DDG_MD = 'Title: arama\n\nMarkdown Content:\n[Naakka Nakliyat İletişim](https://duckduckgo.com/l/?uddg=aHR0cHM6Ly9uYWtrYS5jb20=&rut=abc)\nResmi site snippet.\n[İKİNCİ sonuç](https://example.org/iki)\n';
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('r.jina.ai') && u.includes('duckduckgo')) return { ok: true, status: 200, headers: { get: () => 'text/plain' }, text: async () => DDG_MD, json: async () => ({}) };
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return round === 1 ? fakeRes(body, { name: 'web_ara', args: { sorgu: 'Beyoğlu nakliyat telefon' } }) : fakeRes(body, null, 'Kaynak: https://nakka.com — telefon 0212…');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Ara'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'Beyoğlu nakliyat telefonunu bul'; $(w, '#send').click();
+  await wait(3000);
+  const tools = calls.find((c) => c?.tools)?.tools || [];
+  const kc = tools.find((t) => t.function.name === 'kod_calistir');
+  ok('19. Groq şeması geçerli: properties nesne, required dizi (kod_calistir)', !!kc && !!kc.function.parameters.properties.kod && Array.isArray(kc.function.parameters.required) && !kc.function.parameters.properties.required);
+  ok('19. web_ara araç listesinde', tools.some((t) => t.function.name === 'web_ara'));
+  const toolMsg = calls.filter((c) => c?.stream)[1]?.messages?.find((m) => m.role === 'tool');
+  const tr = toolMsg ? JSON.parse(toolMsg.content) : null;
+  ok('19. arama sonucu: uddg çözüldü + başlık', tr?.sonuc?.[0]?.url === 'https://nakka.com/' || tr?.sonuc?.[0]?.url === 'https://nakka.com', );
+  ok('19. ikinci sonuç da listede', (tr?.sonuc || []).some((x) => x.url === 'https://example.org/iki'));
+  ok('19. çip: Web araması', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Web')));
+  ok('19. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

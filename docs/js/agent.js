@@ -73,11 +73,13 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('web_ara', 'WEB ARAMA (anahtarsız): güncel/gerçek bilgi, haber, fiyat, sürüm, kişi/kurum bilgisi lazımsa ÖNCE ara; sonra en iyi sonucu web_oku ile okuyup ÖYLE cevapla. Uydurma link yasak — buradan gelen linkleri kullan.', {
+    sorgu: { type: 'string', description: 'Arama sorgusu (kısa, net)' },
+    adet: { type: 'number', description: 'Opsiyonel: kaç sonuç (1-5, varsayılan 5)' },
+  }, ['sorgu']),
   F('kod_calistir', 'KOD ÇALIŞTIR (güvenli sandbox): matematik, hesap, algoritma, veri dönüştürme, test — JS kodunu izole çalıştırır, console çıktısını döndürür. Emin olmadığın hesabı burayla doğrula.', {
-    type: 'object',
-    properties: { kod: { type: 'string', description: 'Çalıştırılacak JS kodu (console.log kullan)' } },
-    required: ['kod'],
-  }),
+    kod: { type: 'string', description: 'Çalıştırılacak JS kodu (console.log kullan)' },
+  }, ['kod']),
   F('api_katalog', 'AÇIK API KATALOĞU (660+ üretici medya modeli + üçüncü taraf araçlar): kullanıcı görsel/video/ses/3D üretim modeli, arka plan kaldırma, upscale, SEO, scraping, veri zenginleştirme gibi DIŞ API/model araçları sorarsa burada ara. Kendin model adı UYDURMA — katalogdan getir ve ücret/anahtar gereksinimini mutlaka söyle.', {
     sorgu: { type: 'string', description: 'Aranacak yetenek (İngilizce terim daha iyi eşleşir): "text to image", "video upscale", "background removal", "text to speech"...' },
     adet: { type: 'integer', description: 'Kaç sonuç istensin (1-5, varsayılan 3)' },
@@ -561,6 +563,35 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async web_ara({ sorgu, adet }) {
+    const q = String(sorgu || '').trim();
+    if (!q) return { hata: 'sorgu boş' };
+    const lim = Math.max(1, Math.min(5, Number(adet) || 5));
+    try {
+      const res = await fetch('https://r.jina.ai/https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q), { headers: { Accept: 'text/plain' } });
+      if (!res.ok) return { hata: res.status === 429 ? 'arama limiti dolu (20/dk) — birazdan tekrar dene' : 'arama servisi yanıt vermedi (' + res.status + ')' };
+      const md = await res.text();
+      const items = [];
+      const re = /\[([^\]\n]{6,140})\]\((https?:[^)\s]+)\)/g;
+      let m;
+      while ((m = re.exec(md)) && items.length < lim) {
+        let u = m[2];
+        const dd = /uddg=([^&]+)/.exec(u);
+        if (dd) {
+          try { u = atob(dd[1].replace(/-/g, '+').replace(/_/g, '/')); }
+          catch { try { u = decodeURIComponent(dd[1]); } catch {} }
+        }
+        if (/duckduckgo\.com|jina\.ai|\.(png|jpg|jpeg|gif|css|js)$/i.test(u)) continue;
+        if (items.some((x) => x.url === u)) continue;
+        items.push({ baslik: m[1].trim(), url: u });
+      }
+      if (!items.length) return { ok: true, sorgu: q, sonuc: [], not: 'Sonuç bulunamadı — sorguyu değiştirip tekrar dene.' };
+      return { ok: true, sorgu: q, sonuc: items, not: 'En uygun 1-2 sonucu web_oku ile oku, sonra kaynak linkleriyle cevapla.' };
+    } catch (e) {
+      return { hata: String(e.message || e).slice(0, 140) };
+    }
+  },
+
   async kod_calistir({ kod }) {
     // v31: benim bash'imin karşılığı — izole JS sandbox (sahte console, try/catch, çıktı sınırı)
     const src = String(kod || '').slice(0, 8000);
@@ -720,6 +751,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    web_ara: (args.sorgu) ? `🔍 Web'de ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu).slice(0, 40)}"` : `🔍 Web araması ${done ? 'yaptı' : 'yapıyor'}`,
     kod_calistir: done ? '💻 Kod çalıştırdı' : '💻 Kod çalıştırıyor',
     api_katalog: (args.sorgu || args.query)
       ? `📚 API kataloğunda ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu || args.query).slice(0, 40)}"`

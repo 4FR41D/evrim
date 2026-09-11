@@ -360,6 +360,9 @@ export async function rawChat(messages, opts = {}) {
             opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model…`);
             continue;
           }
+          if (res.status === 400 && /schema|tools/i.test(msg) && supportsTools && !opts._schemaRetry) {
+            return rawChat(messages, { ...opts, _schemaRetry: true, tools: null });
+          }
           if (a.houseKey && ROTATABLE.test(`${res.status} ${msg}`)) markHouseDown(60000);
           throw new Error(msg);
         }
