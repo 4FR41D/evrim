@@ -392,5 +392,48 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 13) KOTA: 429 -> model rotasyonu ile cevap ================= */
+{
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (body?.model === 'openai/gpt-oss-120b') return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'rate limit exceeded' } }), text: async () => '{}' };
+      return fakeRes(body, null, 'Yedek modelden cevap: döngü tamam.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kota'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'kuantum nedir'; $(w, '#send').click();
+  await wait(3000);
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('13. 429 -> sıradaki Groq modeliyle cevap', ms.some((m) => m.role === 'assistant' && String(m.content).includes('Yedek modelden cevap')));
+  ok('13. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 14) TÜM modeller 429 -> zincir + kart (OpenRouter efsanesi YOK) ================= */
+{
+  const w = makeWin({ fetch: async (url) => {
+    if (String(url).includes('groq.com')) return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'rate limit exceeded' } }), text: async () => '{}' };
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Tuku'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'kuantum nedir'; $(w, '#send').click();
+  await wait(4000);
+  const all = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').map((m) => m.content).join(' ');
+  ok('14. kota tükenince seçim kartı (çıkmaz yok)', !!$(w, '#msgs .cwasm') && !!$(w, '#msgs .cconn'));
+  ok('14. yanlış metin yok (OpenRouter geçmez)', !all.includes('OpenRouter'));
+  ok('14. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

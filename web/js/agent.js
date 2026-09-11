@@ -9,6 +9,9 @@ import { all, insert, getSettings, now, storageSize } from './store.js';
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import { rawChat, active as activeLLM } from './llm.js';
+import { localStatus } from './local.js';
+import { puterStatus } from './puter.js';
+import { houseStatus } from './house.js';
 
 const MAX_STEPS = 4;
 
@@ -564,6 +567,9 @@ export async function agentChat(messages, opts = {}) {
     const { houseChat } = await import('./house.js');
     const out = await houseChat(messages, opts.onChunk);
     return { content: out.content, model: out.model || 'ev bulutu', steps: [] };
+  }
+  if (a.id === 'local' && !localStatus?.().ready && !puterStatus?.().ready && !houseStatus?.().ready) {
+    throw new Error('BEYIN_YOK');
   }
   const supportsTools = a.def?.format === 'openai' && !opts.json;
 

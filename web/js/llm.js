@@ -84,10 +84,15 @@ export function detectProvider(key) {
 }
 
 /** O an hangi beyin kullanılacak? */
+let houseDownUntil = 0;
+export function markHouseDown(ms = 60000) { houseDownUntil = Date.now() + ms; }
+
 export function active() {
   const s = getSettings();
-  const key = (s.apiKey || '').trim() || HOUSE_KEY;   // v27: ev anahtarı = platform anahtarı
-  const houseKey = !(s.apiKey || '').trim() && !!HOUSE_KEY;
+  const userKey = (s.apiKey || '').trim();
+  const houseOk = !!HOUSE_KEY && Date.now() > houseDownUntil;   // kota kilidine saygılı
+  const key = userKey || (houseOk ? HOUSE_KEY : '');            // v27: ev anahtarı = platform anahtarı
+  const houseKey = !userKey && houseOk;
   // 0-) Ev bulutu bağlıysa (WebRTC): sıfır giriş, sıfır sunucu, sıfır anahtar
   if (!key && houseStatus().ready) {
     return { id: 'house', key: '', def: { name: 'Ev bulutu', format: 'house', defaultModel: 'ev-beyni' }, model: 'ev bulutu (WebRTC)' };
@@ -326,7 +331,11 @@ export async function rawChat(messages, opts = {}) {
   if (a.def.format === 'openai') {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
     if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
-    const queue = a.id === 'openrouter' ? (opts._queue || await rankedFreeModels()).slice(0, 5) : [model];
+    const queue = a.id === 'openrouter'
+      ? (opts._queue || await rankedFreeModels()).slice(0, 5)
+      : a.id === 'groq'
+        ? [model, ...PROVIDERS.groq.models.filter((m) => m !== model)]
+        : [model];
     let lastErr = null;
     for (let qi = 0; qi < queue.length; qi++) {
       const mid = queue[qi];
@@ -351,6 +360,7 @@ export async function rawChat(messages, opts = {}) {
             opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} dolu (${res.status}) → sıradaki model…`);
             continue;
           }
+          if (a.houseKey && ROTATABLE.test(`${res.status} ${msg}`)) markHouseDown(60000);
           throw new Error(msg);
         }
         if (useStream) {
@@ -476,7 +486,9 @@ function errText(status, data, id) {
   const msg = data?.error?.message || data?.error?.error?.message || JSON.stringify(data || {}).slice(0, 200);
   if (status === 401) return `Anahtar geçersiz (${id}). Ayarlar’dan kontrol et.`;
   if (status === 402) return `${id}: ücretsiz kota/bakiye tükendi.`;
-  if (status === 429) return `${id}: hız limiti/kota doldu. OpenRouter ücretsiz katmanı günde ~50 istek verir; yarın sıfırlanır ya da modeli değiştir.`;
+  if (status === 429) return id === 'groq'
+    ? 'groq: paylaşımlı ücretsiz kota bu dakika dolu — diğer modeller sırayla deneniyor'
+    : `${id}: hız limiti/kota dolu — birazdan tekrar dene`;
   if (status === 404) return `Model bulunamadı (${id}): ${msg}`;
   return `${id} HTTP ${status}: ${msg}`;
 }

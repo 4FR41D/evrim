@@ -9,7 +9,7 @@ import {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
   fetchFreeModels, bestFreeModel,
   probeNano, nanoStatus, createNano, hasNanoAPI,
-  probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown,
+  probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown, markHouseDown,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
@@ -335,21 +335,47 @@ async function send(text) {
       }
     }
 
-    const res = await agentChat(messages, {
-      temperature: 0.7,
-      maxTokens: 1200,
-      onChunk,
-      onTool,
-      onProgress: (pct, t) => {
-        beat();
-        if (pct > 0 && pct < 100) {
-          liveStat.textContent = `⬇️ ${t || ''} %${pct}`;
-          setLocalProgress(pct, t);
-        } else if (t) {
-          liveStat.textContent = t;
+    let res;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        res = await agentChat(messages, {
+          temperature: 0.7,
+          maxTokens: 1200,
+          onChunk,
+          onTool,
+          onProgress: (pct, t) => {
+            beat();
+            if (pct > 0 && pct < 100) {
+              liveStat.textContent = `⬇️ ${t || ''} %${pct}`;
+              setLocalProgress(pct, t);
+            } else if (t) {
+              liveStat.textContent = t;
+            }
+          },
+        });
+        break;
+      } catch (e429) {
+        const em = String(e429?.message || e429);
+        if (attempt === 0 && /429|kota|hız limiti|overloaded/i.test(em)) {
+          // v29: kota doluysa ev anahtarını 60 sn dinlendir, ZİNCİRLE bir deneme daha
+          markHouseDown(60000);
+          liveStat.textContent = '⏳ Ücretsiz kota dolu — yedek beyin devreye alınıyor…';
+          beat();
+          refreshStatus();
+          continue;
         }
-      },
-    });
+        if (/BEYIN_YOK/.test(em)) {
+          clearInterval(watchdog);
+          live.remove();
+          typing(false);
+          busy($('#send'), false);
+          sending = false;
+          askBrain(content);
+          return;
+        }
+        throw e429;
+      }
+    }
     const reply = res.content;
     beat();
     clearInterval(watchdog);
