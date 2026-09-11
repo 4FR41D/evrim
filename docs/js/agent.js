@@ -73,6 +73,11 @@ export const TOOLS = [
     model: { type: 'string', description: 'Opsiyonel model (örn. gpt-image-1-mini, flux-schnell)' },
   }, ['istem']),
 
+  F('kod_calistir', 'KOD ÇALIŞTIR (güvenli sandbox): matematik, hesap, algoritma, veri dönüştürme, test — JS kodunu izole çalıştırır, console çıktısını döndürür. Emin olmadığın hesabı burayla doğrula.', {
+    type: 'object',
+    properties: { kod: { type: 'string', description: 'Çalıştırılacak JS kodu (console.log kullan)' } },
+    required: ['kod'],
+  }),
   F('api_katalog', 'AÇIK API KATALOĞU (660+ üretici medya modeli + üçüncü taraf araçlar): kullanıcı görsel/video/ses/3D üretim modeli, arka plan kaldırma, upscale, SEO, scraping, veri zenginleştirme gibi DIŞ API/model araçları sorarsa burada ara. Kendin model adı UYDURMA — katalogdan getir ve ücret/anahtar gereksinimini mutlaka söyle.', {
     sorgu: { type: 'string', description: 'Aranacak yetenek (İngilizce terim daha iyi eşleşir): "text to image", "video upscale", "background removal", "text to speech"...' },
     adet: { type: 'integer', description: 'Kaç sonuç istensin (1-5, varsayılan 3)' },
@@ -556,6 +561,23 @@ const EXEC = {
     return { hata: 'Görsel servisi bu anda yanıt vermedi — 10-20 sn sonra tekrar iste (giriş/hesap gerekmez).' };
   },
 
+  async kod_calistir({ kod }) {
+    // v31: benim bash'imin karşılığı — izole JS sandbox (sahte console, try/catch, çıktı sınırı)
+    const src = String(kod || '').slice(0, 8000);
+    if (!src.trim()) return { hata: 'kod boş' };
+    const logs = [];
+    const fake = new Proxy({}, {
+      get: () => (...a) => logs.push(a.map((x) => { try { return typeof x === 'object' ? JSON.stringify(x) : String(x); } catch { return String(x); } }).join(' ')),
+    });
+    try {
+      const t0 = Date.now();
+      Function('console', '"use strict";' + src)(fake);
+      return { ok: true, cikti: logs.join('\n').slice(0, 4000) || '(çıktı yok)', ms: Date.now() - t0, hata: null };
+    } catch (e) {
+      return { ok: false, cikti: logs.join('\n').slice(0, 2000), hata: String(e.message || e).slice(0, 200) };
+    }
+  },
+
   async api_katalog({ sorgu, adet }) {
     return katalogAra(sorgu, adet);
   },
@@ -698,6 +720,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     web_oku: args.url
       ? `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}: ${String(args.url).replace(/^https?:\/\//, '').slice(0, 42)}`
       : `🌍 ${done ? 'Sayfa okudu' : 'Sayfa okuyor'}`,
+    kod_calistir: done ? '💻 Kod çalıştırdı' : '💻 Kod çalıştırıyor',
     api_katalog: (args.sorgu || args.query)
       ? `📚 API kataloğunda ${done ? 'aradı' : 'arıyor'}: "${String(args.sorgu || args.query).slice(0, 40)}"`
       : `📚 API kataloğuna ${done ? 'baktı' : 'bakıyor'}`,

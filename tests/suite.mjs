@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v5 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 5'));
+  ok('1. beyin v6 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 6') && sys.includes('AJAN ÇALIŞMA BİÇİMİM'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -468,6 +468,91 @@ function makeBroker() {
   ok('15. putera yönlendirme YOK (signIn 0)', puterSignInCalls === 0);
   ok('15. pollinations çağrıldı', calls.includes('img'));
   ok('15. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 16) COMPACTION: uzun konuşma özetlenir, bağlam kaybolmaz ================= */
+{
+  let sysSeen = '';
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (body?.response_format) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: JSON.stringify({ ozet: 'ESKI ÖZET: logo, plan ve şehir listesi konuşuldu.' } ) } }] }), text: async () => '{}' };
+      if (body?.messages?.[0]?.role === 'system') sysSeen = body.messages[0].content;
+      return fakeRes(body, null, 'Özet bağlamıyla cevap: kaldığımız yerden.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  const seed = [];
+  for (let i = 0; i < 30; i++) seed.push({ id: 's' + i, conversationId: 'c1', role: i % 2 ? 'assistant' : 'user', content: 'eski mesaj ' + i + ' '.repeat(40), createdAt: new Date().toISOString() });
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'pr1', name: 'T', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'pr1');
+  w.localStorage.setItem('evrim:conversations', JSON.stringify([{ id: 'c1', title: 'uzun', profileId: 'pr1', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:messages', JSON.stringify(seed));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(500);
+  $(w, '#input').value = 'kaldığımız yerden devam edelim mi'; $(w, '#send').click();
+  await wait(3000);
+  const conv = JSON.parse(w.localStorage.getItem('evrim:conversations') || '[]').find((c) => c.id === 'c1');
+  ok('16. konuşma özeti çıkarıldı ve saklandı', !!conv?.summary && conv.summary.includes('ESKI ÖZET'));
+  ok('16. özet sistem promptuna enjekte edildi', sysSeen.includes('ÖNCEKİ KONUŞMA ÖZETİ'));
+  ok('16. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 17) ÖZ-DENETİM: yetersiz cevap otomatik düzeltilir ================= */
+{
+  let round = 0; let streamCalls = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++; if (body?.stream) streamCalls++;
+      return round === 1 ? fakeRes(body, null, 'Evet.') : fakeRes(body, null, 'Detaylı cevap: kuantum dolanıklık iki parçacığın ortak durum paylaşmasıdır; ölçüm biriyle yapıldığında diğeri anında etkilenir. Örnekler: foton çiftleri, süperiletken kübitler.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Denetim'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'kuantum dolanıklık nedir'; $(w, '#send').click();
+  await wait(3500);
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  const bot = ms.filter((m) => m.role === 'assistant').pop();
+  ok('17. kısa cevap reddedildi, düzeltilmiş hali kaydedildi', String(bot?.content || '').includes('Detaylı cevap'));
+  ok('17. öz-denetim bir kez yeniden denedi', streamCalls === 2);
+  ok('17. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 18) KOD ÇALIŞTIR: sandbox çıktı doğrular ================= */
+{
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return round === 1 ? fakeRes(body, { name: 'kod_calistir', args: { kod: 'console.log(6*7)' } }) : fakeRes(body, null, 'Hesap doğrulandı: 42.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Kod'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = '6 kere 7 kaçtır, kodla doğrula'; $(w, '#send').click();
+  await wait(3000);
+  const toolMsg = calls.filter((c) => c?.stream)[1]?.messages?.find((m) => m.role === 'tool');
+  ok('18. kod sandbox çıktısı 42', !!toolMsg && toolMsg.content.includes('42'));
+  ok('18. araç çipi: Kod çalıştırdı', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('Kod çalıştırdı')));
+  ok('18. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

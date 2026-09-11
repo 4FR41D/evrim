@@ -127,10 +127,12 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 13 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 14 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_oku: herhangi bir web sayfasını okur (r.jina.ai, anahtarsız)
+│     │                 #   + kod_calistir: JS sandbox (benim bash'imin karşılığı)
+│     │                 #   + gorsel_uret: girişsiz/anahtarsız görsel (pollinations, CORS *)
 │     ├─ reflex.js      # REFLEKS KATMANI: beyinsiz bile anında cevap (selam, saat, matematik)
 │     ├─ wasm.js        # CİHAZ İÇİ KÜÇÜK BEYİN: transformers.js WASM (SmolLM2-135M) —
 │     │                 #   WebGPU'suz, girişsiz, çevrimdışı; hiçbir siteye yönlendirmez

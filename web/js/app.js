@@ -9,7 +9,7 @@ import {
   detectWebGPU, guessTier, shortName, localStatus, loadLocal, probeFree,
   fetchFreeModels, bestFreeModel,
   probeNano, nanoStatus, createNano, hasNanoAPI,
-  probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown, markHouseDown,
+  probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown, markHouseDown, rawChat,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
@@ -263,10 +263,35 @@ async function send(text) {
     insert('messages', { conversationId, role: 'user', content });
     renderSidebar();
 
+    // v31 COMPACTION (benim session-memory modelim): uzun konuşma özetlenir, bağlam kaybolmaz
+    let summary = '';
+    try {
+      const conv = find('conversations', conversationId);
+      summary = conv?.summary || '';
+      const fullMsgs = all('messages').filter((m) => m.conversationId === conversationId);
+      const needAt = conv?.summaryLen ? conv.summaryLen + 20 : 28;
+      if (fullMsgs.length > needAt) {
+        const oldChunk = fullMsgs.slice(0, fullMsgs.length - 24)
+          .map((m) => `${m.role}: ${String(m.content).slice(0, 240)}`).join('\n').slice(0, 6000);
+        const r = await rawChat([
+          { role: 'system', content: 'Eski konuşmayı 3-6 maddede özetle. YALNIZCA JSON dön: {"ozet":"..."}' },
+          { role: 'user', content: oldChunk + (summary ? '\n\nÖnceki özet: ' + summary : '') },
+        ], { json: true, maxTokens: 400 });
+        const oz = String((JSON.parse(r.content) || {}).ozet || '').slice(0, 1500);
+        if (oz) {
+          summary = oz;
+          update('conversations', conversationId, { summary: oz, summaryLen: fullMsgs.length });
+        }
+      }
+    } catch { /* özet opsiyonel */ }
+
     const history = all('messages').filter((m) => m.conversationId === conversationId).slice(-24)
       .map((m) => ({ role: m.role, content: m.content }));
     const pers = personaPrompt(currentPersonaId());
-    const messages = [{ role: 'system', content: evo.buildSystemPrompt() + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '') }, ...history];
+    const sysPrompt = evo.buildSystemPrompt()
+      + (summary ? `\n\n## ÖNCEKİ KONUŞMA ÖZETİ (bağlam)\n${summary}` : '')
+      + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '');
+    const messages = [{ role: 'system', content: sysPrompt }, ...history];
 
     // v26 REFLEKS: beyin yoksa bile selam/small-talk/matematik/saat ANINDA cevaplanır.
     // Sessizlik yasak — kullanıcı her yazdığında bir şey duyar.
@@ -336,6 +361,7 @@ async function send(text) {
     }
 
     let res;
+    let selfChecked = false;
     for (let attempt = 0; ; attempt++) {
       try {
         res = await agentChat(messages, {
@@ -353,6 +379,17 @@ async function send(text) {
             }
           },
         });
+        // v31 ÖZ-DENETİM (benim test-döngümün karşılığı): cevap yetersizse bir kez düzelt
+        if (!selfChecked) {
+          const chk = cevapYeterliMi(content, res.content);
+          if (!chk.ok) {
+            selfChecked = true;
+            liveStat.textContent = '🔍 Cevabımı doğruluyorum — daha iyisini yazıyorum…';
+            beat();
+            messages.push({ role: 'system', content: `ÖZ DENETİM: önceki cevap yetersizdi (${chk.neden}). Aynı soruya daha dolu, doğrudan, gerekirse maddeli cevap ver.` });
+            continue;
+          }
+        }
         break;
       } catch (e429) {
         const em = String(e429?.message || e429);
@@ -1416,6 +1453,16 @@ async function tryFreeNow(full = false) {
 }
 
 let lightTimer = null;
+function cevapYeterliMi(soru, cevap) {
+  const c = String(cevap || '').trim();
+  if (!c || c.length < 40) return { ok: false, neden: 'cevap çok kısa/k boş' };
+  if (/^(evet|hayır|ok|tamam)[.! ]*$/i.test(c)) return { ok: false, neden: 'tek kelimelik cevap' };
+  if (/üzgünüm|başaramadım|yapamadım|malesef|maalesef/i.test(c) && c.length < 200) return { ok: false, neden: 'hata/kaçınma dili' };
+  const cokParca = (String(soru).match(/\?/g) || []).length >= 2 || /\bve\b.*\?/.test(String(soru));
+  if (cokParca && !/[•\n1-9)]/.test(c)) return { ok: false, neden: 'çok parçalı soruya tek parça cevap' };
+  return { ok: true, neden: '' };
+}
+
 function houseHandlers() {
   return { chat: (msgs, onChunk) => agentChat(msgs, { temperature: 0.7, maxTokens: 1200, onChunk }) };
 }
