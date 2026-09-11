@@ -172,7 +172,30 @@ export async function commitFiles({ full, token, branch = 'main', message, files
       }
     } catch (e2) {
       if (!isEmptyRepoError(e2)) throw e2;
-      /* repo tamamen boş -> ilk commit'i biz oluşturacağız */
+      /* repo tamamen boş -> aşağıda Contents API ile başlatacağız */
+    }
+  }
+
+  // 1b) GitHub, TAMAMEN boş repoya Git Data API ile yazdırmaz (blob/tree -> 409
+  //     "Git Repository is empty"). Önce Contents API ile ilk commit'i oluşturup
+  //     dalı var ediyoruz; sonrasında normal akış çalışır.
+  if (!parentSha) {
+    try {
+      const boot = await gh(
+        `/repos/${r.full}/contents/.evrim-bootstrap`,
+        {
+          token,
+          method: 'PUT',
+          body: {
+            message: 'chore: initialize repository (EVRIM)',
+            content: Buffer.from('Bu dosya boş repoyu başlatmak için oluşturuldu, silinebilir.\n').toString('base64'),
+            branch,
+          },
+        }
+      );
+      parentSha = boot.commit?.sha || null;
+    } catch (e3) {
+      if (!isEmptyRepoError(e3)) throw e3;
     }
   }
 
