@@ -135,13 +135,10 @@ function fakeRes(body, toolCall, finalText) {
   ok('3. açılış: uyarı bandı YOK (beyin hazır görünür)', ($(w, '#brainBar')?.style.display || 'none') === 'none');
   ok('3. açılış: pill korkutucu değil', !($(w, '#statusPill')?.textContent || '').includes('WebGPU') && ($(w, '#statusPill')?.textContent || '').includes('ücretsiz mod'));
   $(w, '#input').value = 'merhaba'; $(w, '#send').click();
-  await wait(8000); // probeKeyless 4sn kap
+  await wait(3000); // v22: gönder → OTOMATİK bağlan (kart/dokunuş yok)
   ok('3. kart: anahtar alanı YOK', !$$(w, '#msgs .ckey').length);
-  ok('3. kart: ücretsiz bağlan düğmesi var', !!$(w, '#msgs .cconn'));
-  const conn = $(w, '#msgs .cconn');
-  if (conn) conn.click();
-  await wait(2500);
-  ok('3. bağlan → signIn → kart kapandı + cevap geldi', signedIn && !$$(w, '#msgs .card').length && (JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').some((m) => m.role === 'assistant')));
+  ok('3. gönder → otomatik bağlan (ekstra dokunuş yok)', signedIn && !$$(w, '#msgs .card').length);
+  ok('3. otomatik bağlan → cevap geldi', JSON.parse(w.localStorage.getItem('evrim:messages') || '[]').some((m) => m.role === 'assistant'));
   ok('3. pill puter', ($(w, '#statusPill')?.textContent || '').includes('Puter'));
   // 2. mesaj doğrudan (kart YOK)
   $(w, '#input').value = 'ikinci'; $(w, '#send').click();
@@ -207,6 +204,21 @@ function fakeRes(body, toolCall, finalText) {
   await wait(500);
   ok('6. reload sonrası görsel mesajda görünüyor', $$(w, '#msgs img.gen').length === 1);
   ok('6. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 7) bağlanma başarısızsa seçim kartı ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  w.puter = { auth: { isSignedIn: () => false, signIn: async () => { throw new Error('popup engellendi'); } },
+    ai: { chat: async () => { throw new Error('no session'); }, models: async () => [] } };
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Engel'; $(w, '#npCreate').click(); await wait(200);
+  $(w, '#input').value = 'merhaba'; $(w, '#send').click();
+  await wait(2500);
+  ok('7. bağlanma başarısız → seçim kartı (çıkmaz yok)', !!$(w, '#msgs .cconn') && !!$(w, '#msgs .clocal'));
+  ok('7. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

@@ -269,21 +269,43 @@ async function send(text) {
     // bulamazsan KULLANICIDAN ANAHTAR İSTEME — tek dokunuşluk ücretsiz bağlantı sun.
     const a = activeLLM();
     if (a.id === 'local' && !localStatus().ready && !puterStatus().ready) {
-      liveStat.textContent = '☁️ Ücretsiz bulut modeli aranıyor…';
-      beat();
-      const found = await Promise.race([
-        probeKeyless({ onProgress: (t) => { liveStat.textContent = t; beat(); } }),
-        new Promise((r) => setTimeout(() => r(null), 4000)),
-      ]).catch(() => null);
-      if (!found) {
-        clearInterval(watchdog);
-        live.remove();
-        busy($('#send'), false);
-        sending = false;
-        askBrain(content);
-        return;
+      if (!localStatus().supported) {
+        // v22: SIFIR SÜRTÜNME — gönder dokunuşu jestin kendisi; ücretsiz bulut
+        // penceresini BEKLEMEDEN aç, girince soruyu otomatik sor. Kart yok, kurulum yok.
+        liveStat.textContent = '☁️ Ücretsiz buluta bağlanıyorum (ilk kez) — sorunu otomatik soracağım…';
+        beat();
+        let connected = false;
+        try { connected = await puterSignIn(); } catch { connected = false; }
+        if (connected && puterStatus().ready) {
+          refreshStatus(); renderSettings(); renderLocalBoxes();
+          liveStat.textContent = '☁️ Bulut hazır — cevabını yazıyorum…';
+          beat();
+        } else {
+          clearInterval(watchdog);
+          live.remove();
+          busy($('#send'), false);
+          sending = false;
+          askBrain(content);
+          return;
+        }
+      } else {
+        // Cihaz modeli çalışabilir: sessiz indirme YOK — net seçim sun
+        liveStat.textContent = '☁️ Ücretsiz bulut modeli aranıyor…';
+        beat();
+        const found = await Promise.race([
+          probeKeyless({ onProgress: (t) => { liveStat.textContent = t; beat(); } }),
+          new Promise((r) => setTimeout(() => r(null), 4000)),
+        ]).catch(() => null);
+        if (!found) {
+          clearInterval(watchdog);
+          live.remove();
+          busy($('#send'), false);
+          sending = false;
+          askBrain(content);
+          return;
+        }
+        refreshStatus();
       }
-      refreshStatus();
     }
 
     const res = await agentChat(messages, {
