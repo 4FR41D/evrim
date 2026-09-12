@@ -1567,5 +1567,38 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 47) 🎯 EĞİTİM PANELİ: paketler + uzmanlaş + kural sil ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Egitim'; $(w, '#npCreate').click(); await wait(250);
+  const navBtn = $(w, '[data-v="train"]');
+  ok('47. nav düğmesi var', !!navBtn);
+  navBtn.click(); await wait(200);
+  ok('47. panel açıldı', $(w, '#v-train').classList.contains('on'));
+  ok('47. 4 hazır paket listelendi', $$(w, '[data-pack]').length === 4);
+  $(w, '[data-pack="yazilim"]').click(); await wait(200);
+  const mems = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('47. paket kuralları beynine işlendi (4)', mems.filter((m) => m.kind === 'rule' && m.source === 'pack').length === 4);
+  $(w, '[data-pack="yazilim"]').click(); await wait(200);
+  const mems2 = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('47. ikinci uygulama çoğaltmıyor (idempotent)', mems2.filter((m) => m.kind === 'rule' && m.source === 'pack').length === 4);
+  $(w, '#trainFocus').value = 'Python'; $(w, '#btnTrainFocus').click(); await wait(200);
+  const mems3 = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('47. uzmanlaş kuralı eklendi', mems3.some((m) => m.kind === 'rule' && m.source === 'focus' && String(m.content).includes('Python')));
+  ok('47. kural listesi DOMda', $$(w, '[data-delrule]').length === 5);
+  const hedef = mems3.find((m) => m.source === 'pack');
+  const del = $(w, `[data-delrule="${hedef.id}"]`);
+  ok('47. sil düğmesi bulundu', !!del);
+  del.click(); await wait(150);
+  const mems4 = JSON.parse(w.localStorage.getItem('evrim:memories') || '[]');
+  ok('47. kural silindi', !mems4.some((m) => m.id === hedef.id));
+  ok('47. gelişim günlüğüne işlendi', (JSON.parse(w.localStorage.getItem('evrim:evolutions') || '[]')).some((e) => e.type === 'pack') && (JSON.parse(w.localStorage.getItem('evrim:evolutions') || '[]')).some((e) => e.type === 'focus'));
+  ok('47. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

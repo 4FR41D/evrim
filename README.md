@@ -40,6 +40,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   (Groq/Puter/ücretsiz servisler tamamen kapalı). Sohbet + öğrenme + hafıza + kendini geliştirme
   %100 cihazda: SmolLM2-135M (WASM, ~90 MB bir kez) / Gemini Nano / WebLLM (WebGPU).
   Kurulumdan sonra **uçak modunda bile** çalışır.
+- **🎯 Eğitim paneli (v59):** hazır eğitim paketleri (💻 Yazılım Öğretmeni, 📝 Sınav Koçu,
+  💼 İş Asistanı, ✍️ Yazar/Editör), "şu konuda uzmanlaş" alanı, öğrenilen tüm kural +
+  hafıza kayıtlarının listesi ve tek tek silinmesi. Kurallar beynin sistem promptuna işlenir.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

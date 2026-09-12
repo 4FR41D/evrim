@@ -135,12 +135,13 @@ function go(v) {
   const tm = $('#chatTitleMain');
   const sb = $('#subBrand');
   if (tm) tm.textContent = v === 'chat' ? `${pe.emoji} ${pe.name}`
-    : ({ search: '🔎 Web arama', learn: '🎓 Öğrenme koçu', gh: '🐙 GitHub', evo: '🧬 Evrim', set: '⚙️ Ayarlar' }[v] || 'EVRIM');
+    : ({ search: '🔎 Web arama', learn: '🎓 Öğrenme koçu', train: '🎯 Eğitim paneli', gh: '🐙 GitHub', evo: '🧬 Evrim', set: '⚙️ Ayarlar' }[v] || 'EVRIM');
   if (sb && v === 'chat') sb.textContent = pe.tag || 'yeni sohbet';
   closeDrawer();
   if (v === 'learn') renderLearn();
   if (v === 'gh') { $('#ghRepoInput').value = getSettings().githubRepo || $('#ghRepoInput').value; }
   if (v === 'evo') renderEvo();
+  if (v === 'train') renderTrain();
   if (v === 'set') renderSettings();
   if (v === 'search') setTimeout(() => $('#wsInput')?.focus(), 50);
 }
@@ -916,6 +917,95 @@ $('#btnMyRepos').addEventListener('click', async () => {
 });
 
 /* ---------------- evrim ---------------- */
+/* ---------------- v59: EĞİTİM PANELİ — paketler, uzmanlaşma, kural/hafıza yönetimi ---------------- */
+const TRAIN_PACKS = [
+  { id: 'yazilim', emoji: '💻', ad: 'Yazılım Öğretmeni', desc: 'Kod öğretirken sabırlı, satır satır, örnekli anlatım.', kurallar: [
+    'Kod örneklerini önce çalışan tam hâliyle ver, sonra satır satır kısa açıkla.',
+    'Programlama öğretirken her adımda küçük bir alıştırma sor ve cevabı bekle.',
+    'Hata mesajlarında önce kök nedeni 1 cümleyle söyle, sonra düzeltmeyi göster.',
+    'Teknik jargonu ilk kullanımda parantez içinde basitçe açıkla.',
+  ] },
+  { id: 'sinav', emoji: '📝', ad: 'Sınav Koçu', desc: 'Quiz, tekrar ve özet disiplini.', kurallar: [
+    'Konu anlatımından sonra 3 soruluk kısa quiz yap; cevapları tek tek bekle.',
+    'Yanlış cevapta doğrusunu gerekçesiyle anlat, sonra benzer bir soru daha sor.',
+    'Her çalışma sonunda 3 maddelik özet ve bir sonraki adımı öner.',
+  ] },
+  { id: 'is', emoji: '💼', ad: 'İş Asistanı', desc: 'BLUF, madde imleri, tablolar, resmî dil.', kurallar: [
+    'Cevaba ilk cümlede net sonuçla başla (BLUF), detayı sonra ver.',
+    'Sayısal verileri her zaman tablo olarak sun.',
+    'Resmî yazı ve e-postalarda Türk resmî yazışma kurallarını uygula.',
+  ] },
+  { id: 'yazar', emoji: '✍️', ad: 'Yazar / Editör', desc: 'Metin düzeltme, üslup koruma, TDK.', kurallar: [
+    'Metin düzenlerken önce düzeltilmiş hâli göster, sonra değişiklikleri madde madde açıkla.',
+    'Kullanıcının üslubunu ve ses tonunu koru; metni kendine benzetme.',
+    'Yazım ve noktalamada TDK kurallarını esas al.',
+  ] },
+];
+
+function renderTrain() {
+  const st = evo.stats();
+  const rules = evo.memories('rule');
+  const others = evo.memories().filter((m) => m.kind !== 'rule');
+  const ts = $('#trainStats');
+  if (ts) ts.innerHTML = `
+    <div class="stat"><b>${rules.length}</b><span>kural</span></div>
+    <div class="stat"><b>${others.length}</b><span>hafıza</span></div>
+    <div class="stat"><b>v${st.promptVersion}</b><span>beyin</span></div>`;
+  const packs = $('#trainPacks');
+  if (packs) packs.innerHTML = TRAIN_PACKS.map((p) => {
+    const yuklu = p.kurallar.every((k) => rules.some((m) => (m.content || '').toLowerCase() === k.toLowerCase()));
+    return `<div class="card">
+      <div class="t"><b>${p.emoji} ${p.ad}</b> ${yuklu ? '<span class="chip ok">yüklü</span>' : ''}</div>
+      <p class="hint">${esc(p.desc)}</p>
+      <ul class="hint" style="padding-left:18px">${p.kurallar.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>
+      <button class="btn sm" data-pack="${p.id}">📦 Paketi uygula</button>
+    </div>`;
+  }).join('');
+  $$('[data-pack]').forEach((b) => b.addEventListener('click', () => {
+    const p = TRAIN_PACKS.find((x) => x.id === b.dataset.pack); if (!p) return;
+    let yeni = 0;
+    for (const k of p.kurallar) {
+      const varMi = evo.memories('rule').some((m) => (m.content || '').toLowerCase() === k.toLowerCase());
+      evo.addMemory({ content: k, kind: 'rule', source: 'pack', strength: 0.95 });
+      if (!varMi) yeni++;
+    }
+    insert('evolutions', { type: 'pack', summary: `${p.emoji} ${p.ad} paketi uygulandı`, detail: p.kurallar.join(' | '), applied: true, confidence: 1, createdAt: new Date().toISOString() });
+    toast(yeni ? `📦 ${p.ad}: ${yeni} yeni kural beynine işlendi` : 'Paket zaten yüklüydü — kurallar güçlendirildi', 'ok');
+    renderTrain(); refreshStatus();
+  }));
+  const rl = $('#trainRules');
+  if (rl) rl.innerHTML = rules.length ? rules.map((m) => `
+    <div class="item">
+      <div class="t" style="font-size:13.5px">${esc(m.content)}</div>
+      <div class="s">${esc(m.source === 'pack' ? 'paket' : m.source === 'focus' ? 'uzmanlık' : m.source || 'oto')} · güç %${Math.round((m.strength || 0) * 100)}</div>
+      <div class="a"><button class="btn ghost sm" data-delrule="${m.id}">🗑 Sil</button></div>
+    </div>`).join('') : '<p class="hint">Henüz kural yok — yukarıdan paket uygula, sohbette "bundan sonra …" de veya bir konuda uzmanlaş.</p>';
+  $$('[data-delrule]').forEach((b) => b.addEventListener('click', () => {
+    evo.forgetMemory(b.dataset.delrule); toast('Kural silindi'); renderTrain(); refreshStatus();
+  }));
+  const ml = $('#trainMems');
+  if (ml) ml.innerHTML = others.length ? others.slice(0, 30).map((m) => `
+    <div class="item">
+      <div class="t" style="font-size:13.5px">${esc(m.content)}</div>
+      <div class="s">${esc(m.kind)} · ${esc(m.source || 'oto')}</div>
+      <div class="a"><button class="btn ghost sm" data-delmem="${m.id}">🗑 Sil</button></div>
+    </div>`).join('') : '<p class="hint">Hafıza kaydı yok — sohbette "hatırla: …" diyerek ekleyebilirsin.</p>';
+  $$('[data-delmem]').forEach((b) => b.addEventListener('click', () => {
+    evo.forgetMemory(b.dataset.delmem); toast('Kayıt silindi'); renderTrain(); refreshStatus();
+  }));
+  const bf = $('#btnTrainFocus');
+  if (bf) bf.onclick = () => {
+    const konu = ($('#trainFocus')?.value || '').trim().slice(0, 80);
+    if (!konu) { toast('Önce bir konu yaz', 'bad'); return; }
+    evo.addMemory({ content: `${konu} konusunda uzmansın: bu alandaki sorularda derin, güncel ve bol örnekli cevap ver; terimleri ilk geçişte açıkla.`, kind: 'rule', source: 'focus', strength: 0.95 });
+    try { evo.upsertSkill(konu, 3, 'kullanıcı uzmanlaşma istedi'); } catch {}
+    insert('evolutions', { type: 'focus', summary: `🎯 Uzmanlık: ${konu}`, detail: konu, applied: true, confidence: 1, createdAt: new Date().toISOString() });
+    const tf = $('#trainFocus'); if (tf) tf.value = '';
+    toast(`🎯 "${konu}" uzmanlığı beynine işlendi`, 'ok');
+    renderTrain(); refreshStatus();
+  };
+}
+
 function renderEvoStats(st) {
   $('#evoStats').innerHTML = `
     <div class="stat"><b>v${st.promptVersion}</b><span>beyin sürümü</span></div>

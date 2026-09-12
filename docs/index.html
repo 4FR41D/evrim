@@ -71,6 +71,7 @@
       <nav class="sb-nav">
         <button data-v="search">🔎 Web'de ara</button>
         <button data-v="learn">🎓 Öğrenme koçu <span class="badge" id="dueBadge" style="display:none">0</span></button>
+        <button data-v="train">🎯 Eğitim paneli</button>
         <button data-v="gh">🐙 GitHub</button>
         <button data-v="evo">🧬 Evrim <span class="badge" id="pendingBadge" style="display:none">0</span></button>
         <button data-v="set">⚙️ Ayarlar</button>
@@ -183,6 +184,25 @@
         <div id="repoPicker" style="margin-top:8px"></div>
       </div>
       <div id="ghBody"></div>
+    </section>
+
+    <!-- ============ EĞİTİM PANELİ (v59) ============ -->
+    <section class="view" id="v-train">
+      <div class="grid3" id="trainStats"></div>
+      <div class="sect">🎯 Şu konuda uzmanlaş</div>
+      <div class="card">
+        <div class="row">
+          <input id="trainFocus" placeholder="örn. Python, İngilizce, matematik, yemek">
+          <button class="btn sm" id="btnTrainFocus" style="flex:0 0 auto">Uzmanlaş</button>
+        </div>
+        <p class="hint">Konu, kalıcı uzmanlık kuralı olarak beynine işlenir; o alandaki cevapların derinleşir.</p>
+      </div>
+      <div class="sect">📦 Hazır eğitim paketleri</div>
+      <div id="trainPacks"></div>
+      <div class="sect">🧠 Öğrenilen kurallar (beyne işlenen)</div>
+      <div id="trainRules"></div>
+      <div class="sect">💾 Hafıza kayıtları</div>
+      <div id="trainMems"></div>
     </section>
 
     <!-- ============ EVRİM ============ -->
@@ -504,6 +524,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="js/app.js"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=58').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=59').catch(()=>{}))}</script>
 </body>
 </html>
