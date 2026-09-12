@@ -9,6 +9,7 @@ import { all, insert, update, remove, getSettings, now, storageSize, gunIsaretle
 import * as evo from './evolve.js';
 import * as learn from './learn.js';
 import { rawChat, active as activeLLM } from './llm.js';
+import { wasmStatus } from './wasm.js';
 import { createCard } from './learn.js';
 import { localStatus } from './local.js';
 import { puterStatus } from './puter.js';
@@ -1846,7 +1847,8 @@ export async function agentChat(messages, opts = {}) {
     const out = await houseChat(messages, opts.onChunk);
     return { content: out.content, model: out.model || 'ev bulutu', steps: [] };
   }
-  if (a.id === 'local' && !localStatus?.().ready && !puterStatus?.().ready && !houseStatus?.().ready) {
+  if (a.id === 'local' && !localStatus?.().ready && !puterStatus?.().ready && !houseStatus?.().ready
+    && !(getSettings().solo && wasmStatus().supported)) {
     throw new Error('BEYIN_YOK');
   }
   const supportsTools = a.def?.format === 'openai' && !opts.json;

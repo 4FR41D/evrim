@@ -1533,5 +1533,39 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 46) 🔌 BAĞIMSIZ MOD: sıfır bulut çağrısı, beyin %100 cihazda ================= */
+{
+  let cloud = 0;
+  const w = makeWin({ fetch: async (url) => {
+    const u = String(url);
+    if (u.startsWith('http')) cloud++;
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVWASM = { pipeline: async (task, model, opts) => {
+    opts?.progress_callback?.({ status: 'progress', progress: 60 });
+    return async (prompt, o) => {
+      o?.streamer?.callback_function?.('CİHAZ_BEYNİ_CEVAP');
+      o?.streamer?.end?.();
+      return [{ generated_text: 'CİHAZ_BEYNİ_CEVAP' }];
+    };
+  } };
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ solo: true }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  ok('46. bağımsız mod anahtarı arayüzde var', !!$(w, '#setSolo'));
+  $(w, '#npName').value = 'Solo'; $(w, '#npCreate').click(); await wait(250);
+  const c0 = cloud;
+  $(w, '#input').value = 'Bana fotosentezi kısaca anlat'; $(w, '#send').click();
+  await wait(3500);
+  const msgs = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('46. cevap cihaz beyninden geldi (kart/indirme beklemeden)', msgs.some((m) => m.role === 'assistant' && String(m.content).includes('CİHAZ_BEYNİ_CEVAP')));
+  ok('46. sıfır dış çağrı (groq/puter/free/jina…)', cloud === c0);
+  const st46 = JSON.parse(w.localStorage.getItem('evrim:settings') || '{}');
+  ok('46. solo ayarı kalıcı', st46.solo === true);
+  ok('46. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

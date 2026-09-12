@@ -10,7 +10,7 @@ import { findWorkingFree, hasWorkingFree, freeChat, FREE_ENDPOINTS } from './fre
 import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI } from './nano.js';
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 import { houseStatus, probeHouse } from './house.js';
-import { wasmStatus } from './wasm.js';
+import { wasmStatus, loadWasm, wasmChat } from './wasm.js';
 import { HOUSE_KEY, HOUSE_PROVIDER } from './housekey.js';
 
 export const PROVIDERS = {
@@ -93,6 +93,16 @@ export function active() {
   const houseOk = !!HOUSE_KEY && Date.now() > houseDownUntil;   // kota kilidine saygılı
   const key = userKey || (houseOk ? HOUSE_KEY : '');            // v27: ev anahtarı = platform anahtarı
   const houseKey = !userKey && houseOk;
+  // 🔌 BAĞIMSIZ MOD (v58): yalnız cihaz beyni — hiçbir bulut API/AI'ı çağrılmaz
+  if (s.solo) {
+    if (wasmStatus().ready) {
+      return { id: 'wasm', key: '', def: { name: 'Küçük beyin', format: 'wasm', defaultModel: 'SmolLM2-135M' }, model: 'SmolLM2-135M (cihaz)' };
+    }
+    if (s.useNano !== false && nanoStatus().availability === 'available') {
+      return { id: 'nano', key: '', def: PROVIDERS.nano, model: 'Gemini Nano (Chrome)' };
+    }
+    return { id: 'local', key: '', def: PROVIDERS.local, model: s.localModel || 'cihazında' };
+  }
   // 0-) Ev bulutu bağlıysa (WebRTC): sıfır giriş, sıfır sunucu, sıfır anahtar
   if (!key && houseStatus().ready) {
     return { id: 'house', key: '', def: { name: 'Ev bulutu', format: 'house', defaultModel: 'ev-beyni' }, model: 'ev bulutu (WebRTC)' };
@@ -139,6 +149,10 @@ export function active() {
 export function isReady() {
   const a = active();
   if (a.id !== 'local') return true;
+  if (getSettings().solo) {
+    // 🔌 Bağımsız: cihaz beyni ya hazır ya da kurulabilir (ilk mesajda iner)
+    return wasmStatus().ready || wasmStatus().supported || localStatus().supported === true;
+  }
   if (puterStatus().ready) return true;
   if (hasWorkingFree()) return true;
   if (nanoStatus().availability === 'available') return true;
@@ -151,6 +165,14 @@ export function isReady() {
  */
 export async function probeKeyless({ onProgress } = {}) {
   if ((getSettings().apiKey || '').trim()) return null;
+  if (getSettings().solo) {
+    // 🔌 Bağımsız mod: bulut sondajı YOK — yalnız cihaz katmanları
+    onProgress?.('🔌 Bağımsız mod: cihaz beyni kontrol ediliyor…');
+    const avSolo = await probeNano();
+    if (avSolo === 'available') return 'nano';
+    if (wasmStatus().ready) return 'wasm';
+    return null;
+  }
   if (getSettings().useHouse !== false) {
     onProgress?.('🏠 Ev bulutu kontrol ediliyor…');
     if (await probeHouse(2500)) return 'house';
@@ -189,6 +211,10 @@ export async function probeFree({ onProgress, force = false } = {}) {
 export function readyReason() {
   const a = active();
   if (a.id !== 'local') return null;
+  if (getSettings().solo) {
+    if (wasmStatus().supported || localStatus().supported) return null;
+    return 'Bağımsız mod: bu tarayıcıda cihaz beyni çalışamaz (WebAssembly/WebGPU yok). Chrome dene ya da modu kapat.';
+  }
   const st = localStatus();
   if (st.checked && st.supported) return null;
   return 'Cihazında WebGPU bulunamadı. Chrome 113+ (Android 121+) / Safari 26+ gerekir, ya da ücretsiz bir API anahtarı girebilirsin.';
@@ -576,14 +602,21 @@ export async function chat(messages, opts = {}) {
 
   // --- CİHAZINDA ÇALIŞAN MODEL (anahtarsız) ---
   if (a.id === 'local') {
-    // Belki bu arada bir ücretsiz servis çalışır hale gelmiştir
-    if (getSettings().preferFree !== false && !(getSettings().apiKey || '').trim()) {
+    const solo = !!getSettings().solo;
+    // Belki bu arada bir ücretsiz servis çalışır hale gelmiştir (🔌 bağımsız modda ASLA)
+    if (!solo && getSettings().preferFree !== false && !(getSettings().apiKey || '').trim()) {
       const id = await findWorkingFree({ onProgress: opts.onProgress });
       if (id) {
         try { return await freeChat(messages, opts); } catch {}
       }
     }
     if (!localStatus().ready) {
+      // 🔌 Bağımsız mod + WebGPU yok → küçük beyin (WASM/CPU) ile yola devam
+      if (solo && !localStatus().supported && wasmStatus().supported) {
+        if (!wasmStatus().ready) await loadWasm((p) => opts.onProgress?.(p, `🧠 Cihaz beyni kuruluyor… %${p}`));
+        const out = await wasmChat(messages, opts.onChunk);
+        return out.content;
+      }
       await loadLocal({ onProgress: opts.onProgress });
     }
     return localChat(messages, opts);

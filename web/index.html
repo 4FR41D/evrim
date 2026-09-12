@@ -247,6 +247,19 @@
         </div>
       </div>
 
+      <div class="card" style="border-color:rgba(34,197,94,.5)">
+        <h3>🔌 Bağımsız mod <span class="chip ok">yalnız cihaz beyni</span></h3>
+        <p class="hint">Açıkken EVRIM <b>hiçbir bulut API'si/AI'ı çağırmaz</b> (Groq, Puter, ücretsiz servisler kapalı).
+          Sohbet, öğrenme, hafıza ve kendini geliştirme <b>%100 cihazında</b> çalışır. İlk kurulumda ~90 MB açık kaynak
+          beyin (SmolLM2) bir kez iner; sonra <b>uçak modunda bile</b> çalışır. WebGPU'lu cihazda daha büyük model de
+          seçebilirsin (aşağıdaki boyut listesi). Not: hava/döviz/çeviri/web okuma gibi <i>canlı veri</i> araçları
+          doğaları gereği internet ister; kalan 30+ araç çevrimdışı çalışır.</p>
+        <div class="switch">
+          <input type="checkbox" id="setSolo">
+          <div><b>Yalnız cihaz beyni — bulut tamamen kapalı</b><small>Kapalıyken akıllı sıra çalışır (önce bulut, cihaz yedek)</small></div>
+        </div>
+      </div>
+
       <div class="card" style="border-color:rgba(124,92,255,.45)">
         <h3>☁️ Puter — anahtarsız bulut modeli <span class="chip acc">önerilen</span></h3>
         <p class="hint">Büyük bulut modeli <b>API anahtarı olmadan</b> kullanılır. 0 MB indirme — telefon için ideal.<br>
@@ -491,6 +504,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="js/app.js"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=57').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=58').catch(()=>{}))}</script>
 </body>
 </html>

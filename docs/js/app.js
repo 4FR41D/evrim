@@ -413,7 +413,8 @@ async function send(text) {
     // Sessizlik yasak — kullanıcı her yazdığında bir şey duyar.
     {
       const a0 = activeLLM();
-      const brainReady = !(a0.id === 'local' && !localStatus().ready);
+      const brainReady = !(a0.id === 'local' && !localStatus().ready)
+        || !!(getSettings().solo && wasmStatus().supported);   // 🔌 bağımsız mod: cihaz beyni ilk mesajda kurulur
       if (!brainReady) {
         const rx = reflexAnswer(content, { userName: getSettings().userName });
         if (rx) {
@@ -434,7 +435,8 @@ async function send(text) {
     // Beyin hazır değilse: SESSIZCE indirme başlatma; önce anahtarsız kaynağı ARA,
     // bulamazsan KULLANICIDAN ANAHTAR İSTEME — tek dokunuşluk ücretsiz bağlantı sun.
     const a = activeLLM();
-    if (a.id === 'local' && !localStatus().ready && !puterStatus().ready) {
+    if (a.id === 'local' && !localStatus().ready && !puterStatus().ready
+      && !(getSettings().solo && wasmStatus().supported)) {   // 🔌 bağımsız modda bulut kapıları atlanır
       if (!localStatus().supported) {
         // v22: SIFIR SÜRTÜNME — gönder dokunuşu jestin kendisi; ücretsiz bulut
         // penceresini BEKLEMEDEN aç, girince soruyu otomatik sor. Kart yok, kurulum yok.
@@ -1056,6 +1058,36 @@ function renderSettings() {
     pf.checked = getSettings().preferFree !== false;
     pf.onchange = () => { setSettings({ preferFree: pf.checked }); refreshStatus(); };
   }
+  const soloEl = $('#setSolo');
+  if (soloEl) {
+    soloEl.checked = !!getSettings().solo;
+    soloEl.onchange = async () => {
+      setSettings({ solo: soloEl.checked });
+      if (soloEl.checked) {
+        const hazir = wasmStatus().ready || nanoStatus().availability === 'available' || localStatus().ready;
+        if (hazir) {
+          toast('🔌 Bağımsız mod AÇIK — bulut tamamen kapalı, cihaz beyni hazır', 'ok');
+        } else if (wasmStatus().supported) {
+          let evet = false;
+          try { evet = !!confirm('Bağımsız mod için cihaz beyni kurulacak: ~90 MB, tek seferlik indirme (sonrası tamamen çevrimdışı). Şimdi kurulsun mu?'); } catch { evet = false; }
+          if (evet) {
+            toast('🧠 Küçük beyin kuruluyor… %0');
+            try {
+              await loadWasm((p2) => { if (p2 % 20 === 0) toast(`🧠 Cihaz beyni kuruluyor… %${p2}`); });
+              toast('🧠 Cihaz beyni hazır — artık tamamen bağımsızsın 🔌', 'ok');
+            } catch (e) { toast('Beyin kurulamadı: ' + String(e.message || e).slice(0, 60), 'bad'); }
+          } else {
+            toast('🔌 Bağımsız mod açık — cihaz beyni ilk mesajda kurulur (~90 MB, bir kez)', 'ok');
+          }
+        } else {
+          toast('Bu tarayıcıda cihaz beyni desteklenmiyor — bağımsız mod çalışmayabilir', 'bad');
+        }
+      } else {
+        toast('☁️ Bağımsız mod kapalı — akıllı sıra (bulut + cihaz) yeniden aktif', 'ok');
+      }
+      refreshStatus(); renderSettings();
+    };
+  }
   const freeBox = $('#freeBox');
   if (freeBox) {
     const snap = freeCacheSnapshot();
@@ -1079,6 +1111,7 @@ function renderSettings() {
     <div class="kv"><span>Beyin sürümü</span><b>v${st.promptVersion}</b></div>
     <div class="kv"><span>Hafıza</span><b>${st.memories}</b></div>
     <div class="kv"><span>Öğrenme kartı</span><b>${st.cards}</b></div>
+    <div class="kv"><span>Mod</span><b>${getSettings().solo ? '🔌 Bağımsız — yalnız cihaz beyni' : '☁️ Karma — bulut + cihaz'}</b></div>
     <div class="kv"><span>Çalışma biçimi</span><b>%100 tarayıcı (sunucusuz)</b></div>`;
   renderLocalBoxes();
   renderSmartCard();
