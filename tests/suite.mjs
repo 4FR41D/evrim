@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v13 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 13') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 14') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -1753,6 +1753,60 @@ function makeBroker() {
   ok('50. kesik JSON onarıldı → site kaydedildi', sites.length === 1 && sites[0].ad === 'kisitli' && sites[0].html.includes('TestTamir'));
   ok('50. önizleme kartı render edildi', !!$(w, '#msgs .sitecard[data-site="kisitli"]'));
   ok('50. hata yok (B)', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 51) v63: ham kod yakalayıcı → otomatik önizleme kartı ================= */
+{
+  let round = 0;
+  const HAM = `İşte siteniz:
+
+\`\`\`css
+/* style.css */
+:root { --primary:#0d6efd; }
+body { font-family:Helvetica,Arial,sans-serif; line-height:1.6; }
+.hero { background:#f8f9fa; padding:4rem 2rem; text-align:center; }
+\`\`\`
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><title>Nakliyat</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<section class="hero"><h1>Evden Eve Nakliyat</h1><p>Guvenli tasima</p></section>
+</body>
+</html>
+\`\`\`
+
+Beğenmezsen renkleri değiştirebilirim.`;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return fakeRes(body, null, HAM);
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Yakala'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'beyoğlu nakliyat için site yap'; $(w, '#send').click();
+  await wait(4200);
+  const sites = JSON.parse(w.localStorage.getItem('evrim:sites') || '[]');
+  ok('51. ham cevap otomatik siteye dönüştü', sites.length === 1 && sites[0].oto === true && sites[0].html.includes('Evden Eve Nakliyat'));
+  ok('51. CSS tek dosyaya gömüldü (<style>)', sites[0].html.includes('<style>') && sites[0].html.includes('--primary:#0d6efd') && sites[0].html.includes('</head>'));
+  const card = $(w, '#msgs .sitecard');
+  ok('51. önizleme kartı mesajda göründü', !!card && card.dataset.site.startsWith('oto-'));
+  const botTxt = $$(w, '#msgs .msg.bot').map((e) => e.textContent).join(' ');
+  ok('51. ham kod mesajdan temizlendi', !botTxt.includes('<!DOCTYPE') && !botTxt.includes(':root'));
+  card.querySelector('.siteprev').click(); await wait(150);
+  const ifr = $(w, '#siteOverlay iframe');
+  ok('51. canlı önizleme açıldı (srcdoc dolu)', !!ifr && String(ifr.getAttribute('srcdoc') || '').includes('Evden Eve Nakliyat'));
+  ok('51. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

@@ -281,6 +281,40 @@ function typing(on) {
 
 const KEY_RE = /^(sk-or-v1-[A-Za-z0-9-]{20,}|gsk_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{20,})$/;
 
+/* ---------------- v63: HAM KOD YAKALAYICI — model site_uret'i unutursa cevap otomatik siteye dönüşür ---------------- */
+function yakalaSite(text) {
+  const t = String(text || '');
+  if (!/```|<html|<!doctype/i.test(t)) return null;
+  const re = /```([a-zA-Z]*)\n?([\s\S]*?)```/g;
+  let m; const consumed = []; const htmls = []; const csss = [];
+  while ((m = re.exec(t)) !== null) {
+    const lang = (m[1] || '').toLowerCase();
+    const code = m[2] || '';
+    const isHtml = /<!doctype html>|<html[\s>]/i.test(code);
+    const isCss = !isHtml && (lang === 'css'
+      || (!lang && /<\/?[a-z][\s>]/i.test(code) === false && (code.match(/\{/g) || []).length >= 2
+        && /(^|\n)\s*(\/\*|:root|body\s*\{|html\s*\{|\*\s*\{|header[\s,{.]|footer[\s,{.]|nav[\s,{.]|@media|[.#][\w-]+\s*\{)/.test(code)));
+    if (isHtml) { htmls.push(code); consumed.push([m.index, m.index + m[0].length]); }
+    else if (isCss) { csss.push(code); consumed.push([m.index, m.index + m[0].length]); }
+  }
+  if (!htmls.length) {
+    const dm = /<!doctype html>[\s\S]*?<\/html>/i.exec(t);
+    if (dm) { htmls.push(dm[0]); consumed.push([dm.index, dm.index + dm[0].length]); }
+  }
+  if (!htmls.length) return null;
+  let html = htmls.sort((x, y) => y.length - x.length)[0];
+  if (csss.length) {
+    const style = '<style>\n' + csss.join('\n') + '\n</style>';
+    html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, style + '\n</head>') : style + '\n' + html;
+  }
+  const slug = 'oto-' + Date.now().toString(36);
+  insert('sites', { ad: slug, html, ts: Date.now(), createdAt: new Date().toISOString(), oto: true });
+  let temiz = t;
+  for (const [a2, b2] of consumed.sort((x, y) => y[0] - x[0])) temiz = temiz.slice(0, a2) + temiz.slice(b2);
+  temiz = temiz.replace(/\n{3,}/g, '\n\n').trim();
+  return { temizMetin: temiz, isaret: `[site](evrimsite:${slug})` };
+}
+
 async function send(text) {
   const content = (text ?? $('#input').value).trim();
   if (!content || sending) return;
@@ -550,7 +584,16 @@ async function send(text) {
         throw e429;
       }
     }
-    const reply = res.content;
+    let reply = res.content;
+    // v63: model araç çağırmayıp ham kod yazdıysa → otomatik tek dosyaya çevir + canlı önizleme kartı ekle
+    try {
+      const yk = yakalaSite(reply);
+      if (yk) {
+        reply = (yk.temizMetin ? yk.temizMetin + '\n\n' : '')
+          + '🏗️ Cevaptaki site otomatik olarak **tek dosyaya dönüştürüldü** — canlı önizleme, tam ekran ve indirme hazır:\n\n'
+          + yk.isaret;
+      }
+    } catch {}
     beat();
     clearInterval(watchdog);
     live.remove();

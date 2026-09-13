@@ -52,6 +52,10 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **🩹 v62 hata onarımı:** `tool_use_failed / Failed to parse tool call arguments as JSON` kökten çözüldü —
   araç turlarında max_tokens 900→8000 (kesilme bitti), kesik JSON otomatik onarılır (`repairJSON`),
   yine de bozulursa araçsız tek tekrar → kullanıcı asla cevapsız kalmaz.
+- **🏗️ v63 site garantisi:** beyin v14 kuralı site işlerinde `site_uret` çağırmayı ZORUNLU kılar
+  (tek dosya + profesyonel tasarım rehberi); `site_uret` çekirdek araç setine girdi (küçük modeller de
+  site üretir); model yine de ham kod yazarsa **yakalayıcı** devreye girer: HTML+CSS otomatik tek
+  dosyaya çevrilir, mesajın altına canlı önizleme kartı (👁/⛶/⬇️) eklenir — önizleme ASLA kaçmaz.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
