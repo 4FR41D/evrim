@@ -1,30 +1,30 @@
 {
- "tarih": "2026-09-13T12:07:26.060Z",
+ "tarih": "2026-09-13T12:28:55.983Z",
  "ortPuan": 10,
- "calismaSayisi": 8,
+ "calismaSayisi": 9,
  "ekSoruToplam": 12,
- "trend": "4 → 6 → 6 → 7.6 → 6.8 → 9.7 → 10 → 10",
+ "trend": "6 → 6 → 7.6 → 6.8 → 9.7 → 10 → 10 → 10",
  "sonYama": null,
  "sonBench": [
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 > 9.11 çünkü ondalık karşılaştırmada 9.90, 9.11'den büyüktür"
+   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 0.11'den büyüktür"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 10,
-   "neden": "İlk %20 zam 120 TL, ardından %20 indirim 96 TL olur."
+   "neden": "Doğru hesaplama: 100 TL +20% = 120 TL, sonra 20% indirim = 96 TL"
   },
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
+   "neden": "Zeynep en kısa, çünkü verilen sıralama Ali > Ayşe > Mert > Zeynep"
   },
   {
    "id": "elma-tuzak",
    "puan": 10,
-   "neden": "Cevap doğrudan sorunun talebini karşılıyor: aldığın elmalar 2'dir."
+   "neden": "Soru, aldığın elmaların sayısını soruyor; 2 elma aldın, bu yüzden cevap 2."
   },
   {
    "id": "plan-yapma",
@@ -38,8 +38,8 @@
   },
   {
    "id": "site-tasarim",
-   "puan": 10,
-   "neden": "Tüm kriterleri eksiksiz ve doğru şekilde karşılayan, mobil uyumlu, erişilebilir, gerçek Türkçe içerikli HTML belgesi."
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b"
