@@ -30,24 +30,55 @@ function frontierKey() {
 }
 const FKEY = frontierKey();
 let frontierDown = false;
+// Faz 4: KOTA BÜTÇESİ — OpenRouter :free 50 istek/gün (anahtar başına); gece koşusu tam bütçeyi alır,
+// gündüz koşuları bilinçli tasarruf eder. Sahip ÜCRETSİZ Gemini anahtarı eklerse (repo secret LAB_GEMINI_KEY)
+// ikinci havuz açılır (~200 istek/gün, ayrı kota) — frontierSoru otomatik düşer.
+const GEMINI_KEY = process.env.LAB_GEMINI_KEY || '';
+const GEMINI_MODEL = 'gemini-2.5-flash';
+function kotaOku() {
+  const bugun = new Date().toISOString().slice(0, 10);
+  try { const k = JSON.parse(fs.readFileSync('lab/kota.json', 'utf8')); if (k && k.tarih === bugun) return { tarih: bugun, frontier: 0, gemini: 0, ...k }; } catch { /* ilk koşu */ }
+  return { tarih: bugun, frontier: 0, gemini: 0 };
+}
+function kotaSay(havuz) { const k = kotaOku(); k[havuz] = (Number(k[havuz]) || 0) + 1; try { fs.writeFileSync('lab/kota.json', JSON.stringify(k, null, 1) + '\n'); } catch { /* yazılamazsa sayaçsız devam */ } return k; }
+function frontierKalan() { return Math.max(0, 50 - (Number(kotaOku().frontier) || 0)); }
+function geminiKalan() { return GEMINI_KEY ? Math.max(0, 200 - (Number(kotaOku().gemini) || 0)) : 0; }
 async function frontierSoru(messages, { temp = 0, max = 3500 } = {}) {
-  if (!FKEY || frontierDown) return null;
-  try {
-    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + FKEY, 'HTTP-Referer': 'https://github.com/4FR41D/evrim', 'X-Title': 'EVRIM-lab' },
-      body: JSON.stringify({ model: FRONTIER_BEYIN, messages, temperature: temp, max_tokens: max }),
-    });
-    if (r.status === 429 || r.status === 402 || r.status === 403) {
-      frontierDown = true;
-      console.log('lab: frontier kota/erişim limiti (' + r.status + ') — bu koşuda frontier ölçümü atlanacak');
-      return null;
-    }
-    if (!r.ok) return null;
-    const j = await r.json();
-    const c = j?.choices?.[0]?.message?.content;
-    return c && String(c).trim() ? String(c) : null;
-  } catch { return null; }
+  // Faz 4: önce OpenRouter (bütçe sayacıyla), limit/bitince Gemini ücretsiz havuzu
+  if (FKEY && !frontierDown && frontierKalan() > 0) {
+    kotaSay('frontier');
+    try {
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + FKEY, 'HTTP-Referer': 'https://github.com/4FR41D/evrim', 'X-Title': 'EVRIM-lab' },
+        body: JSON.stringify({ model: FRONTIER_BEYIN, messages, temperature: temp, max_tokens: max }),
+      });
+      if (r.status === 429 || r.status === 402 || r.status === 403) {
+        frontierDown = true;
+        console.log('lab: frontier kota/erişim limiti (' + r.status + ') — Gemini havuzuna düşülüyor');
+      } else if (r.ok) {
+        const j = await r.json();
+        const c = j?.choices?.[0]?.message?.content;
+        return c && String(c).trim() ? String(c) : null;
+      } else return null;
+    } catch { /* ağ hatası → Gemini havuzu denensin */ }
+  }
+  if (geminiKalan() > 0) {
+    kotaSay('gemini');
+    try {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + GEMINI_KEY },
+        body: JSON.stringify({ model: GEMINI_MODEL, messages, temperature: temp, max_tokens: max }),
+      });
+      if (r.status === 429 || r.status === 403) { console.log('lab: gemini havuzu da limitte (' + r.status + ')'); return null; }
+      if (!r.ok) return null;
+      const j = await r.json();
+      const c = j?.choices?.[0]?.message?.content;
+      return c && String(c).trim() ? String(c) : null;
+    } catch { return null; }
+  }
+  return null;
 }
 
 async function groq(model, messages, { temp = 0, max = 900, reason = 'high', solo = false } = {}) {
@@ -111,6 +142,10 @@ async function bench() {
   // v70: AĞIR sorular (yüksek max) ÖNCE — kota gün içinde tükeniyor, en değerli ölçümler taze kotasıyla yapılsın
   sorular.sort((x, y) => (y.max || 3500) - (x.max || 3500));
   const sonuc = [];
+  // Faz 4: bench frontier bütçesi — kodAyar/oneriYama için 15 istek rezerv (bench satırından değerliler)
+  const fButce = Math.max(0, frontierKalan() + geminiKalan() - 15);
+  let fDeneme = 0;
+  if (fButce < sorular.length) console.log(`lab: frontier bütçe ${fButce}/${sorular.length} soru — bütçe dışı sorular yalnız 120b ölçülür (dürüst null)`);
   for (let si = 0; si < sorular.length; si++) {
     const b = sorular[si];
     if (si > 0) await new Promise((z) => setTimeout(z, 10000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
@@ -119,8 +154,12 @@ async function bench() {
       { role: 'user', content: b.soru },
     ];
     // --- FRONTIER (uygulamanın varsayılan beyni, ayrı kota havuzu) — TPD'den BAĞIMSIZ önce o ölçülür
-    let fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 });
-    if (!fCevap && !frontierDown) { await new Promise((z) => setTimeout(z, 15000)); fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 }); }
+    let fCevap = null;
+    if (fDeneme < fButce) {
+      fDeneme++;
+      fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 });
+      if (!fCevap && !frontierDown && frontierKalan() + geminiKalan() > 0) { fDeneme++; await new Promise((z) => setTimeout(z, 15000)); fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 }); }
+    }
     // --- 120b (trend sürekliliği; Groq kotası bittiyse dürüst atlama)
     let cevap = null;
     if (!globalThis.__TPD) {

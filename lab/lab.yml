@@ -16,6 +16,8 @@ jobs:
   lab:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      LAB_GEMINI_KEY: ${{ secrets.LAB_GEMINI_KEY }}   # sahip ücretsiz Gemini anahtarı eklerse 2. kota havuzu (yoksa boş = davranış aynı)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

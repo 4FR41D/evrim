@@ -165,6 +165,11 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **🧬 v83 ÖLÇÜM TABANI:** bench 7→10 soru: kod-uretme (kenar durumlu fonksiyon), mantik-kisit (çok
   adımlı kısıt tatmini), yanlis-onerme (uydurma öncülde dürüstlük — yıl uyduran 0-2 alır). kodAyar
   EWMA geçmişi: prob gürültüsüyle rota flip-flop yapmaz (0.6 eski + 0.4 yeni, ayar.json ile taşınır).
+- **🧬 v84 KOTA BÜTÇESİ + 2. HAVUZ:** lab frontier kotasını SAYAR (lab/kota.json, 50/gün): gece
+  koşusu tam bütçeyi alır (bench + kodAyar + öneri-yama), gündüz koşuları bilinçli tasarruf eder
+  (dürüst null, rastgele 429 yok); bench, kodAyar/öneri-yama için 15 istek rezerv bırakır. Sahip
+  ücretsiz Gemini anahtarı eklerse (repo secret LAB_GEMINI_KEY, ~200 istek/gün ayrı kota) frontierSoru
+  otomatik ikinci havuza düşer — lab kapasitesi ~5×.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
