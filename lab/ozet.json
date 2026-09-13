@@ -1,15 +1,15 @@
 {
- "tarih": "2026-09-13T12:28:55.983Z",
+ "tarih": "2026-09-13T12:55:32.521Z",
  "ortPuan": 10,
- "calismaSayisi": 9,
+ "calismaSayisi": 10,
  "ekSoruToplam": 12,
- "trend": "6 → 6 → 7.6 → 6.8 → 9.7 → 10 → 10 → 10",
+ "trend": "6 → 7.6 → 6.8 → 9.7 → 10 → 10 → 10 → 10",
  "sonYama": null,
  "sonBench": [
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 0.11'den büyüktür"
+   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden daha büyüktür"
   },
   {
    "id": "yuzde-tuzak",
@@ -19,7 +19,7 @@
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Zeynep en kısa, çünkü verilen sıralama Ali > Ayşe > Mert > Zeynep"
+   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
   },
   {
    "id": "elma-tuzak",
