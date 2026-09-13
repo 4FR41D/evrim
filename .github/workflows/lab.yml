@@ -33,14 +33,17 @@ jobs:
           git config user.name "evrim-lab[bot]"
           git config user.email "4fr41d@users.noreply.github.com"
           git add -A   # oto-yama store.js/suite/sw/index dosyalarına da dokunabilir (data/settings.json gitignore'da)
-          if ! git diff --cached --quiet; then
-            git commit -m "lab: $(date -u +%F-%H) — bench + yeni quiz + öneriler"
-            for i in 1 2 3; do
-              git pull --rebase origin main || true
-              if git push origin HEAD:main; then echo "push OK"; exit 0; fi
-              echo "push denemesi $i başarısız, 20 sn bekleniyor…"; sleep 20
-            done
-            echo "::error::lab sonuçları push edilemedi (3 deneme)"; exit 1
-          else
-            echo "Değişiklik yok, commit atlandı."
-          fi
+          if git diff --cached --quiet; then echo "Değişiklik yok, commit atlandı."; exit 0; fi
+          git commit -m "lab: $(date -u +%F-%H) — bench + yeni quiz + öneriler"
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs origin main; then
+              if git push origin HEAD:main; then
+                git fetch -q origin main
+                if [ "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)" ]; then echo "push DOĞRULANDI ✅"; exit 0; fi
+              fi
+            else
+              git rebase --abort || true
+            fi
+            echo "deneme $i başarısız, 15 sn…"; sleep 15
+          done
+          echo "::error::lab sonuçları repoya işlenemedi (3 deneme)"; exit 1
