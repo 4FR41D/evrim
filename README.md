@@ -77,6 +77,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   canlı A/B ile doğrulandı: kural öncesi yanlış, sonrası doğru); bench artık uygulamanın GERÇEK
   BASE_PROMPT'uyla ölçüyor ve aynı aileden YENİ soru (portakal-tuzak) eklendi — ezber değil
   genelleme ölçülür.
+- **🤖 v68 oto-yama (tam otonomi):** lab artık kalıcı zayıflığı KENDİSİ düzeltir: bir bench
+  maddesi 3 çalıştırma üst üste ≤3 puan alırsa kural adayı üretir, ADAY beyin promptuyla hedef +
+  2 regresyon sorusunu A/B ölçer, hepsi ≥7 geçerse kuralı store.js'e işler (sürüm yükseltmeleri
+  dahil mekanik) — son sözü 300 testlik regresyon kapısı söyler, geçmezse commit edilmez.
+  Ayarlar kartında 📈 bench trendi ve 🔧 son oto-yama görünür. Mekanizma klon üzerinde canlı
+  doğrulandı (kural üret → A/B 10/10/10 → uygula → suite 300/300).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
