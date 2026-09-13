@@ -283,8 +283,13 @@ async function otoYama(sonuc) {
       const onceki = satirlar.slice(-3);
       if (onceki.length >= 3) {
         const say = {};
-        for (const sat of onceki) for (const [id, p] of (sat.sorular || [])) if (p !== null && p <= 3) say[id] = (say[id] || 0) + 1;   // null = ağ/kota, zaaf değil
-        hedef = Object.keys(say).find((k) => say[k] >= 3) || '';
+        const sayF = {};
+        for (const sat of onceki) {
+          for (const [id, p] of (sat.sorular || [])) if (p !== null && p <= 3) say[id] = (say[id] || 0) + 1;   // null = ağ/kota, zaaf değil
+          for (const [id, p] of (sat.frontierSorular || [])) if (p !== null && p <= 3) sayF[id] = (sayF[id] || 0) + 1;   // v80: kullanıcıların GERÇEK beyni de tetikler
+        }
+        hedef = Object.keys(sayF).find((k) => sayF[k] >= 3) || Object.keys(say).find((k) => say[k] >= 3) || '';
+        globalThis.__YAMA_BEYNI = Object.keys(sayF).find((k) => sayF[k] >= 3) ? 'frontier' : 'groq';
       }
     }
     if (!hedef) return null;
@@ -294,10 +299,12 @@ async function otoYama(sonuc) {
     const not = '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)';
     const dusuk = sonuc.find((x) => x.id === hedef);
     // 1) kural adayı (tek satır, güvenli karakterler)
-    const k = await groq('groq/compound', [
+    const kuralIstek = [
       { role: 'system', content: 'Türkçe sistem promptu kuralı yazan uzmansın. Yalnızca TEK satır yaz (madde işaretsiz, max 220 karakter, tırnak/backtick/$ kullanma).' },
-      { role: 'user', content: `Asistan şu bench sorusunda sürekli başarısız:\nSoru: ${b.soru}\nBeklenen: ${b.beklenti}\nJüri notu: ${dusuk?.neden || '-'}\n\nBu zaafı giderecek GENEL (soruyu birebir tekrar etmeyen, aynı aileden soruları da kapsayan) tek bir davranış kuralı yaz. Kanıtlanmış etkili biçim: önce sorunun ne istediğini tek cümleyle yeniden ifade ettir, sonra cevaplat. Örnek stil: "X tarzı sorularda önce ... yaz, sonra ...".` },
-    ], { temp: 0.7, max: 600, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin (canlı doğrulandı)
+      { role: 'user', content: `Asistan şu bench sorusunda sürekli başarısız:\nSoru: ${b.soru}\nBeklenen: ${b.beklenti}\nJüri notu: ${(globalThis.__YAMA_BEYNI === 'frontier' ? dusuk?.frontierNeden : dusuk?.neden) || '-'}\n\nBu zaafı giderecek GENEL (soruyu birebir tekrar etmeyen, aynı aileden soruları da kapsayan) tek bir davranış kuralı yaz. Kanıtlanmış etkili biçim: önce sorunun ne istediğini tek cümleyle yeniden ifade ettir, sonra cevaplat. Örnek stil: "X tarzı sorularda önce ... yaz, sonra ...".` },
+    ];
+    let k = await groq('groq/compound', kuralIstek, { temp: 0.7, max: 600, reason: 'low' });
+    if (!k) k = await frontierSoru(kuralIstek, { temp: 0.7, max: 600 });   // v80: Groq kotası bittiyse kuralı frontier yazar   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin (canlı doğrulandı)
     let kural = String(k || '').trim().split('\n')[0].replace(/[`$"]/g, '').slice(0, 250);
     if (kural.length < 25) return { hedef, uygulandi: false, neden: 'kural adayı üretilemedi (kota/format)' };
     if (src0.includes(kural.slice(0, 40))) return { hedef, uygulandi: false, neden: 'aynı kural zaten var' };
@@ -314,8 +321,15 @@ async function otoYama(sonuc) {
       let toplam = 0, n = 0;
       for (let r = 0; r < 2 && gecti; r++) {
         await new Promise((z) => setTimeout(z, 8000));   // kota nefesi (A/B ağır çağrılar: 3500 token + jüri)
-        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500, solo: true });
-        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500, solo: true }); }
+        // v80: A/B ölçümü tetikleyen beyinle yapılır (frontier = kullanıcıların gerçek beyni); diğeri çapraz yedek
+        const abIstek = [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }];
+        const fb = globalThis.__YAMA_BEYNI === 'frontier';
+        let cvp = fb ? await frontierSoru(abIstek, { temp: 0, max: t.max || 3500 }) : await groq(BEYIN, abIstek, { temp: 0, max: t.max || 3500, solo: true });
+        if (!cvp) {
+          await new Promise((z) => setTimeout(z, fb ? 15000 : 30000));
+          cvp = fb ? await frontierSoru(abIstek, { temp: 0, max: t.max || 3500 }) : await groq(BEYIN, abIstek, { temp: 0, max: t.max || 3500, solo: true });
+        }
+        if (!cvp && fb) cvp = await groq(BEYIN, abIstek, { temp: 0, max: t.max || 3500, solo: true });
         if (!cvp) { detay.push(`${t.id}:ağ/kota`); gecti = false; break; }
         const p = await juriPuan(t, cvp);
         toplam += p?.puan ?? 0; n++;
@@ -379,7 +393,7 @@ async function oneriler(sonuc, ort) {
   const dusukler = sonuc.filter((x) => x.puan < 7).map((x) => `${x.id}: ${x.puan}/10 — ${x.neden}`).join('\n') || 'tümü ≥7';
   const istek = [
     { role: 'system', content: 'Sen EVRIM uygulamasının geliştirme danışmanısın. Türkçe yaz.' },
-    { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. GERÇEK dosyalar YALNIZ şunlardır (başka dosya/Python YOKTUR, .py önerme): web/js/{app,agent,llm,store,rag,learn,wasm,evolve}.js, lab/{run.mjs,bench.json}, tests/suite.mjs, web/data/{mufredat,katalog}.json. Ortam: tarayıcı (ES modules, localStorage, jsdom test) + Node 20 CI. Buna göre 3-5 SOMUT, ücretsiz, bu dosyalarda yapılabilir iyileştirme öner — her biri tek satır, "- " ile başla, hangi dosyada ne değişeceğini söyle.` },
+    { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. GERÇEK dosyalar YALNIZ şunlardır (başka dosya/Python YOKTUR, .py önerme): web/js/{app,agent,llm,store,rag,learn,wasm,evolve}.js, lab/{run.mjs,bench.json}, tests/suite.mjs, web/data/{mufredat,katalog}.json. Ortam: tarayıcı (ES modules, localStorage, jsdom test) + Node 20 CI. Buna göre 3-5 SOMUT, ücretsiz, bu dosyalarda yapılabilir iyileştirme öner — her biri tek satır, tam olarak "- **dosya/yolu.js**: açıklama" biçiminde. ÖNEMLİ (v80): önerileri lab'ın KENDİSİ otomatik uygulayacak — her öneri CERRAHİ olsun: tek dosyada, ≤40 satırlık bul/değiştir ile yapılabilir, davranış koruyucu veya küçük ölçülebilir iyileştirme. Büyük migrasyon (IndexedDB, Web Worker, yeniden yazım) ÖNERME. Zaten var olanı tekrar önerme (agent.js'te fetchT zaman aşımı VAR; llm.js'te frontier katmanı VAR).` },
   ];
   let t = await groq(JURI, istek, { temp: 0.5, max: 700, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin
   if (!t) { await new Promise((z) => setTimeout(z, 30000)); t = await groq(JURI, istek, { temp: 0.5, max: 700, reason: 'low' }); }   // kota tekrarı
@@ -387,7 +401,7 @@ async function oneriler(sonuc, ort) {
 }
 
 /* ---------- günlük + özet ---------- */
-function logla(sonuc, ort, icerikSonuc, ayar) {
+function logla(sonuc, ort, icerikSonuc, ayar, oy) {
   // ağ/kota kaynaklı 0'lar PUAN DEĞİLDİR → null yazılır (oto-yama tetiği bunları SAYMAZ)
   const fGecerli = sonuc.filter((x) => x.frontierPuan !== null && x.frontierNeden !== 'cevap alınamadı (ağ/kota)');
   const ortF = fGecerli.length ? Math.round((fGecerli.reduce((t, x) => t + x.frontierPuan, 0) / fGecerli.length) * 10) / 10 : null;
@@ -404,17 +418,98 @@ function logla(sonuc, ort, icerikSonuc, ayar) {
   const jsonlSatirlar = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').slice(-8).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   const trend = jsonlSatirlar.map((j) => j.ort).filter((x) => x !== null && x !== undefined).join(' → ');
   const frontierTrend = jsonlSatirlar.map((j) => j.frontierOrt).filter((x) => x !== null && x !== undefined).join(' → ');
-  const ozet = { tarih: now(), ortPuan: ort, frontierOrt: ortF, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, frontierTrend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN, frontierBeyin: FRONTIER_BEYIN, sonAyar: ayar || null };
+  const ozet = { tarih: now(), ortPuan: ort, frontierOrt: ortF, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, frontierTrend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN, frontierBeyin: FRONTIER_BEYIN, sonAyar: ayar || null, sonOneriYama: oy || null };
   fs.writeFileSync('lab/ozet.json', JSON.stringify(ozet, null, 1) + '\n');
   return { calisma, ozet };
 }
 
-export { kodAyar };   // v79: yerel/tekil çalıştırma için (LAB_ONLY_AYAR=1 ile ana döngü atlanır)
+/* ---------- 4) ÖNERİ-YAMA (v80 Faz 2): lab, ONERILER maddesini KENDİSİ kod yamasına çevirir ----------
+   Akış: öneri + hedef dosyanın TAM içeriği → frontier beyin {dosya,bul,degistir} JSON'u üretir
+   → doğrulama (beyaz liste, bul TEK geçmeli, boyut sınırı, korunan bölgeler) → yama
+   → KAPILAR: node --check + esbuild + TAM suite → patlarsa OTOMATİK GERİ AL.
+   Kill-switch: lab/YAMA_KAPALI. Sıklık: günde en fazla 1 deneme (lab/yamalar.json). */
+const YAMA_BEYAZ = ['web/js/rag.js', 'web/js/learn.js', 'web/js/llm.js', 'web/js/store.js', 'web/js/agent.js', 'web/js/app.js'];
+const YAMA_BOYUT = 70000;   // karakter — dev dosyalarda serbest model yaması güvenilmez (Faz 3: bölge-bazlı)
+function yamaBugunYapildi() {
+  try { return (JSON.parse(fs.readFileSync('lab/yamalar.json', 'utf8')).tarih || '').slice(0, 10) === now().slice(0, 10); } catch { return false; }
+}
+function yamaKayit(kayit) {
+  let gecmis = [];
+  try { gecmis = JSON.parse(fs.readFileSync('lab/yamalar.json', 'utf8')).gecmis || []; } catch {}
+  gecmis.unshift(kayit); gecmis = gecmis.slice(0, 30);
+  fs.writeFileSync('lab/yamalar.json', JSON.stringify({ tarih: now(), son: kayit, gecmis }, null, 1) + '\n');
+}
+function dogrulaHatasi(hedef, neden) {
+  yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'doğrulama: ' + neden });
+  return { basarisiz: neden };
+}
+async function oneriYama() {
+  if (fs.existsSync('lab/YAMA_KAPALI')) return { atlandi: 'kill-switch' };
+  if (process.env.LAB_ONERI_YAMA === 'kapali') return { atlandi: 'env kapalı' };
+  if (!FKEY) return { atlandi: 'frontier anahtarı yok' };
+  if (yamaBugunYapildi() && !process.env.LAB_ONLY_YAMA) return { atlandi: 'bugün zaten denendi' };
+  if (!fs.existsSync('lab/ONERILER.md')) return { atlandi: 'ONERILER.md yok' };
+  const md = fs.readFileSync('lab/ONERILER.md', 'utf8');
+  const maddeler = [...md.matchAll(/^- \*\*([^*]+)\*\*:\s*(.+)$/gm)]
+    .map((m) => ({ dosya: m[1].trim(), metin: m[2].trim() }))
+    .filter((x) => YAMA_BEYAZ.includes(x.dosya) && fs.existsSync(x.dosya) && fs.statSync(x.dosya).size <= YAMA_BOYUT);
+  if (!maddeler.length) return { atlandi: 'beyaz listeye uygun öneri yok' };
+  const hedef = maddeler[0];
+  const icerik = fs.readFileSync(hedef.dosya, 'utf8');
+  console.log(`lab-yama: hedef ${hedef.dosya} (${icerik.length} kr) — öneri: ${hedef.metin.slice(0, 90)}…`);
+  const istek = [
+    { role: 'system', content: 'Titiz bir JavaScript geliştiricisin. Bir iyileştirme önerisini CERRAHİ bir yamaya çevir. YANITIN YALNIZCA TEK JSON NESNESİ OLSUN: {"dosya":"...","bul":"...","degistir":"..."} veya uygun değilse {"uygunDegil":"<sebep>"}. KURALLAR: "bul" dosyada BİREBİR ve YALNIZ BİR KEZ geçmeli (boşluk/satır sonları aynen); "degistir" onun yeni hâli; toplam değişiklik ≤40 satır; davranış koruyucu veya öneriyi minimal karşılayan bir iyileştirme; export/fonksiyon adları, TOOLS şemaları, BASE_PROMPT metni, /*lab:*/ işaretli bölgeler, anahtar/token kodları DEĞİŞMEZ; büyük yeniden yazım/migrasyon YASAK (öneri büyükse uygunDegil de). JSON string içinde satır sonları \\n, tırnaklar \\" olarak kaçmalı.' },
+    { role: 'user', content: `ÖNERİ (${hedef.dosya}): ${hedef.metin}\n\nDOSYANIN TAM İÇERİĞİ:\n\`\`\`javascript\n${icerik}\n\`\`\`` },
+  ];
+  let t = await frontierSoru(istek, { temp: 0.2, max: 8000 });
+  if (!t) { await new Promise((z) => setTimeout(z, 20000)); t = await frontierSoru(istek, { temp: 0.2, max: 8000 }); }
+  if (!t) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'beyin yanıt vermedi' }); return { basarisiz: 'cevap alınamadı' }; }
+  const j = jsonCikar(t);
+  if (!j) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'JSON parse edilemedi', ham: String(t).slice(0, 200) }); return { basarisiz: 'JSON bozuk' }; }
+  if (j.uygunDegil) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'model reddetti: ' + String(j.uygunDegil).slice(0, 140) }); return { reddedildi: String(j.uygunDegil).slice(0, 140) }; }
+  const { dosya, bul, degistir } = j;
+  if (dosya !== hedef.dosya || !YAMA_BEYAZ.includes(String(dosya)) || !fs.existsSync(String(dosya))) return dogrulaHatasi(hedef, 'dosya hedefle farklı/beyaz liste dışında');
+  if (typeof bul !== 'string' || typeof degistir !== 'string') return dogrulaHatasi(hedef, 'bul/degistir string değil');
+  const src = fs.readFileSync(dosya, 'utf8');
+  const adet = src.split(bul).length - 1;
+  if (!bul || adet !== 1) return dogrulaHatasi(hedef, `bul ${adet} kez geçiyor (1 olmalı)`);
+  if (degistir === bul) return dogrulaHatasi(hedef, 'degistir = bul (değişiklik yok)');
+  if (Math.max(bul.split('\n').length, degistir.split('\n').length) > 80) return dogrulaHatasi(hedef, 'yama bloğu çok büyük (>80 satır)');
+  if (/\/\*lab:(bas|son|skip)\*\//.test(bul + degistir)) return dogrulaHatasi(hedef, 'korunan lab işaretli bölge');
+  if (dosya === 'web/js/store.js') {
+    const bs = src.indexOf('const BASE_PROMPT'); const be = src.indexOf('export function', bs);
+    const bi = src.indexOf(bul);
+    if (bs >= 0 && bi > bs && bi < be) return dogrulaHatasi(hedef, 'BASE_PROMPT bölgesi oto-yamanın alanı (dokunulmaz)');
+  }
+  const yedek = src;
+  fs.writeFileSync(dosya, src.replace(bul, degistir));
+  console.log('lab-yama: yama yazıldı → kapılar (node --check + esbuild + tam suite)…');
+  try {
+    execSync(`node --check ${dosya}`, { stdio: 'pipe' });
+    execSync('npx esbuild web/js/app.js --bundle --format=iife --outfile=tests/bundle.js --log-level=warning', { stdio: 'pipe' });
+    execSync('node tests/suite.mjs', { stdio: 'pipe', timeout: 900000 });
+  } catch (e) {
+    fs.writeFileSync(dosya, yedek);
+    console.log('lab-yama: KAPI REDDETTİ → dosya geri alındı');
+    yamaKayit({ t: now(), dosya, oneri: hedef.metin.slice(0, 160), sonuc: 'kapı reddetti — geri alındı' });
+    return { basarisiz: 'kapı reddetti (geri alındı)' };
+  }
+  yamaKayit({ t: now(), dosya, oneri: hedef.metin.slice(0, 160), sonuc: 'UYGULANDI (suite yeşil)' });
+  console.log('lab-yama: YAMA UYGULANDI ✅ (suite yeşil)');
+  return { uygulandi: true, dosya, oneri: hedef.metin.slice(0, 160) };
+}
+
+export { kodAyar, oneriYama };   // v79/v80: yerel/tekil çalıştırma (LAB_ONLY_AYAR / LAB_ONLY_YAMA)
 
 /* ---------- ana ---------- */
 if (process.env.LAB_ONLY_AYAR) {
   const r = await kodAyar();
   console.log('kodAyar sonucu:', JSON.stringify(r));
+  process.exit(0);
+}
+if (process.env.LAB_ONLY_YAMA) {
+  const r = await oneriYama();
+  console.log('oneriYama sonucu:', JSON.stringify(r));
   process.exit(0);
 }
 try {
@@ -434,7 +529,10 @@ try {
   globalThis.__SONYAMA = yama || null;
   console.log('lab: oto-yama =', yama ? JSON.stringify(yama).slice(0, 400) : 'tetiklenmedi (kalıcı zayıflık yok)');
   await oneriler(sonuc, ort);
-  const { calisma } = logla(sonuc, ort, ic, ayar);
+  console.log('lab: öneri-yama (Faz 2 — kendi kodunu yazma denemesi)…');
+  const oy = await oneriYama();
+  console.log('lab: öneri-yama sonucu:', JSON.stringify(oy).slice(0, 300));
+  const { calisma } = logla(sonuc, ort, ic, ayar, oy);
   console.log(`lab: tamam — çalıştırma #${calisma}`);
 } catch (e) {
   console.log('lab: HATA —', String(e?.message || e).slice(0, 200));
