@@ -139,7 +139,7 @@ function logla(sonuc, ort, icerikSonuc) {
   if (!md.includes('| Çalışma (UTC) |')) md = baslik;
   const govde = md.split('\n').filter((l) => l.startsWith('| '));
   const ust = md.slice(0, md.indexOf('| Çalışma (UTC) |') >= 0 ? md.indexOf('| Çalışma (UTC) |') : md.length);
-  const tablo = [...govde.slice(0, 2), satir, ...govde.slice(2)].slice(0, 62);
+  const tablo = [...govde.slice(0, 1), satir, ...govde.slice(1)].slice(0, 62);   // başlık satırından sonra EN ÜSTE ekle (kronolojik)
   fs.writeFileSync('lab/ARASTIRMA.md', (ust.endsWith('\n') || ust === '' ? ust : ust + '\n') + tablo.join('\n') + '\n');
   const ozet = { tarih: now(), ortPuan: ort, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, sonBench: sonuc, beyin: BEYIN };
   fs.writeFileSync('lab/ozet.json', JSON.stringify(ozet, null, 1) + '\n');
