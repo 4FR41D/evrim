@@ -71,6 +71,8 @@ function basePrompt() {   // uygulamanın GERÇEK beyin promptu (store.js) — b
 /* ---------- 1) BENCH ---------- */
 async function bench() {
   const sorular = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
+  // v70: AĞIR sorular (yüksek max) ÖNCE — kota gün içinde tükeniyor, en değerli ölçümler taze kotasıyla yapılsın
+  sorular.sort((x, y) => (y.max || 3500) - (x.max || 3500));
   const sonuc = [];
   for (let si = 0; si < sorular.length; si++) {
     const b = sorular[si];
@@ -79,12 +81,20 @@ async function bench() {
       { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
     ], { temp: 0, max: b.max || 3500 });
-    if (!cevap) {   // CI'da kota/ağ dalgalanması: bir tekrar (20 sn sonra)
+    if (!cevap) {   // kota/ağ dalgalanması: bekle → aynı limitle tekrar → KADEME DÜŞÜR (kısa ölçüm > ölçümsüz)
       await new Promise((z) => setTimeout(z, 20000));
       cevap = await groq(BEYIN, [
         { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
         { role: 'user', content: b.soru },
       ], { temp: 0, max: b.max || 3500 });
+      if (!cevap) {
+        const dusukMax = (b.max || 3500) > 4000 ? 4500 : 2500;
+        await new Promise((z) => setTimeout(z, 20000));
+        cevap = await groq(BEYIN, [
+          { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
+          { role: 'user', content: b.soru + (dusukMax <= 2500 ? ' (cevabı kısa tut)' : '') },
+        ], { temp: 0, max: dusukMax });
+      }
     }
     if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
     const p = await juriPuan(b, cevap);
