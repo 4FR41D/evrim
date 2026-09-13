@@ -285,7 +285,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/08-building-search-applications",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/08-building-search-applications/README.md",
-   "yerel": "data/dersler/08.md"
+   "yerel": "data/dersler/08.md",
+   "ekQuizler": [
+    {
+     "soru": "Embedding nedir ve ne amaçla kullanılır?",
+     "secenekler": [
+      "a. Metin, görsel vb. verileri sayısal vektörlere dönüştüren bir model",
+      "b. Veritabanı indeksleme yöntemi",
+      "c. Görüntü sıkıştırma algoritması",
+      "d. Doğrusal regresyon parametresi"
+     ],
+     "dogru": 0,
+     "aciklama": "Embedding, yüksek boyutlu verileri düşük boyutlu sayısal vektörlere çevirerek benzerlik ölçümü ve semantik arama gibi görevlerde kullanılmasını sağlar."
+    }
+   ]
   },
   {
    "no": 9,
@@ -309,7 +322,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/09-building-image-applications",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/09-building-image-applications/README.md",
-   "yerel": "data/dersler/09.md"
+   "yerel": "data/dersler/09.md",
+   "ekQuizler": [
+    {
+     "soru": "Diffusion modeli görsel üretirken hangi adımları izler?",
+     "secenekler": [
+      "a) Gürültüyü artırarak bir görüntü oluşturur",
+      "b) Rastgele bir gürültüden başlayıp iteratif olarak gürültüyü azaltır",
+      "c) Sadece prompta göre doğrudan piksel değerlerini tahmin eder",
+      "d) Önceden eğitilmiş bir veritabanından kopyalar"
+     ],
+     "dogru": 1,
+     "aciklama": "Diffusion modeli, rastgele bir gürültü ile başlar ve bir dizi iterasyonla gürültüyü azaltarak istenen görseli üretir."
+    }
+   ]
   },
   {
    "no": 10,
