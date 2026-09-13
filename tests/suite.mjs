@@ -4,8 +4,9 @@
 import { JSDOM } from 'jsdom';
 import fs from 'fs';
 
-const html = fs.readFileSync('/home/user/evrim/web/index.html', 'utf8');
-const bundle = fs.readFileSync('/home/user/evrim/tests/bundle.js', 'utf8');
+const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');   // repo kökü (CI dahil her ortamda çalışır)
+const html = fs.readFileSync(ROOT + '/web/index.html', 'utf8');
+const bundle = fs.readFileSync(ROOT + '/tests/bundle.js', 'utf8');
 let pass = 0, fail = 0;
 const ok = (n, c) => { c ? pass++ : fail++; console.log(`${c ? '✅' : '❌'} ${n}`); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -174,7 +175,7 @@ function fakeRes(body, toolCall, finalText) {
   let round = 0; const calls = [];
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
-    if (u.includes('katalog.json')) { const j = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8')); return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => j, text: async () => fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8') }; }
+    if (u.includes('katalog.json')) { const j = JSON.parse(fs.readFileSync(ROOT + '/web/data/katalog.json', 'utf8')); return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => j, text: async () => fs.readFileSync(ROOT + '/web/data/katalog.json', 'utf8') }; }
     if (u.includes('githubusercontent') || u.includes('api.github.com')) return { ok: false, status: 404, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
     if (u.includes('openrouter.ai')) {
       const body = opts?.body ? JSON.parse(opts.body) : null; calls.push({ body });
@@ -645,7 +646,7 @@ function makeBroker() {
 /* ================= 23) KURS MODU: ders getir + yanlış quiz -> seviye & flash-card ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -683,7 +684,7 @@ function makeBroker() {
 /* ================= 24) ode_coz: RK4 lojistik + sinüs integrali + güvenlik + ders 22 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -943,7 +944,7 @@ function makeBroker() {
 /* ================= 30) kuantum_devre: Bell durumu + RX(pi) çevirme + ders 25 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -982,7 +983,7 @@ function makeBroker() {
 /* ================= 31) sinir_agi: XOR %100 + sinüs kayıp düşüşü + ders 26 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1022,7 +1023,7 @@ function makeBroker() {
 /* ================= 32) olasilik: binom tablosu + Monte Carlo π + MCMC posterior + ders 27 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1062,7 +1063,7 @@ function makeBroker() {
 /* ================= 33) gizli_ogren: FedAvg yakınsama + diferansiyel gizlilik tablosu + ders 28 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1100,7 +1101,7 @@ function makeBroker() {
 /* ================= 34) oto_model: AutoML araması + en iyi seçimi + ders 29 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1138,7 +1139,7 @@ function makeBroker() {
 /* ================= 35) SESLİ YANIT: 🔊 düğmesi + speechSynthesis çağrısı + ders 30 ================= */
 {
   const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1175,7 +1176,7 @@ function makeBroker() {
 /* ================= 36) otomatik_turev: ters mod AD + sayısal doğrulama + güvenlik + ders 31 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1218,7 +1219,7 @@ function makeBroker() {
 /* ================= 37) evrak_taslak: dilekçe arz / resmî rica + ders 32 ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1321,7 +1322,7 @@ function makeBroker() {
 /* ================= 40) LINK OLSE BILE KURS: ders_calis tam:true -> yerel arsiv ================= */
 {
   let round = 0; const calls = []; const hits = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const ARSIV = '# AI Agents\nAn agent uses tools in a loop. Plan, act, observe.';
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
@@ -1361,8 +1362,8 @@ function makeBroker() {
 /* ================= 41) oz_test: canlı uygulamanın duman testi kendinden geçmeli ================= */
 {
   let round = 0; const calls = [];
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
-  const KAT = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/katalog.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
+  const KAT = JSON.parse(fs.readFileSync(ROOT + '/web/data/katalog.json', 'utf8'));
   const w = makeWin({ fetch: async (url, opts) => {
     const u = String(url);
     if (u.includes('mufredat.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => MUF, text: async () => JSON.stringify(MUF) };
@@ -1955,7 +1956,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
   ok('55. lab kartı arayüzde var', !!$(w, '#labStat'));
   const ls = String($(w, '#labStat')?.textContent || '');
   ok('55. lab özeti GitHub\'dan çekilip gösterildi', ls.includes('9.2/10') && ls.includes('12'));
-  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const ekler = MUF.dersler.flatMap((d) => d.ekQuizler || []);
   const bozuk = ekler.filter((q) => !q.soru || !Array.isArray(q.secenekler) || q.secenekler.length !== 4 || !Number.isInteger(q.dogru) || q.dogru < 0 || q.dogru > 3 || !q.aciklama);
   ok('55. ekQuizler şeması geçerli (' + ekler.length + ' soru)', bozuk.length === 0);
