@@ -101,6 +101,13 @@ function md(src) {
       ? `<img class="gen" alt="${alt}" src="${src2}">`
       : `<span class="muted">[görsel bu cihazda/oturumda yok: ${id}]</span>`;
   });
+  // v61: üretilen siteler: [site](evrimsite:slug) -> canlı önizleme kartı
+  s = s.replace(/\[([^\]]*)\]\(evrimsite:([A-Za-z0-9çğıöşü_-]+)\)/g, (_, alt, slug) => {
+    const row = all('sites').find((x) => x.ad === slug);
+    return row
+      ? `<div class="sitecard" data-site="${slug}"><b>🏗️ ${slug}</b> <span class="muted">· ${Math.round(String(row.html || '').length / 1024)} KB · canlı önizleme hazır</span><div class="row" style="margin-top:8px"><button class="btn sm siteprev">👁 Önizle</button><button class="btn sm ghost sitefs">⛶ Tam ekran</button><button class="btn sm ghost sitedl">⬇️ İndir</button></div></div>`
+      : `<span class="muted">[site bu cihazda yok: ${slug}]</span>`;
+  });
   // v56: ```grafik bloğu -> inline SVG (tabloların görsel hâli)
   s = s.replace(/```grafik\n([\s\S]*?)```/g, (blok, govde) => grafikSVG(govde) || blok);
   s = s.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c}</code></pre>`);
@@ -1384,6 +1391,42 @@ function brifingEkle() {
   requestAnimationFrame(scrollBottom);
 }
 $('#btnBrief')?.addEventListener('click', () => brifingEkle());
+
+/* ---------------- v61: 🏗️ SİTE ÖNİZLEME (sandbox iframe — benim canlı önizlemem gibi) ---------------- */
+function siteAc(slug, fs) {
+  const row = all('sites').find((x) => x.ad === slug);
+  if (!row) { toast('Site bulunamadı', 'bad'); return; }
+  document.getElementById('siteOverlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'siteOverlay';
+  ov.className = 'site-overlay' + (fs ? ' fs' : '');
+  ov.innerHTML = `<div class="site-bar"><b>🏗️ ${esc(slug)}</b><span class="muted"> canlı önizleme · korumalı alan (sandbox)</span><span style="flex:1"></span><button class="btn sm ghost" id="siteClose">✕ Kapat</button></div><iframe class="site-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="${esc(slug)}"></iframe>`;
+  document.body.appendChild(ov);
+  const ifr = ov.querySelector('iframe');
+  ifr.srcdoc = row.html;
+  ov.querySelector('#siteClose').addEventListener('click', () => ov.remove());
+}
+function siteIndir(row) {
+  try {
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) { toast('Bu tarayıcıda indirme desteklenmiyor', 'bad'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([row.html], { type: 'text/html;charset=utf-8' }));
+    a.download = (row.ad || 'site') + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch {} }, 4000);
+    toast('⬇️ Site indirildi: ' + a.download + ' — dosya yöneticisinden açıp tarayıcıda görüntüleyebilirsin', 'ok');
+  } catch { toast('İndirme başarısız', 'bad'); }
+}
+$('#msgs')?.addEventListener('click', (e) => {
+  const card = e.target.closest?.('.sitecard');
+  if (!card) return;
+  const slug = card.dataset.site;
+  const row = all('sites').find((x) => x.ad === slug);
+  if (!row) return;
+  if (e.target.closest('.siteprev')) siteAc(slug, false);
+  else if (e.target.closest('.sitefs')) siteAc(slug, true);
+  else if (e.target.closest('.sitedl')) siteIndir(row);
+});
 
 /* ---------------- v56: 📄 PDF metin çıkarma (pdf.js CDN) ---------------- */
 function loadScript(src) {

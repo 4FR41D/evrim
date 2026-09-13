@@ -46,6 +46,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **Beyin v60:** 🧠 ilgili hafıza (mesajla örtüşen kayıtlar promptta öne çıkar),
   🎧 sesli sohbet modu (eller serbest: dinle → cevapla → seslendir → tekrar dinle),
   🌅 günlük brifing (günde bir, tamamen yerel: seri + hatırlatıcı + görev + alışkanlık + harcama).
+- **🏗️ Site üretimi + canlı önizleme (v61):** "bana portföy sitesi yap" → beyin tek dosya HTML
+  üretir (`site_uret`), sohbet içinde **sandbox iframe ile canlı önizleme** kartı açılır
+  (👁 Önizle / ⛶ Tam ekran / ⬇️ İndir). "Başlığı mavi yap" → aynı adla güncellenir.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
@@ -148,7 +151,7 @@ evrim/
 │     ├─ shell.js       # giriş akışı, kenar çubuğu, botlar, modal, çekmece
 │     ├─ profile.js     # cihaz içi profiller + PIN
 │     ├─ personas.js    # hazır botlar + şablonlar
-│     ├─ agent.js       # 36 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
+│     ├─ agent.js       # 37 araç + ajan döngüsü + Türkçe-duyarlı Vikipedi
 │     │                 #   + gorsel_uret: Puter üzerinden anahtarsız/ücretsiz görsel üretimi
 │     │                 #   + api_katalog: awesome-agent-apis (660+ model, anahtarsız/ücretsiz okuma)
 │     │                 #   + web_ara: anahtarsız web araması (jina+ddg) → web_oku zinciri

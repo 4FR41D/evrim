@@ -111,6 +111,11 @@ export const TOOLS = [
     islem: { type: 'string', description: 'ekle | yapildi | durum | sil' },
     ad: { type: 'string', description: 'alışkanlık adı (örn. "su iç")' },
   }, []),
+  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, harici kaynak/CDN YOK, mobil uyumlu) ve "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için).', {
+    ad: { type: 'string', description: 'kısa slug: "portfoy", "yilan-oyunu" (küçük harf, tireli)' },
+    kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü, harici kaynak yok)' },
+    islem: { type: 'string', description: 'olustur (varsayılan) | liste | sil' },
+  }, ['ad']),
   F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
   F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
     konu: { type: 'string', description: 'yazının konusu (kısa)' },
@@ -869,6 +874,30 @@ const EXEC = {
     if (!hs.length) return { ok: true, adet: 0, not: 'Henüz alışkanlık yok — "su iç", "kitap oku", "spor" gibi örnekler öner.' };
     const tablo = '| alışkanlık | bugün | seri | toplam |\n|---|---|---|---|\n' + hs.map((x) => `| ${x.ad} | ${(x.tarihler || []).includes(bugun) ? '✅' : '—'} | ${serisi(x)} gün | ${(x.tarihler || []).length} |`).join('\n');
     return { ok: true, adet: hs.length, tablo, not: 'Tabloyu sun; en uzun seriyi 1 cümleyle öne çıkar.' };
+  },
+
+  async site_uret({ ad, kod, islem }) {
+    const op = String(islem || (kod ? 'olustur' : 'liste')).trim().toLowerCase();
+    const slug = String(ad || '').trim().toLowerCase().replace(/[^a-z0-9çğıöşü_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'site';
+    if (op === 'liste') {
+      const ss = all('sites');
+      return { ok: true, adet: ss.length, siteler: ss.slice(-15).map((x) => ({ ad: x.ad, boyutKB: Math.round(String(x.html || '').length / 1024), tarih: new Date(x.ts || Date.now()).toLocaleDateString('tr-TR') })), not: 'Listeyi sun; önizlemek/degistirmek için birini seçmesini söyle.' };
+    }
+    if (op === 'sil') {
+      const row = all('sites').find((x) => x.ad === slug);
+      if (!row) return { hata: `"${slug}" adlı site yok — liste ile adları gör.` };
+      remove('sites', row.id);
+      return { ok: true, silinen: slug, not: 'Silindiğini tek satırda söyle.' };
+    }
+    const h = String(kod || '');
+    if (!h.trim()) return { hata: 'kod boş — TAM HTML belgesini kod parametresine yaz' };
+    if (h.length > 400000) return { hata: 'kod çok büyük (400KB üstü) — sayfayı sadeleştir, böl veya varlıkları azalt' };
+    if (!/<!doctype html>/i.test(h) && !/<html[\s>]/i.test(h)) return { hata: 'kod geçerli HTML belgesi değil — <!doctype html> ile başlayan tam belge yaz' };
+    const varMi = all('sites').find((x) => x.ad === slug);
+    if (varMi) update('sites', varMi.id, { html: h, ts: Date.now() });
+    else insert('sites', { ad: slug, html: h, ts: Date.now(), createdAt: now() });
+    const isaret = `[site](evrimsite:${slug})`;
+    return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür. Kartta Önizle/İndir/Tam ekran düğmeleri olduğunu bir cümleyle söyle.` };
   },
 
   async oz_test() {
@@ -1963,6 +1992,7 @@ export function toolLabel(name, args = {}, done = false, bad = false) {
     ceviri: done ? (bad ? '🗣️ Çeviri başarısız' : `🗣️ Çevrildi${args.hedef ? ' (→' + String(args.hedef).slice(0, 5) + ')' : ''}`) : '🗣️ Çeviriyor',
     yapilac: done ? (bad ? '🗓️ Görev işlemi başarısız' : `🗓️ Yapılacaklar: ${String(args.islem || 'liste').slice(0, 8)}`) : '🗓️ Görev listesi işleniyor',
     aliskanlik: done ? (bad ? '💧 Alışkanlık başarısız' : `💧 Alışkanlık: ${String(args.islem || 'durum').slice(0, 8)}`) : '💧 Alışkanlık işleniyor',
+    site_uret: done ? (bad ? '🏗️ Site üretilemedi' : (args.islem === 'sil' ? `🏗️ Site silindi: ${String(args.ad || '').slice(0, 16)}` : args.islem === 'liste' ? '🏗️ Siteler listelendi' : `🏗️ Site hazır: ${String(args.ad || '').slice(0, 16)}`)) : '🏗️ Web sitesi üretiliyor',
     oz_test: done ? (bad ? '🧪 Öz test BAŞARISIZ' : '🧪 Öz test tamam') : '🧪 Öz test çalışıyor (canlı uygulama duman testi)',
     evrak_taslak: done ? (bad ? '📄 Taslak üretilemedi' : `📄 ${args.tip === 'resmi' ? 'Resmî yazı' : 'Dilekçe'} taslağı hazır`) : '📄 Evrak taslağı üretiliyor',
     otomatik_turev: done ? (bad ? '𝛁 Türev hesaplanamadı' : '𝛁 Gradyan hesaplandı (AD)') : '𝛁 Otomatik türev hesaplanıyor',

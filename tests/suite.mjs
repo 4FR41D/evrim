@@ -68,7 +68,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v12 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 12') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v13 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 13') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -1648,6 +1648,45 @@ function makeBroker() {
   ok('48. sistem promptuna hafıza girdi', sysSent.includes('kahve') && sysSent.includes('Python döngü'));
   ok('48. ilgili hafıza güçsüz olsa da öne çıktı', sysSent.indexOf('Python döngü') < sysSent.indexOf('kahve'));
   ok('48. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+
+/* ================= 49) 🏗️ site_uret: üret → güncelle → canlı önizleme ================= */
+{
+  let round = 0; const calls = [];
+  const KOD1 = '<!doctype html><html><head><meta charset="utf-8"><title>Portfoy</title><style>body{background:#111;color:#eee}</style></head><body><h1>Merhaba EVRIM</h1></body></html>';
+  const KOD2 = '<!doctype html><html><head><meta charset="utf-8"><title>Portfoy v2</title></head><body><h1 style="color:blue">Surum 2</h1></body></html>';
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'site_uret', args: { ad: 'portfoy', kod: KOD1 } });
+      if (round === 2) return fakeRes(body, { name: 'site_uret', args: { ad: 'portfoy', kod: KOD2 } });
+      return fakeRes(body, null, 'Siten hazır: [site](evrimsite:portfoy) — Önizle düğmesine bas!');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Site'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'bana portföy sitesi yap sonra başlığı mavi yap'; $(w, '#send').click();
+  await wait(4200);
+  const sites = JSON.parse(w.localStorage.getItem('evrim:sites') || '[]');
+  ok('49. site kaydedildi + güncelleme çoğaltmadı', sites.length === 1 && sites[0].ad === 'portfoy' && sites[0].html.includes('Surum 2'));
+  const card = $(w, '#msgs .sitecard[data-site="portfoy"]');
+  ok('49. canlı önizleme kartı render edildi', !!card && !!card.querySelector('.siteprev') && !!card.querySelector('.sitedl'));
+  ok('49. çip: 🏗️', $$(w, '#msgs .toolstep').some((e) => e.textContent.includes('🏗️')));
+  card.querySelector('.siteprev').click(); await wait(150);
+  const ov = $(w, '#siteOverlay');
+  const ifr = ov?.querySelector('iframe');
+  ok('49. önizleme açıldı (sandbox iframe + srcdoc)', !!ov && !!ifr && String(ifr.getAttribute('srcdoc') || '').includes('Surum 2') && String(ifr.getAttribute('sandbox') || '').includes('allow-scripts'));
+  $(w, '#siteClose')?.click(); await wait(100);
+  ok('49. önizleme kapandı', !$(w, '#siteOverlay'));
+  ok('49. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

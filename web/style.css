@@ -345,3 +345,10 @@ nav.tabs{display:none !important}
 #composer .tool-btn.on{opacity:1;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 svg.grafik{display:block;max-width:100%;margin:8px 0;background:#0b1020;border:1px solid var(--line);border-radius:12px}
+
+/* v61: 🏗️ site üretimi + canlı önizleme */
+.sitecard { border:1px solid rgba(124,92,255,.45); border-radius:12px; padding:10px 12px; margin:8px 0; background:rgba(124,92,255,.06); }
+.site-overlay { position:fixed; inset:0; z-index:9000; background:#0b0d12; display:flex; flex-direction:column; }
+.site-overlay .site-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.12); font-size:14px; }
+.site-overlay .site-frame { flex:1; width:100%; border:0; background:#fff; }
+.site-overlay.fs .site-bar { display:none; }
