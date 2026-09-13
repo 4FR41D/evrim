@@ -13,6 +13,15 @@ import { wasmStatus } from './wasm.js';
 import { createCard } from './learn.js';
 import { localStatus } from './local.js';
 import { puterStatus } from './puter.js';
+
+// v70 (lab önerisi #1): araç ağ çağrılarına zaman aşımı — mobilde asılı istek ajanı sonsuza dek kilitlemesin
+async function fetchT(url, opts = {}, ms = 25000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+  catch (e) { if (e?.name === 'AbortError') throw new Error(`ağ zaman aşımı (${ms / 1000}sn)`); throw e; }
+  finally { clearTimeout(t); }
+}
 import { houseStatus } from './house.js';
 
 const MAX_STEPS = 6;   // v64: daha derin ajan döngüsü (çok adımlı görevler için)
@@ -384,7 +393,7 @@ async function catTree() {
       catTreeMem = c.names; return c.names;
     }
   } catch { /* önbellek yok */ }
-  const res = await fetch(`https://api.github.com/repos/${CAT_REPO}/git/trees/main?recursive=1`,
+  const res = await fetchT(`https://api.github.com/repos/${CAT_REPO}/git/trees/main?recursive=1`,
     { headers: { Accept: 'application/vnd.github+json' } });
   if (!res.ok) throw new Error(`katalog listesine ulaşılamadı (${res.status})`);
   const j = await res.json();
@@ -411,7 +420,7 @@ const CAT_MIRROR = new URL('data/katalog.json', document.baseURI).href;
 let catMirrorMem = null;
 async function catMirror() {
   if (catMirrorMem) return catMirrorMem;
-  const r = await fetch(CAT_MIRROR);
+  const r = await fetchT(CAT_MIRROR);
   if (!r.ok) throw new Error(`yerel yedek ${r.status}`);
   const j = await r.json();
   if (!j || !Array.isArray(j.items) || !j.items.length) throw new Error('yerel yedek boş');
@@ -428,7 +437,7 @@ function secQuiz(d) {
 
 async function mufredat() {
   if (MUF_CACHE) return MUF_CACHE;
-  const r = await fetch('data/mufredat.json');
+  const r = await fetchT('data/mufredat.json', {}, 15000);
   if (!r.ok) throw new Error('müfredat yüklenemedi');
   MUF_CACHE = await r.json();
   return MUF_CACHE;
@@ -480,7 +489,7 @@ async function katalogAra(sorgu, adet) {
     if (!ranked.length) return { found: 0, toplam: names.length, kaynak: 'upstream GitHub', note: CAT_NOMATCH };
     const items = await Promise.all(ranked.map(async ({ n }) => {
       try {
-        const r = await fetch(`https://raw.githubusercontent.com/${CAT_REPO}/main/models/${encodeURIComponent(n)}.yaml`);
+        const r = await fetchT(`https://raw.githubusercontent.com/${CAT_REPO}/main/models/${encodeURIComponent(n)}.yaml`);
         if (!r.ok) return { model: n, hata: `okunamadı (${r.status})` };
         const y = await r.text();
         return {
@@ -649,7 +658,7 @@ const EXEC = {
     const u = String(url || '').trim();
     if (!/^https?:\/\/[^\s]+$/i.test(u)) return { hata: 'geçersiz adres (https:// ile başlamalı)' };
     try {
-      const r = await fetch('https://r.jina.ai/' + u, { headers: { Accept: 'text/plain' } });
+      const r = await fetchT('https://r.jina.ai/' + u, { headers: { Accept: 'text/plain' } }, 40000);
       if (r.status === 429) return { hata: 'okuyucu limiti dolu (20/dk); 1 dk sonra tekrar dene' };
       if (!r.ok) return { hata: `sayfa okunamadı (${r.status})` };
       let t = await r.text();
@@ -789,12 +798,12 @@ const EXEC = {
     const WC = { 0: 'Açık', 1: 'Az bulutlu', 2: 'Parçalı bulutlu', 3: 'Kapalı', 45: 'Sisli', 48: 'Kırağılı sis', 51: 'Hafif çisenti', 53: 'Çisenti', 55: 'Yoğun çisenti', 56: 'Donan çisenti', 57: 'Donan çisenti', 61: 'Hafif yağmur', 63: 'Yağmurlu', 65: 'Şiddetli yağmur', 66: 'Donan yağmur', 67: 'Donan yağmur', 71: 'Hafif kar', 73: 'Karlı', 75: 'Yoğun kar', 77: 'Kar taneleri', 80: 'Hafif sağanak', 81: 'Sağanak', 82: 'Şiddetli sağanak', 85: 'Kar sağanağı', 86: 'Yoğun kar sağanağı', 95: 'Gök gürültülü fırtına', 96: 'Dolulu fırtına', 99: 'Şiddetli dolu fırtınası' };
     const wc = (c) => WC[c] || 'Bilinmiyor';
     try {
-      const gr = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(s0)}&count=1&language=tr&format=json`);
+      const gr = await fetchT(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(s0)}&count=1&language=tr&format=json`);
       if (!gr.ok) return { hata: 'şehir aranamadı (HTTP ' + gr.status + ')' };
       const gj = await gr.json();
       const loc = gj?.results?.[0];
       if (!loc) return { hata: `"${s0}" bulunamadı — daha bilinen bir ad dene (örn. "Gaziantep").` };
-      const fr = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=${g}`);
+      const fr = await fetchT(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=${g}`);
       if (!fr.ok) return { hata: 'hava verisi alınamadı (HTTP ' + fr.status + ')' };
       const f = await fr.json();
       const cur = f.current || {};
@@ -812,7 +821,7 @@ const EXEC = {
     const h = String(hedef || 'TRY').trim().toUpperCase().slice(0, 3);
     const m = Number(miktar) > 0 ? Number(miktar) : 1;
     try {
-      const r = await fetch(`https://api.frankfurter.dev/v1/latest?base=${encodeURIComponent(b)}&symbols=${encodeURIComponent(h)}`);
+      const r = await fetchT(`https://api.frankfurter.dev/v1/latest?base=${encodeURIComponent(b)}&symbols=${encodeURIComponent(h)}`);
       if (!r.ok) return { hata: 'kur alınamadı (HTTP ' + r.status + ') — kod geçerli mi? (USD, EUR, TRY, GBP, JPY… kripto yok)' };
       const j = await r.json();
       const kur = j?.rates?.[h];
@@ -828,7 +837,7 @@ const EXEC = {
     const k = String(kaynak || '').trim().toLowerCase().slice(0, 2) || (/[çğıöşü]/i.test(t) ? 'tr' : 'en');
     const h = String(hedef || '').trim().toLowerCase().slice(0, 2) || (k === 'tr' ? 'en' : 'tr');
     try {
-      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=${k}|${h}`);
+      const r = await fetchT(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=${k}|${h}`);
       if (!r.ok) return { hata: 'çeviri alınamadı (HTTP ' + r.status + ')' };
       const j = await r.json();
       const out = j?.responseData?.translatedText;
@@ -962,7 +971,7 @@ const EXEC = {
     try { const c = all('conversations'); convOk = Array.isArray(c); convN = c ? c.length : 0; } catch { convOk = false; }
     add('Sohbet deposu geçerli', convOk, convN + ' konuşma');
     try {
-      const kr = await fetch('data/katalog.json');
+      const kr = await fetchT('data/katalog.json', {}, 15000);
       const kj = kr.ok ? await kr.json() : null;
       const n1 = kj ? Number(kj.adet || (Array.isArray(kj.yetenekler) ? kj.yetenekler.length : 0)) : 0;
       add('API kataloğu yüklü', kr.ok && n1 > 0, n1 + ' kayıt');

@@ -88,6 +88,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   yasak, mobil @media, erişilebilirlik, pollinations görselleri); lab'a `site-tasarim` bench sorusu
   girdi — tasarım kalitesi artık HER TURDA jüri puanıyla ölçülüyor, kalıcı düşüşte oto-yama devreye
   girer. Canlı ön prova: 251 satırlık tam donanımlı baklavacı landing page (tüm kontroller yeşil).
+- **⏱️ v70 lab önerisi uygulandı:** öneri motoru temellendirildi (artık yalnız gerçek dosyaları
+  öneriyor — ilk taze çıktısının 1 numaralı önerisi uygulandı): tüm araç ağ çağrılarına
+  `fetchT` zaman aşımı (25sn, jina okuyucu 40sn, yerel veri 15sn) — mobilde asılı istekler
+  ajanı artık kilitlemiyor, araç Türkçe "ağ zaman aşımı" hatasıyla hızlıca geri dönüyor.
+  Ayrıca bench ölçüm bütünlüğü: cevaplar YALNIZ 120b'den ölçülür (yedek modele düşünce kimlik
+  bozulmasın), günlük kota bitince ölçümler dürüstçe atlanır.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

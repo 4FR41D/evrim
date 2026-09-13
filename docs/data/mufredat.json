@@ -433,7 +433,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/12-designing-ux-for-ai-applications",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/12-designing-ux-for-ai-applications/README.md",
-   "yerel": "data/dersler/12.md"
+   "yerel": "data/dersler/12.md",
+   "ekQuizler": [
+    {
+     "soru": "AI destekli bir sohbet botunda kullanıcıların güvenini artırmak için en etkili tasarım yaklaşımı hangisidir?",
+     "secenekler": [
+      "a) Sonuçları anında ve şeffaf bir şekilde göstermek",
+      "b) Kullanıcıya sadece sonuçları vermek, işlem sürecini gizlemek",
+      "c) İşlem süresini gizlemek ve bekleme hissini yok saymak",
+      "d) Geri alma seçeneği sunmamak"
+     ],
+     "dogru": 0,
+     "aciklama": "Şeffaflık, belirsizliği azaltır ve kullanıcıların AI sistemine güvenmesini sağlar; bu yüzden sonuçları açıkça göstermek en kritik ilkedir."
+    }
+   ]
   },
   {
    "no": 13,
