@@ -116,6 +116,13 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   sırası + perf puanıyla otomatik seçim, araç çağrıları canlı doğrulandı. Zincir: :free kuyruğu →
   kota dolarsa Groq ev beyni (10 dk soğuma) → kullanıcı hiçbir şey fark etmez. Dev bağlam bu
   beyinlerle otomatik açılır (60 mesaj geçmiş + 12 RAG parçası).
+- **🎨 v75 İLERİ DÜZEY site şartnamesi (BASE_PROMPT v17):** tasarım bölümüne ZORUNLU ileri düzey
+  listesi eklendi — sticky header+blur, hamburger menü, IntersectionObserver scroll animasyonları,
+  koyu/açık tema (prefers-color-scheme + düğme + localStorage), inline SVG ikonlar (emoji yasak),
+  clamp() akışkan tipografi, mikro-etkileşimler, form doğrulama, zengin footer, back-to-top;
+  hedef 350-600 satır. Frontier araç bütçesi 16K tokena çıktı. site_kontrol'e ZENGİNLİK taraması
+  eklendi: eksik ileri düzey özellikler raporlanır → beyin bir zenginleştirme turu atar (küçük
+  demolar şişirilmez). Canlı kanıt: kahveci-pro.html — 445 satır, zenginlik 9/9, ilk turda sıfır kusur.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

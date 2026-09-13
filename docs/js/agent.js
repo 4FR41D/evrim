@@ -477,6 +477,19 @@ function qaOzet(r) {
   if (r.imgYuklenmedi.length) kus.push('yüklenmeyen görsel: ' + r.imgYuklenmedi.join(' | ') + ' → onerror yedeği/background-color ekle veya görseli kaldır');
   return kus;
 }
+// v75: ZENGİNLİK taraması — "etkileyici site" eksenindeki eksikler (yalnız gerçek sayfalarda; küçük demoları şişirme)
+function qaZenginlik(src) {
+  const oneri = [];
+  const uzun = src.length > 2500 || (src.match(/<section/gi) || []).length >= 2;
+  if (!uzun) return oneri;
+  if (!/<script[\s>]/i.test(src)) oneri.push('etkilesim (script yok)');
+  if (!/IntersectionObserver|@keyframes|transition:/i.test(src)) oneri.push('animasyon yok');
+  if (!/prefers-color-scheme|data-theme/i.test(src)) oneri.push('koyu/açık tema yok');
+  if (!/<svg[\s>]/i.test(src)) oneri.push('SVG ikon yok');
+  if (!/position:\s*sticky|backdrop-filter/i.test(src)) oneri.push('sticky header yok');
+  if (/<form[\s>]/i.test(src) && !/addEventListener|onsubmit/i.test(src)) oneri.push('form doğrulaması yok');
+  return oneri;
+}
 
 // v66: lab döngüsünün ürettiği ek sorular (ekQuizler) derslerde rastgele seçilir → içerik sürekli tazelenir
 function secQuiz(d) {
@@ -984,17 +997,19 @@ const EXEC = {
     else insert('sites', { ad: slug, html: h, ts: Date.now(), createdAt: now() });
     const isaret = `[site](evrimsite:${slug})`;
     // v72: otomatik denetim — kusur varsa beyin aynı ad ile düzeltme turu atar (site güncellenir)
-    let kontrol = null, kusurlar = [];
+    let kontrol = null, kusurlar = [], zenginlik = [];
     try {
       if (getSettings().siteQa !== false) {
         kontrol = await siteQA(h);
         kusurlar = qaOzet(kontrol);
+        zenginlik = qaZenginlik(h);
       }
     } catch { /* denetim aracı asla bozmasın */ }
     const denetimNot = kusurlar.length
       ? ` ÖNCE DÜZELT: şu kusurları giderip AYNI "${slug}" adı ile site_uret'i TEKRAR çağır (site güncellenir); kullanıcıye bitti deme: ${kusurlar.join('; ')}`
-      : ' Site OTOMATİK DENETİMDEN GEÇTİ (görseller, linkler, mobil taşma) — kusur yok.';
-    return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, kusur: kusurlar.length, kontrol: kontrol ? { render: kontrol.render, kusurlar } : undefined, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür.` + denetimNot };
+      : ' Site OTOMATİK DENETİMDEN GEÇTİ (görseller, linkler, mobil taşma) — kusur yok.'
+      + (zenginlik.length ? ` ZENGİNLEŞTİR: şu İLERİ DÜZEY özellikler eksik → ekle ve AYNI "${slug}" adı ile (islem=guncelle) TEKRAR çağır: ${zenginlik.join(', ')}. Tasarımın geri kalanını BOZMA.` : '');
+    return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, kusur: kusurlar.length, kontrol: kontrol ? { render: kontrol.render, kusurlar, zenginlikEksik: zenginlik } : undefined, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür.` + denetimNot };
   },
 
   async oz_test() {

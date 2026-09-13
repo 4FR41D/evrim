@@ -412,7 +412,8 @@ export async function rawChat(messages, opts = {}) {
       if (small64) maxTok64 = Math.min(Math.max(maxTok64, 1500), 4000);
       else if (toolsForModel?.length) maxTok64 = Math.max(maxTok64, 8000);   // v62: büyük araç argümanları
       else if (oss64) maxTok64 = Math.max(maxTok64, 4000);                    // v64: düşünce payı
-      if (a.id === 'gemini') maxTok64 = Math.max(maxTok64, toolsForModel?.length ? 12000 : 8000);  // v73: 2.5 düşünme bütçesi çıktıdan yer → geniş pay
+      if (a.id === 'gemini') maxTok64 = Math.max(maxTok64, toolsForModel?.length ? 16000 : 8000);  // v73/v75: düşünme payı + zengin site kodu
+      if ((a.frontier || a.id === 'openrouter') && toolsForModel?.length) maxTok64 = Math.max(maxTok64, 16000);  // v75: 350-600 satır site ~12-15K token
       const body = {
         model: mid, messages, temperature: opts.temperature ?? 0.7,
         max_tokens: maxTok64,

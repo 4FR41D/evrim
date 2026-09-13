@@ -70,7 +70,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 16') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 17') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -2162,6 +2162,48 @@ Beğenmezsen renkleri değiştirebilirim.`;
   ok('59B. free kuyruğu denendi', orQ.length >= 1);
   ok('59B. hata yok', w2.errors.length === 0);
   w2.close?.();
+}
+
+/* ================= 60) v75 ZENGİNLİK DENETİMİ: ileri düzey eksikleri raporlanır, zengin site geçerken küçük demo şişirilmez ================= */
+{
+  const FAKIR = '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>t</title></head><body><h1>Kafe</h1><section id="a">' + '<p>Uzun içerik. </p>'.repeat(220) + '</section><section id="b"><p>Menü</p></section></body></html>';
+  const ZENGIN = '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>t</title><style>header{position:sticky;backdrop-filter:blur(6px)}.c{transition:transform .2s}@media (prefers-color-scheme:dark){body{background:#111}}</style></head><body><h1>Kafe</h1><svg width="10" height="10"><circle r="4"/></svg><section id="a"><p>x</p></section><section id="b"><p>y</p></section><script>new IntersectionObserver(()=>{});document.addEventListener("DOMContentLoaded",()=>{});</script></body></html>';
+  const bodies = [];
+  let round = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'site_uret', args: { ad: 'fakir', kod: FAKIR } });
+      if (round === 2) return fakeRes(body, null, 'fakir sitesi hazır ve otomatik denetimden geçti. Önizleme kartı aşağıda görünüyor; kartta Önizle, İndir, Tam ekran ve Yayınla düğmeleri var. [site](evrimsite:fakir)');
+      if (round === 3) return fakeRes(body, { name: 'site_uret', args: { ad: 'zengin', kod: ZENGIN } });
+      return fakeRes(body, null, 'zengin sitesi hazır ve otomatik denetimden geçti. Önizleme kartı aşağıda görünüyor; kartta Önizle, İndir, Tam ekran ve Yayınla düğmeleri var. [site](evrimsite:zengin)');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'p1', ad: 'T', personaId: null, createdAt: Date.now() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'p1');
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'fakir site yap'; $(w, '#send').click();
+  await wait(3000);
+  const toolBul = (ad) => bodies.filter((b) => b?.stream)
+    .flatMap((b) => (b.messages || []).filter((m) => m.role === 'tool'))
+    .map((m) => String(m.content || ''))
+    .find((c) => c.includes('"ad":"' + ad + '"'));
+  const icerikA = toolBul('fakir') || '';
+  ok('60. fakir site: ZENGİNLEŞTİR + eksik listesi', icerikA.includes('ZENGİNLEŞTİR') && icerikA.includes('etkilesim') && icerikA.includes('tema') && icerikA.includes('SVG'));
+  ok('60. fakir site: kusur yok ama denetimden geçti', icerikA.includes('DENETİMDEN GEÇTİ'));
+  $(w, '#input').value = 'zengin site yap'; $(w, '#send').click();
+  await wait(3000);
+  const icerikB = toolBul('zengin') || '';
+  ok('60. zengin site: ZENGİNLEŞTİR istenmez', icerikB.includes('DENETİMDEN GEÇTİ') && !icerikB.includes('ZENGİNLEŞTİR'));
+  ok('60. hata yok', w.errors.length === 0);
+  w.close?.();
 }
 
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
