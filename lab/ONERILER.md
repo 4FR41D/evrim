@@ -1,9 +1,9 @@
 # 💡 Lab Önerileri
 
-_Son güncelleme: 2026-09-13T09:05:48.012Z — bench ortalaması 7.6/10_
+_Son güncelleme: 2026-09-13T13:17:29.240Z — bench ortalaması 8/10_
 
-- `tool_call_validator.py` dosyası ekleyerek her araç (tool) yanıtını JSON şemasıyla doğrula ve tutarsız/yanlış sonuçları otomatik olarak yeniden sorgula.  
-- Prompt şablonuna “Şu anda senin elinde X elma var” gibi dinamik durum değişkeni ekle; böylece RAG‑destekli yanıtlar mevcut envanteri hesaba katabilir.  
-- Mobil tarayıcıda çalışan SPA’da (single‑page app) araç çağrılarının sonuçlarını `localStorage`‑da önbellekle; aynı sorgu tekrarlandığında ağ isteği yapmadan anlık yanıt ver.  
-- `memory_manager.js` içinde her yeni bilgi eklenmeden önce basit bir kural‑tabanlı tutarlılık kontrolü (ör. “elma sayısı negatif olamaz”) yap, tutarsızlık tespit edildiğinde kullanıcıya uyarı göster.  
-- Araç seçim mantığını `tool_selector.py` içinde “en yüksek güven skoruna sahip 3 aracı paralel çalıştır, sonuçları çoğunluk oylamasıyla birleştir” şeklinde güncelle; bu, tek bir aracın hatalı yanıt vermesini azaltır.
+- **web/js/agent.js**: Araç çağırma fonksiyonuna `AbortController` ekleyerek uzun süren istekleri zaman aşımına uğrat, böylece “ağ/kota” hataları azaltılır.  
+- **web/js/rag.js**: RAG sorgularını önbelleğe almak için `localStorage` tabanlı bir LRU cache katmanı ekle; aynı sorgular tekrarlandığında ağ çağrısı yapılmaz.  
+- **web/js/store.js**: Bellek yönetimini iyileştirmek amacıyla, hafıza sınırı aşıldığında en eski sohbet geçmişini otomatik olarak silen bir “eviction policy” uygula.  
+- **web/js/learn.js**: Kullanıcıdan gelen geri bildirimleri toplamak ve model güncellemelerinde kullanmak için basit bir “feedback queue” (localStorage’da kuyruk) ekle.  
+- **tests/suite.mjs**: Benchmark testlerini paralel çalıştırmak yerine `Promise.allSettled` ile asenkron hale getir, böyleca CI süresi kısalır ve “ağ/kota” hataları daha net izlenebilir.
