@@ -6,6 +6,7 @@
    Anahtar: repoda gömülü ev anahtarı (housekey.js) — CI'da secret gerekmez.
    Güvenlik: bu betik YALNIZ veri üretir; uygulama kodunu değiştirmez (kod = insan onaylı). */
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const UA = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
 const now = () => new Date().toISOString();
@@ -164,6 +165,104 @@ async function juriPuan(b, cevap) {
   return p;
 }
 
+/* ---------- 1c) KOD AYARI (v79 Faz 1): EVRIM kendi model-yönlendirme KODUNU ölçerek günceller ----------
+   Kapsam: llm.js OR_PRIORITY sırası + OR_SKIP bloklisti (işaretli, veri-benzeri kod bölgesi).
+   Kapılar: canlı ölçüm (başarı+hız) → node --check → esbuild + TAM suite → başarısızsa OTOMATİK GERİ AL
+   → workflow'taki ikinci suite kapısı → commit. Kill-switch: lab/AYAR_KAPALI dosyası. Sıklık: günde 1. */
+const LLM_PATH = 'web/js/llm.js';
+function ayarBugunYapildi() {
+  try { return (JSON.parse(fs.readFileSync('lab/ayar.json', 'utf8')).tarih || '').slice(0, 10) === now().slice(0, 10); } catch { return false; }
+}
+async function modelProbe(id) {
+  try {
+    const t0 = Date.now();
+    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + FKEY, 'HTTP-Referer': 'https://github.com/4FR41D/evrim', 'X-Title': 'EVRIM-lab-ayar' },
+      body: JSON.stringify({ model: id, messages: [{ role: 'user', content: '2+2=? Sadece rakamla cevap ver.' }], temperature: 0, max_tokens: 16 }),
+      signal: AbortSignal.timeout(45000),
+    });
+    const ms = Date.now() - t0;
+    if (!r.ok) return { id, ok: false, ms, hata: `HTTP ${r.status}: ${(await r.text().catch(() => '')).slice(0, 140)}` };
+    const j = await r.json();
+    const c = j?.choices?.[0]?.message?.content;
+    return { id, ok: !!(c && String(c).trim()), ms, hata: c ? '' : 'boş yanıt' };
+  } catch (e) { return { id, ok: false, ms: 0, hata: String(e.message || e).slice(0, 140) }; }
+}
+async function kodAyar() {
+  if (fs.existsSync('lab/AYAR_KAPALI')) return { atlandi: 'kill-switch açık' };
+  if (!FKEY) return { atlandi: 'frontier anahtarı yok' };
+  if (frontierDown) return { atlandi: 'frontier kotası bu koşuda bitti' };
+  if (ayarBugunYapildi()) return { atlandi: 'bugün zaten yapıldı' };
+  const src = fs.readFileSync(LLM_PATH, 'utf8');
+  const mPri = src.match(/const OR_PRIORITY = \[ \/\*lab:bas\*\/([\s\S]*?)\/\*lab:son\*\/ \];/);
+  const mSkip = src.match(/const OR_SKIP = \/([^/]+)\/i; \/\*lab:skip\*\//);
+  if (!mPri || !mSkip) return { atlandi: 'işaretler bulunamadı' };
+  const eskiSira = [...mPri[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+  const eskiSkip = mSkip[1];
+  // adaylar: mevcut sıra + canlı :free listesinden 128K+ bağlamlı en fazla 4 yeni aday
+  let adaylar = [...eskiSira];
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/models', { signal: AbortSignal.timeout(20000) });
+    const j = await r.json();
+    const skipRe = new RegExp(eskiSkip, 'i');
+    const yeni = (j.data || [])
+      .filter((m) => m.id.endsWith(':free') && !skipRe.test(m.id) && !eskiSira.includes(m.id) && (m.context_length || 0) >= 128000)
+      .sort((a, b) => (b.context_length || 0) - (a.context_length || 0))
+      .slice(0, 4).map((m) => m.id);
+    adaylar = [...adaylar, ...yeni];
+  } catch { /* canlı liste alınamazsa mevcut sırayla devam */ }
+  adaylar = adaylar.slice(0, Number(process.env.PROBE_CAP || 10));
+  const olcumler = [];
+  for (const id of adaylar) {
+    let o = await modelProbe(id);
+    if (!o.ok && /HTTP (429|5\d\d)|timeout|fetch failed/i.test(o.hata || '')) {
+      await new Promise((z) => setTimeout(z, 8000));
+      o = await modelProbe(id);   // geçici hataya bir tekrar
+    }
+    olcumler.push(o);
+    console.log(`lab-ayar: ${o.ok ? '✅' : '❌'} ${id} ${o.ms}ms ${o.hata || ''}`.slice(0, 200));
+    await new Promise((z) => setTimeout(z, 3000));   // RPM nefesi
+  }
+  const kisitli = (o) => !o.ok && /agentic harness|only available on/i.test(o.hata || '');
+  const yeniSkip = [];
+  for (const o of olcumler.filter(kisitli)) {
+    const parca = String(o.id.split('/')[1] || '').replace(/:free$/, '').split('-')[0];
+    if (parca.length > 3 && !eskiSkip.includes(parca)) yeniSkip.push(parca);
+  }
+  const basarili = olcumler.filter((o) => o.ok).sort((a, b) => a.ms - b.ms).map((o) => o.id);
+  if (!basarili.length) {
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'başarılı ölçüm yok — liste korundu', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms, hata: o.hata })) }, null, 1) + '\n');
+    return { degisiklik: false, sebep: 'başarılı ölçüm yok' };
+  }
+  const korunmus = eskiSira.filter((id) => !olcumler.some((o) => o.id === id && kisitli(o)));
+  const yeniSira = [...basarili, ...korunmus.filter((id) => !basarili.includes(id))].slice(0, 8);
+  const siraDegisti = JSON.stringify(yeniSira) !== JSON.stringify(eskiSira);
+  if (!siraDegisti && !yeniSkip.length) {
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'sıra zaten optimal', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+    return { degisiklik: false, sebep: 'değişiklik gerekmedi', olcum: olcumler.length };
+  }
+  // --- YAMA ---
+  const yedek = src;
+  let out = src.replace(mPri[0], `const OR_PRIORITY = [ /*lab:bas*/\n${yeniSira.map((id) => `  '${id}',`).join('\n')}\n/*lab:son*/ ];`);
+  if (yeniSkip.length) out = out.replace(mSkip[0], `const OR_SKIP = /${[eskiSkip, ...yeniSkip].join('|')}/i; /*lab:skip*/`);
+  fs.writeFileSync(LLM_PATH, out);
+  console.log('lab-ayar: yama yazıldı → kapılar koşuluyor (node --check + esbuild + tam suite)…');
+  // --- KAPILAR: sözdizimi + paket + TAM suite; herhangi biri patlarsa GERİ AL ---
+  try {
+    execSync('node --check web/js/llm.js', { stdio: 'pipe' });
+    execSync('npx esbuild web/js/app.js --bundle --format=iife --outfile=tests/bundle.js --log-level=warning', { stdio: 'pipe' });
+    execSync('node tests/suite.mjs', { stdio: 'pipe', timeout: 900000 });
+  } catch (e) {
+    fs.writeFileSync(LLM_PATH, yedek);
+    console.log('lab-ayar: KAPI REDDETTİ → llm.js geri alındı');
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'kapı reddetti (geri alındı)', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+    return { degisiklik: false, sebep: 'kapı reddetti — geri alındı' };
+  }
+  fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: true, yeniSira, yeniSkip, olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+  return { degisiklik: true, yeniSira, yeniSkip, olcum: olcumler.length };
+}
+
 /* ---------- 1b) OTO-YAMA: kalıcı zayıflığı lab KENDİSİ düzeltir (v68) ----------
    Tetik: bir bench maddesi SON 3 çalıştırmada ≤3 puan aldıysa.
    Akış: kural adayı üret → ADAY prompt ile hedef + 2 regresyon sorusunu 2'şer kez ölç →
@@ -288,7 +387,7 @@ async function oneriler(sonuc, ort) {
 }
 
 /* ---------- günlük + özet ---------- */
-function logla(sonuc, ort, icerikSonuc) {
+function logla(sonuc, ort, icerikSonuc, ayar) {
   // ağ/kota kaynaklı 0'lar PUAN DEĞİLDİR → null yazılır (oto-yama tetiği bunları SAYMAZ)
   const fGecerli = sonuc.filter((x) => x.frontierPuan !== null && x.frontierNeden !== 'cevap alınamadı (ağ/kota)');
   const ortF = fGecerli.length ? Math.round((fGecerli.reduce((t, x) => t + x.frontierPuan, 0) / fGecerli.length) * 10) / 10 : null;
@@ -305,12 +404,19 @@ function logla(sonuc, ort, icerikSonuc) {
   const jsonlSatirlar = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').slice(-8).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   const trend = jsonlSatirlar.map((j) => j.ort).filter((x) => x !== null && x !== undefined).join(' → ');
   const frontierTrend = jsonlSatirlar.map((j) => j.frontierOrt).filter((x) => x !== null && x !== undefined).join(' → ');
-  const ozet = { tarih: now(), ortPuan: ort, frontierOrt: ortF, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, frontierTrend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN, frontierBeyin: FRONTIER_BEYIN };
+  const ozet = { tarih: now(), ortPuan: ort, frontierOrt: ortF, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, frontierTrend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN, frontierBeyin: FRONTIER_BEYIN, sonAyar: ayar || null };
   fs.writeFileSync('lab/ozet.json', JSON.stringify(ozet, null, 1) + '\n');
   return { calisma, ozet };
 }
 
+export { kodAyar };   // v79: yerel/tekil çalıştırma için (LAB_ONLY_AYAR=1 ile ana döngü atlanır)
+
 /* ---------- ana ---------- */
+if (process.env.LAB_ONLY_AYAR) {
+  const r = await kodAyar();
+  console.log('kodAyar sonucu:', JSON.stringify(r));
+  process.exit(0);
+}
 try {
   if (!KEY) { console.log('lab: ev anahtarı bulunamadı, atlanıyor'); process.exit(0); }
   console.log('lab: bench başlıyor…');
@@ -318,6 +424,9 @@ try {
   const gecerliPuanlar = sonuc.filter((x) => x.neden !== 'cevap alınamadı (ağ/kota)');
   const ort = gecerliPuanlar.length ? Math.round((gecerliPuanlar.reduce((t, x) => t + x.puan, 0) / gecerliPuanlar.length) * 10) / 10 : 0;
   console.log('lab: bench bitti, ort =', ort, JSON.stringify(sonuc.map((x) => [x.id, x.puan])));
+  console.log('lab: kod ayarı (ölçülmüş model yönlendirme)…');
+  const ayar = await kodAyar();
+  console.log('lab: ayar sonucu:', JSON.stringify(ayar).slice(0, 300));
   console.log('lab: içerik üretimi…');
   const ic = await icerik();
   console.log('lab: yeni soru =', ic.yeni, 'toplam ek =', ic.toplam);
@@ -325,7 +434,7 @@ try {
   globalThis.__SONYAMA = yama || null;
   console.log('lab: oto-yama =', yama ? JSON.stringify(yama).slice(0, 400) : 'tetiklenmedi (kalıcı zayıflık yok)');
   await oneriler(sonuc, ort);
-  const { calisma } = logla(sonuc, ort, ic);
+  const { calisma } = logla(sonuc, ort, ic, ayar);
   console.log(`lab: tamam — çalıştırma #${calisma}`);
 } catch (e) {
   console.log('lab: HATA —', String(e?.message || e).slice(0, 200));

@@ -142,6 +142,13 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   bitse bile frontier ölçümü sürer (dürüst null semantiği korundu). ozet.json/ARASTIRMA.md/jsonl'ye
   frontierOrt + frontierTrend eklendi. MAX_STEPS 6→8: proje inşaatının üret→test→düzelt turları
   ajan döngüsüne sığar.
+- **🧬 v79 KOD SEVİYESİNDE KENDİ KENDİNİ GELİŞTİRME (Faz 1 — ölçülen yönlendirme):** lab artık
+  EVRIM'in kendi kodunu güncelliyor: `kodAyar()` OpenRouter :free havuzunu canlı ÖLÇER (başarı + hız
+  propları, yeni adayları keşfeder, kısıtlı/ölü modelleri eler) → llm.js'teki işaretli OR_PRIORITY/
+  OR_SKIP bölgesini yeniden yazar → KAPILAR: node --check + esbuild + TAM suite (334 test);herhangi biri
+  patlarsa yama OTOMATİK GERİ ALINIR. Kill-switch: lab/AYAR_KAPALI. Sıklık: günde 1 (lab/ayar.json).
+  İlk canlı koşu: 8 model ölçüldü, sıra yenilendi (ultra-550b en hızlı), nex-n2.5-mini havuza girdi.
+  Yol haritası: Faz 2 = sabit/mekanizma mikro-yamaları, Faz 3 = test-doğrulamalı fonksiyon yamaları.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

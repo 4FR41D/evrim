@@ -15,17 +15,18 @@ permissions:
 jobs:
   lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Lab döngüsü (bench + jüri + yeni quiz + öneri)
+      - name: Bağımlılıklar (kod ayarı kendi kapısını CI içinde koşabilsin)
+        run: npm install --no-audit --no-fund jsdom esbuild
+      - name: Lab döngüsü (bench + jüri + kod ayarı + yeni quiz + öneri)
         run: node lab/run.mjs
       - name: Regresyon kapısı (tam test paketi)
         run: |
-          npm install --no-audit --no-fund jsdom esbuild
           npx esbuild web/js/app.js --bundle --format=iife --outfile=tests/bundle.js
           node tests/suite.mjs
       - name: Sonuçları repoya işle

@@ -2127,7 +2127,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
   const txtA = w.document.querySelector('#msgs')?.textContent || '';
   const comp = orCalls.filter((c) => !c.u.includes('/models'));
   ok('59A. openrouter frontier cevabı render edildi', txtA.includes('OR FRONTIER CEVAP'));
-  ok('59A. :free model + ölçülmüş öncelik sırası', comp.length >= 1 && String(comp[0].body?.model || '').endsWith(':free') && comp[0].body.model === 'nvidia/nemotron-3-super-120b-a12b:free');
+  ok('59A. :free model havuzdan seçildi (sıra lab tarafından güncellenebilir)', comp.length >= 1 && String(comp[0].body?.model || '').endsWith(':free'));
   ok('59A. Bearer frontier anahtarı', String(comp[0]?.auth || '').startsWith('Bearer sk-or-v1-'));
   ok('59A. ajan araçları açık + araç çıktı payı', (comp[0]?.body?.tools || []).length > 5 && comp[0]?.body?.max_tokens >= 8000);
   ok('59A. hata yok', w.errors.length === 0);

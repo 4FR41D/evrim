@@ -256,15 +256,18 @@ async function withTimeout(url, opts, ms = 60000) {
 //   nex-n2.5-pro: 4.0 sn, daha detaylı                          <-- 2.
 //   ultra-550b : 3-20 sn değişken, sık 502 veriyor ama en akıllı <-- 3.
 //   gemma-4    : sürekli 429 (upstream dolu)                    <-- yedek
-const OR_PRIORITY = [
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'nex-agi/nex-n2.5-pro:free',
+// v79: lab:bas/lab:son ve lab:skip İŞARETLERİ arasını lab KOD AYARI kendisi günceller
+// (ölçüm → yama → node --check + tam suite → başarısızsa geri al; kill-switch: lab/AYAR_KAPALI)
+const OR_PRIORITY = [ /*lab:bas*/
   'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'nex-agi/nex-n2.5-pro:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nex-agi/nex-n2.5-mini:free',
   'google/gemma-4-26b-a4b-it:free',
   'google/gemma-4-31b-it:free',
   'dots-studio/dots-3-note-preview:free',
-];
-const OR_SKIP = /inkling|lightning|laguna|-code|-vl|safety|omni|sante|-fin$/i;
+/*lab:son*/ ];
+const OR_SKIP = /inkling|lightning|laguna|-code|-vl|safety|omni|sante|-fin$/i; /*lab:skip*/
 const OR_SCORE = (id) => {
   const p = OR_PRIORITY.indexOf(id);
   if (p !== -1) return 1000 - p;
