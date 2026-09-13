@@ -276,6 +276,7 @@ async function otoYama(sonuc) {
     const src0 = fs.readFileSync('web/js/store.js', 'utf8');
     if ((src0.match(/OTO-KURAL/g) || []).length >= 3) return null;   // prompt şişmesin: en fazla 3 oto-kural
     let hedef = process.env.LAB_FORCE_YAMA || '';
+    if (hedef && process.env.LAB_FORCE_BEYIN) globalThis.__YAMA_BEYNI = process.env.LAB_FORCE_BEYIN;   // Faz 3: zorlu provada A/B beynini seç
     if (!hedef) {
       const satirlar = fs.existsSync('lab/sonuclar.jsonl')
         ? fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
@@ -443,6 +444,18 @@ function dogrulaHatasi(hedef, neden) {
   yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'doğrulama: ' + neden });
   return { basarisiz: neden };
 }
+function fonksiyonIndeksi(kod) {   // Faz 3: üst-seviye fonksiyon/sabit bildirimleri -> {ad, bas, son} bolgeleri
+  const satirlar = kod.split('\n');
+  const re = /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z0-9_$]+)|^(?:export\s+)?(?:const|let)\s+([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?(?:\(|function\b)/;
+  const idx = [];
+  for (let i = 0; i < satirlar.length; i++) {
+    const m = satirlar[i].match(re);
+    if (m) idx.push({ ad: m[1] || m[2], bas: i, son: satirlar.length - 1 });
+  }
+  for (let k = 0; k < idx.length - 1; k++) idx[k].son = idx[k + 1].bas - 1;
+  return idx.filter((f) => f.son - f.bas + 1 >= 3 && f.son - f.bas + 1 <= 200);
+}
+
 async function oneriYama() {
   if (fs.existsSync('lab/YAMA_KAPALI')) return { atlandi: 'kill-switch' };
   if (process.env.LAB_ONERI_YAMA === 'kapali') return { atlandi: 'env kapalı' };
@@ -452,14 +465,33 @@ async function oneriYama() {
   const md = fs.readFileSync('lab/ONERILER.md', 'utf8');
   const maddeler = [...md.matchAll(/^- \*\*([^*]+)\*\*:\s*(.+)$/gm)]
     .map((m) => ({ dosya: m[1].trim(), metin: m[2].trim() }))
-    .filter((x) => YAMA_BEYAZ.includes(x.dosya) && fs.existsSync(x.dosya) && fs.statSync(x.dosya).size <= YAMA_BOYUT);
+    .filter((x) => YAMA_BEYAZ.includes(x.dosya) && fs.existsSync(x.dosya));   // Faz 3: boyut filtresi yok - buyuk dosya bolge moduyla yamalanir
   if (!maddeler.length) return { atlandi: 'beyaz listeye uygun öneri yok' };
   const hedef = maddeler[0];
   const icerik = fs.readFileSync(hedef.dosya, 'utf8');
   console.log(`lab-yama: hedef ${hedef.dosya} (${icerik.length} kr) — öneri: ${hedef.metin.slice(0, 90)}…`);
+  // Faz 3: buyuk dosya (>YAMA_BOYUT) butun gonderilmez -> fonksiyon indeksi + bolge secimi
+  let baglam = icerik, bolgeAd = '';
+  if (icerik.length > YAMA_BOYUT) {
+    const idx = fonksiyonIndeksi(icerik);
+    if (!idx.length) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'bolge modu: fonksiyon indeksi cikarilamadi' }); return { atlandi: 'indeks yok' }; }
+    const secIstek = [
+      { role: 'system', content: 'JavaScript kod uzmanısın. YANITIN YALNIZCA TEK JSON NESNESİ OLSUN: {"fonksiyon":"<ad>"} veya öneri bu dosyada cerrahi uygulanamazsa {"uygunDegil":"<sebep>"}.' },
+      { role: 'user', content: `ÖNERİ (${hedef.dosya}): ${hedef.metin}\n\nDosya çok büyük; yalnızca bir fonksiyon bölgesi yamalanabilir. Fonksiyon indeksi (ad, satır sayısı):\n${idx.map((f) => `${f.ad} (${f.son - f.bas + 1})`).join(', ')}\n\nBu öneriyi ≤80 satırlık cerrahi değişiklikle karşılayacak TEK fonksiyonu seç; hiçbiri uygun değilse uygunDegil de.` },
+    ];
+    let s = await frontierSoru(secIstek, { temp: 0, max: 500 });
+    if (!s) { await new Promise((z) => setTimeout(z, 15000)); s = await frontierSoru(secIstek, { temp: 0, max: 500 }); }
+    const sj = jsonCikar(String(s || ''));
+    if (!sj || sj.uygunDegil || !sj.fonksiyon) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'bolge secilemedi: ' + String(sj?.uygunDegil || 'yanit yok').slice(0, 120) }); return { reddedildi: String(sj?.uygunDegil || 'bölge seçilemedi').slice(0, 140) }; }
+    const f = idx.find((x) => x.ad === sj.fonksiyon);
+    if (!f) { yamaKayit({ t: now(), dosya: hedef.dosya, sonuc: 'bolge modu: secilen fonksiyon indekste yok (' + String(sj.fonksiyon).slice(0, 40) + ')' }); return { basarisiz: 'fonksiyon indekste yok' }; }
+    baglam = icerik.split('\n').slice(f.bas, f.son + 1).join('\n');
+    bolgeAd = f.ad;
+    console.log(`lab-yama: bölge modu → ${f.ad} (${baglam.length} kr)`);
+  }
   const istek = [
     { role: 'system', content: 'Titiz bir JavaScript geliştiricisin. Bir iyileştirme önerisini CERRAHİ bir yamaya çevir. YANITIN YALNIZCA TEK JSON NESNESİ OLSUN: {"dosya":"...","bul":"...","degistir":"..."} veya uygun değilse {"uygunDegil":"<sebep>"}. KURALLAR: "bul" dosyada BİREBİR ve YALNIZ BİR KEZ geçmeli (boşluk/satır sonları aynen); "degistir" onun yeni hâli; toplam değişiklik ≤40 satır; davranış koruyucu veya öneriyi minimal karşılayan bir iyileştirme; export/fonksiyon adları, TOOLS şemaları, BASE_PROMPT metni, /*lab:*/ işaretli bölgeler, anahtar/token kodları DEĞİŞMEZ; büyük yeniden yazım/migrasyon YASAK (öneri büyükse uygunDegil de). JSON string içinde satır sonları \\n, tırnaklar \\" olarak kaçmalı.' },
-    { role: 'user', content: `ÖNERİ (${hedef.dosya}): ${hedef.metin}\n\nDOSYANIN TAM İÇERİĞİ:\n\`\`\`javascript\n${icerik}\n\`\`\`` },
+    { role: 'user', content: `ÖNERİ (${hedef.dosya}): ${hedef.metin}\n\nDOSYA İÇERİĞİ${bolgeAd ? ` (yalnızca '${bolgeAd}' fonksiyonunun bölgesi — \"bul\" metni bu bölgede dosyada birebir geçmeli)` : ' (tam)'}:\n\`\`\`javascript\n${baglam}\n\`\`\`` },
   ];
   let t = await frontierSoru(istek, { temp: 0.2, max: 8000 });
   if (!t) { await new Promise((z) => setTimeout(z, 20000)); t = await frontierSoru(istek, { temp: 0.2, max: 8000 }); }
@@ -499,7 +531,7 @@ async function oneriYama() {
   return { uygulandi: true, dosya, oneri: hedef.metin.slice(0, 160) };
 }
 
-export { kodAyar, oneriYama };   // v79/v80: yerel/tekil çalıştırma (LAB_ONLY_AYAR / LAB_ONLY_YAMA)
+export { kodAyar, oneriYama, otoYama };   // v79/v80: yerel/tekil çalıştırma (LAB_ONLY_AYAR / LAB_ONLY_YAMA)
 
 /* ---------- ana ---------- */
 if (process.env.LAB_ONLY_AYAR) {
@@ -510,6 +542,11 @@ if (process.env.LAB_ONLY_AYAR) {
 if (process.env.LAB_ONLY_YAMA) {
   const r = await oneriYama();
   console.log('oneriYama sonucu:', JSON.stringify(r));
+  process.exit(0);
+}
+if (process.env.LAB_ONLY_OTOYAMA) {
+  const r = await otoYama([]);   // Faz 3: zorlu prova (LAB_FORCE_YAMA + LAB_FORCE_BEYIN ile)
+  console.log('otoYama sonucu:', JSON.stringify(r));
   process.exit(0);
 }
 try {
