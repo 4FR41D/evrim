@@ -70,7 +70,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 17') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 18') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;
@@ -2203,6 +2203,64 @@ Beğenmezsen renkleri değiştirebilirim.`;
   const icerikB = toolBul('zengin') || '';
   ok('60. zengin site: ZENGİNLEŞTİR istenmez', icerikB.includes('DENETİMDEN GEÇTİ') && !icerikB.includes('ZENGİNLEŞTİR'));
   ok('60. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 61) v76 ÇOK DOSYALI PROJE: proje_uret + denetim + kart + 🌍 klasör yayını + ✅ test düğmesi ================= */
+{
+  const INDEX = '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Takip</title><link rel="stylesheet" href="style.css"></head><body><h1>Görev Takip</h1><ul class="liste"></ul><form id="f"><input id="q" aria-label="görev"><button>Ekle</button></form><script src="app.js"><\/script></body></html>';
+  const CSS = 'body{font-family:system-ui}.liste li{padding:8px}';
+  const JSS = 'const l=document.querySelector(".liste");const li=document.createElement("li");li.textContent="ornek";l.appendChild(li);';
+  const TESTS = [
+    { ad: 'baslik var', js: 'if(!document.querySelector("h1")) throw new Error("h1 yok")' },
+    { ad: 'liste dolu', js: 'if(!document.querySelector(".liste li")) throw new Error("liste bos")' },
+    { ad: 'kalici depolama', js: 'if(typeof localStorage==="undefined") throw new Error("localStorage yok")' },
+  ];
+  const bodies = []; const puts = [];
+  let round = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'proje_uret', args: { ad: 'gorev-takip', dosyalar: { 'index.html': INDEX, 'style.css': CSS, 'app.js': JSS }, testler: TESTS } });
+      return fakeRes(body, null, 'gorev-takip projesi hazır: 3 dosya (index.html, style.css, app.js) ve 3 test kaydedildi, otomatik denetimden geçti. Kart aşağıda — Önizle, Test, Yayınla, İndir düğmeleri var. [proje](evrimproje:gorev-takip)');
+    }
+    if (u.includes('api.github.com')) {
+      if (u.endsWith('/user')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ login: 'testuser' }) };
+      if (u.includes('/repos/testuser/evrim-siteler') && !u.includes('/contents/') && !u.includes('/pages')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ default_branch: 'main' }) };
+      if (u.includes('/pages')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ status: 'built' }) };
+      if (u.includes('/contents/')) {
+        if (opts?.method === 'PUT') { puts.push(u); return { ok: true, status: 201, headers: { get: () => 'application/json' }, json: async () => ({ content: { sha: 'x1' } }) }; }
+        return { ok: false, status: 404, headers: { get: () => 'application/json' }, json: async () => ({ message: 'Not Found' }), text: async () => '{}' };
+      }
+      return { ok: false, status: 404, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'p1', ad: 'T', personaId: null, createdAt: Date.now() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'p1');
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ githubToken: 'ghp_testtok' }));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'bana görev takip uygulaması yap, testleriyle'; $(w, '#send').click();
+  await wait(3000);
+  const toolMsg = bodies.filter((b) => b?.stream).flatMap((b) => (b.messages || []).filter((m) => m.role === 'tool')).map((m) => String(m.content || '')).find((c) => c.includes('"gorev-takip"'));
+  const icerik = String(toolMsg || '');
+  ok('61. proje_uret: 3 dosya + 3 test + denetim geçti', icerik.includes('"ok":true') && icerik.includes('"testSayisi":3') && icerik.includes('DENETİMDEN GEÇTİ') && icerik.includes('index.html'));
+  const card = w.document.querySelector('.projecard[data-proje="gorev-takip"]');
+  ok('61. proje kartı render edildi (4 düğme)', !!card && !!card.querySelector('.projprev') && !!card.querySelector('.projtest') && !!card.querySelector('.projpub') && !!card.querySelector('.projdl'));
+  card.querySelector('.projpub').click();
+  await wait(1200);
+  ok('61. 🌍 yayın: 3 dosya klasöre PUT edildi', puts.length === 3 && puts.every((x) => x.includes('/contents/gorev-takip/')) && puts.some((x) => x.endsWith('/index.html')) && puts.some((x) => x.endsWith('/style.css')) && puts.some((x) => x.endsWith('/app.js')));
+  card.querySelector('.projtest').click();
+  await wait(1200);
+  const sonuc = card.querySelector('.projsonuc');
+  ok('61. ✅ test düğmesi: sonuç görünür (jsdomda çalıştırma atlanır, statik temiz)', sonuc && sonuc.style.display !== 'none' && /atlandı/.test(sonuc.textContent));
+  ok('61. hata yok', w.errors.length === 0);
   w.close?.();
 }
 

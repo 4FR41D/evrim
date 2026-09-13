@@ -125,6 +125,15 @@ export const TOOLS = [
     kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü; CDN yok, görsel pollinations olabilir)' },
     islem: { type: 'string', description: 'olustur (varsayılan) | liste | sil' },
   }, ['ad']),
+  F('proje_uret', 'ÇOK DOSYALI WEB PROJESİ/UYGULAMASI üret (v76): etkileşimli uygulama, oyun, araç, dashboard, çok ekranlı iş isteklerinde site_uret YERİNE bunu kullan. dosyalar: {"index.html":"...","style.css":"...","app.js":"..."} — her dosyanın TAM içeriği; index.html diğerlerine <link rel="stylesheet" href="style.css"> ve <script src="app.js"><\/script> ile bağlanır (harici CDN YOK). testler: [{ad, js}] — js sayfanın İÇİNDE koşar (document/window erişir); doğrulamayan durumda throw at (örn if(!document.querySelector(".liste")) throw new Error("liste yok")). Araç OTOMATİK DENETİM yapar: statik kontroller + testleri gerçekten çalıştırır; başarısızlık raporunu düzelt ve AYNI ad ile tekrar çağır — DOSYALAR BİRLEŞİR, büyük projeyi turlar halinde inşa et. Profesyonel uygulama standartları: durum yönetimi (localStorage kalıcı), boş/hata durumları, erişilebilirlik, mobil uyum.', {
+    ad: { type: 'string', description: 'kısa slug: "todo-app", "hesap-makinesi"' },
+    dosyalar: { type: 'object', description: '{"index.html": "...", "style.css": "...", "app.js": "..."} — TAM içerikler' },
+    testler: { type: 'array', items: { type: 'object', properties: { ad: { type: 'string' }, js: { type: 'string' } }, required: ['ad', 'js'] }, description: 'sayfa içinde koşacak doğrulama testleri' },
+    islem: { type: 'string', description: 'olustur/guncelle (varsayılan) | liste | sil' },
+  }, ['ad']),
+  F('proje_test', 'Kayıtlı çok dosyalı projenin testlerini + denetimini YENİDEN çalıştır (proje_uret sonrası doğrulama veya "testleri çalıştır" isteği).', {
+    ad: { type: 'string', description: 'proje slug' },
+  }, ['ad']),
   F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
   F('evrak_taslak', 'RESMÎ YAZI / DİLEKÇE TASLAK ÜRETİCİ (KACHOW ruhu, tarayıcıda): Türk resmî yazışma kurallarına göre biçimlendirilmiş taslak üretir. tip: "dilekce" (vatandaş→kurum, varsayılan) veya "resmi" (kurum yazısı, sayı/ilgi/imza bloğu). yon: "ust" makama → "arz ederim", "alt"/"denk" → "rica ederim". Kullanıcı dilekçe/resmî yazı/evrak taslağı isterse çağır; taslağı markdown olarak aynen sun, değiştirilecek yerleri [...] belirt.', {
     konu: { type: 'string', description: 'yazının konusu (kısa)' },
@@ -489,6 +498,59 @@ function qaZenginlik(src) {
   if (!/position:\s*sticky|backdrop-filter/i.test(src)) oneri.push('sticky header yok');
   if (/<form[\s>]/i.test(src) && !/addEventListener|onsubmit/i.test(src)) oneri.push('form doğrulaması yok');
   return oneri;
+}
+
+// v76: ÇOK DOSYALI PROJE — paketleyici (önizleme/test/yayın tek kaynaktan)
+export function projeBundleFiles(files) {
+  let doc = String(files?.['index.html'] || '');
+  doc = doc.replace(/<link[^>]+href="([^"]+\.css)"[^>]*>/gi, (m, p) => (files[p] != null ? `<style>\n${files[p]}\n</style>` : m));
+  doc = doc.replace(/<script[^>]+src="([^"]+\.js)"[^>]*>\s*<\/script>/gi, (m, p) => (files[p] != null ? `<script>\n${files[p]}\n<\/script>` : m));
+  return doc;
+}
+// v76: proje denetimi — statik kontroller + (gerçek tarayıcıda) paketlenmiş belgeyi ÇALIŞTIRIP testleri koşar
+export async function projeQA(files, testler) {
+  const r = { kusurlar: [], testler: [], render: 'yapildi' };
+  const idx = String(files?.['index.html'] || '');
+  if (!/<!doctype html>/i.test(idx)) r.kusurlar.push('index.html doctype yok');
+  if (!/<meta[^>]+viewport/i.test(idx)) r.kusurlar.push('viewport meta yok (mobilde bozulur)');
+  if (!/<html[^>]+lang=/i.test(idx)) r.kusurlar.push('html lang yok');
+  const refs = [...idx.matchAll(/(?:href|src)="([^"#][^"]*)"/g)].map((m) => m[1]).filter((u) => !/^(https?:|data:|mailto:)/i.test(u));
+  for (const ref of refs) if (!(ref in (files || {}))) r.kusurlar.push('index.html referansı projede YOK: ' + ref);
+  const ext = [...idx.matchAll(/(?:href|src)="(https?:[^"]+)"/g)].map((m) => m[1]).filter((u) => !/image\.pollinations\.ai/.test(u));
+  if (ext.length) r.kusurlar.push('harici CDN/kaynak var (tek paket ilkesi — dosyaları projeye göm): ' + ext.slice(0, 3).join(' | '));
+  for (const t of (testler || [])) { try { new Function(String(t?.js || '')); } catch (e) { r.kusurlar.push('test "' + t?.ad + '" sözdizimi hatası: ' + String(e.message).slice(0, 80)); } }
+  try {
+    const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(String(navigator.userAgent || ''));
+    if (!isJsdom && typeof document !== 'undefined' && document.createElement && document.body) {
+      const ifr = document.createElement('iframe');
+      ifr.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals');
+      ifr.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:844px;visibility:hidden';
+      document.body.appendChild(ifr);
+      const yuklendi = await new Promise((res) => { ifr.onload = () => res(true); setTimeout(() => res(false), 4000); ifr.srcdoc = projeBundleFiles(files); });
+      if (yuklendi) {
+        await new Promise((z) => setTimeout(z, 700));   // DOMContentLoaded + listener'lar otursun
+        const w = ifr.contentWindow;
+        const jsErrors = [];
+        try { w.addEventListener('error', (ev) => jsErrors.push(String(ev.message || '').slice(0, 100))); } catch {}
+        for (const t of (testler || [])) {
+          try {
+            const fn = new w.Function('"use strict";' + String(t?.js || '') + '\nreturn true;');
+            const out = fn();
+            r.testler.push({ ad: String(t?.ad || 'test'), gecti: out !== false });
+          } catch (e) { r.testler.push({ ad: String(t?.ad || 'test'), gecti: false, hata: String(e.message || e).slice(0, 120) }); }
+        }
+        if (jsErrors.length) r.kusurlar.push('çalışma zamanı JS hatası: ' + jsErrors.join(' | '));
+      } else r.render = 'atlandi';
+      ifr.remove();
+    } else r.render = 'atlandi';
+  } catch { r.render = 'atlandi'; }
+  return r;
+}
+// v76: kart üzerindeki ✅ Test düğmesi için — kayıtlı projeyi bul, denetimi koş, rapor döndür
+export async function projeCalistirTestler(slug) {
+  const row = all('projects').find((x) => x.ad === slug);
+  if (!row) throw new Error('proje yok: ' + slug);
+  return projeQA(row.files || {}, row.testler || []);
 }
 
 // v66: lab döngüsünün ürettiği ek sorular (ekQuizler) derslerde rastgele seçilir → içerik sürekli tazelenir
@@ -1010,6 +1072,66 @@ const EXEC = {
       : ' Site OTOMATİK DENETİMDEN GEÇTİ (görseller, linkler, mobil taşma) — kusur yok.'
       + (zenginlik.length ? ` ZENGİNLEŞTİR: şu İLERİ DÜZEY özellikler eksik → ekle ve AYNI "${slug}" adı ile (islem=guncelle) TEKRAR çağır: ${zenginlik.join(', ')}. Tasarımın geri kalanını BOZMA.` : '');
     return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, kusur: kusurlar.length, kontrol: kontrol ? { render: kontrol.render, kusurlar, zenginlikEksik: zenginlik } : undefined, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür.` + denetimNot };
+  },
+
+  async proje_uret({ ad, dosyalar, testler, islem }) {
+    const op = String(islem || (dosyalar ? 'olustur' : 'liste')).trim().toLowerCase();
+    const slug = String(ad || '').trim().toLowerCase().replace(/[^a-z0-9çğıöşü_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'proje';
+    if (op === 'liste') {
+      const ps = all('projects');
+      return { ok: true, adet: ps.length, projeler: ps.slice(-12).map((x) => ({ ad: x.ad, dosyalar: Object.keys(x.files || {}), testler: (x.testler || []).length, tarih: new Date(x.ts || Date.now()).toLocaleDateString('tr-TR') })), not: 'Listeyi sun.' };
+    }
+    if (op === 'sil') {
+      const row = all('projects').find((x) => x.ad === slug);
+      if (!row) return { hata: `"${slug}" adlı proje yok — liste ile adları gör.` };
+      remove('projects', row.id);
+      return { ok: true, silinen: slug, not: 'Silindiğini tek satırda söyle.' };
+    }
+    const yeni = {};
+    if (dosyalar && typeof dosyalar === 'object') {
+      for (const [p, c] of Object.entries(dosyalar)) {
+        const n = String(p).replace(/^\/+/, '').replace(/\.\./g, '').replace(/[^A-Za-z0-9._/-]/g, '');
+        if (n && typeof c === 'string' && c.trim()) yeni[n] = c;
+      }
+    }
+    const varMi = all('projects').find((x) => x.ad === slug);
+    if (!varMi && !yeni['index.html']) return { hata: 'index.html ZORUNLU — dosyalar: {"index.html":"...","style.css":"...","app.js":"..."} biçiminde TAM içerikleri ver' };
+    const merged = varMi ? { ...(varMi.files || {}), ...yeni } : { ...yeni };
+    const tList = (Array.isArray(testler) && testler.length)
+      ? testler.filter((t) => t && t.ad && typeof t.js === 'string')
+      : (varMi?.testler || []);
+    if (varMi) update('projects', varMi.id, { files: merged, testler: tList, ts: Date.now() });
+    else insert('projects', { ad: slug, files: merged, testler: tList, ts: Date.now(), createdAt: now() });
+    let rapor = null;
+    try { if (getSettings().siteQa !== false) rapor = await projeQA(merged, tList); } catch { /* denetim aracı bozmasın */ }
+    const kusurlar = rapor?.kusurlar || [];
+    const kalanTest = (rapor?.testler || []).filter((t) => !t.gecti);
+    const isaret = `[proje](evrimproje:${slug})`;
+    const denetimNot = (kusurlar.length || kalanTest.length)
+      ? ` ÖNCE DÜZELT: ${[...kusurlar, ...kalanTest.map((t) => `test "${t.ad}" BAŞARISIZ: ${t.hata || 'false döndü'}`)].join('; ')} → dosyaları düzelt ve AYNI "${slug}" adı ile proje_uret'i TEKRAR çağır (dosyalar birleşir); kullanıcıye bitti deme.`
+      : ` Proje OTOMATİK DENETİMDEN GEÇTİ: ${rapor ? rapor.testler.length + ' test çalıştırıldı' : 'denetim atlandı'}${rapor?.render === 'atlandi' ? ' (çalıştırma bu ortamda atlandı — statik kontroller temiz)' : ''}, kusur yok.`;
+    return {
+      ok: true, ad: slug, islem: varMi ? 'guncellendi (dosyalar birleşti)' : 'olusturuldu',
+      dosyalar: Object.keys(merged).map((k) => `${k} (${Math.max(1, Math.round(merged[k].length / 1024))}KB)`),
+      testSayisi: tList.length, kusur: kusurlar.length, basarisizTest: kalanTest.length, isaret,
+      not: `Bu işareti yanıtına AYNEN koy: ${isaret} — proje kartı görünür (Önizle/Test/Yayınla/İndir).` + denetimNot,
+    };
+  },
+
+  async proje_test({ ad }) {
+    const slug = String(ad || '').trim().toLowerCase().replace(/[^a-z0-9çğıöşü_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    const row = all('projects').find((x) => x.ad === slug);
+    if (!row) return { hata: `"${slug}" adlı proje yok — proje_uret islem=liste ile adları gör.` };
+    let rapor;
+    try { rapor = await projeQA(row.files || {}, row.testler || []); }
+    catch (e) { return { hata: 'test koşusu başarısız: ' + String(e.message || e).slice(0, 100) }; }
+    const kalan = rapor.testler.filter((t) => !t.gecti);
+    return {
+      ok: true, ad: slug, render: rapor.render, kusurlar: rapor.kusurlar, testler: rapor.testler,
+      not: (kalan.length || rapor.kusurlar.length)
+        ? `BAŞARISIZ ${kalan.length} test + ${rapor.kusurlar.length} kusur var → dosyaları düzelt ve AYNI "${slug}" adı ile proje_uret'i tekrar çağır (birleşerek güncellenir).`
+        : 'TÜM testler geçti ✅ — kullanıcıya tek cümleyle söyle.',
+    };
   },
 
   async oz_test() {

@@ -17,7 +17,7 @@ import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.
 import { wasmStatus, loadWasm, unloadWasm } from './wasm.js';
 import { ragQuery, ragLoad, ragIndex, ragStatus } from './rag.js';
 import { reflexAnswer } from './reflex.js';
-import { agentChat, toolLabel, TOOLS, mediaGet, webSearch } from './agent.js';
+import { agentChat, toolLabel, TOOLS, mediaGet, webSearch, projeBundleFiles, projeCalistirTestler } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
 import { personaPrompt } from './personas.js';
 import { activeProfile, renameProfile, isLoggedIn } from './profile.js';
@@ -109,6 +109,14 @@ function md(src) {
     return row
       ? `<div class="sitecard" data-site="${slug}"><b>🏗️ ${slug}</b> <span class="muted">· ${Math.round(String(row.html || '').length / 1024)} KB · canlı önizleme hazır</span><div class="row" style="margin-top:8px"><button class="btn sm siteprev">👁 Önizle</button><button class="btn sm ghost sitefs">⛶ Tam ekran</button><button class="btn sm ghost sitedl">⬇️ İndir</button><button class="btn sm ghost sitepub">🌍 Yayınla</button></div></div>`
       : `<span class="muted">[site bu cihazda yok: ${slug}]</span>`;
+  });
+  // v76: üretilen ÇOK DOSYALI projeler: [proje](evrimproje:slug) -> proje kartı (önizle/test/yayınla/indir)
+  s = s.replace(/\[([^\]]*)\]\(evrimproje:([A-Za-z0-9çğıöşü_-]+)\)/g, (_, alt, slug) => {
+    const row = all('projects').find((x) => x.ad === slug);
+    if (!row) return `<span class="muted">[proje bu cihazda yok: ${slug}]</span>`;
+    const fs = row.files || {};
+    const kb = Math.round(Object.values(fs).reduce((a, c) => a + String(c).length, 0) / 1024);
+    return `<div class="sitecard projecard" data-proje="${slug}"><b>📦 ${slug}</b> <span class="muted">· ${Object.keys(fs).length} dosya · ${kb} KB · ${(row.testler || []).length} test · canlı önizleme hazır</span><div class="row" style="margin-top:8px"><button class="btn sm projprev">👁 Önizle</button><button class="btn sm ghost projtest">✅ Test</button><button class="btn sm ghost projdl">⬇️ İndir</button><button class="btn sm ghost projpub">🌍 Yayınla</button></div><div class="muted projsonuc" style="margin-top:6px;display:none;white-space:pre-wrap"></div></div>`;
   });
   // v56: ```grafik bloğu -> inline SVG (tabloların görsel hâli)
   s = s.replace(/```grafik\n([\s\S]*?)```/g, (blok, govde) => grafikSVG(govde) || blok);
@@ -1530,6 +1538,8 @@ function siteIndir(row) {
   } catch { toast('İndirme başarısız', 'bad'); }
 }
 $('#msgs')?.addEventListener('click', (e) => {
+  const pcard = e.target.closest?.('.projecard');
+  if (pcard) { projeKartTikla(pcard, e); return; }   // v76
   const card = e.target.closest?.('.sitecard');
   if (!card) return;
   const slug = card.dataset.site;
@@ -1558,6 +1568,77 @@ async function siteYayinla(slug, row, btn) {
     toast('Yayın hatası: ' + String(err.message || err).slice(0, 90), 'bad');
   }
   if (btn) btn.disabled = false;
+}
+
+/* ---------------- v76: 📦 ÇOK DOSYALI PROJE (önizle/test/yayınla/indir) ---------------- */
+function projeAc(slug, fs) {
+  const row = all('projects').find((x) => x.ad === slug);
+  if (!row) { toast('Proje bulunamadı', 'bad'); return; }
+  document.getElementById('siteOverlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'siteOverlay';
+  ov.className = 'site-overlay' + (fs ? ' fs' : '');
+  ov.innerHTML = `<div class="site-bar"><b>📦 ${esc(slug)}</b><span class="muted"> canlı önizleme · ${Object.keys(row.files || {}).length} dosya tek belgede · korumalı alan</span><span style="flex:1"></span><button class="btn sm ghost" id="siteClose">✕ Kapat</button></div><iframe class="site-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="${esc(slug)}"></iframe>`;
+  document.body.appendChild(ov);
+  ov.querySelector('iframe').srcdoc = projeBundleFiles(row.files || {});
+  ov.querySelector('#siteClose').addEventListener('click', () => ov.remove());
+}
+async function projeTestCalistir(slug, card, btn) {
+  const sonuc = card.querySelector('.projsonuc');
+  if (btn) btn.disabled = true;
+  if (sonuc) { sonuc.style.display = 'block'; sonuc.textContent = '🔍 Testler koşuluyor…'; }
+  try {
+    const r = await projeCalistirTestler(slug);
+    const satirlar = [];
+    satirlar.push(r.render === 'atlandi' ? '⏭ Çalıştırma denetimi bu ortamda atlandı (statik kontroller yapıldı)' : '▶ Proje gerçek tarayıcıda çalıştırıldı');
+    for (const t of r.testler) satirlar.push(`${t.gecti ? '✅' : '❌'} ${t.ad}${t.hata ? ' — ' + t.hata : ''}`);
+    if (!r.testler.length) satirlar.push('ℹ Bu projede kayıtlı test yok (proje_uret testler parametresi)');
+    for (const k of r.kusurlar) satirlar.push('⚠ ' + k);
+    if (sonuc) sonuc.textContent = satirlar.join('\n');
+    const kalan = r.testler.filter((t) => !t.gecti).length + r.kusurlar.length;
+    toast(kalan ? `❌ ${kalan} sorun bulundu — EVRIM'e "düzelt" yaz` : '✅ Tüm testler geçti', kalan ? 'bad' : 'ok');
+  } catch (err) {
+    if (sonuc) sonuc.textContent = 'Hata: ' + String(err.message || err).slice(0, 120);
+  }
+  if (btn) btn.disabled = false;
+}
+function projeIndir(row) {
+  try {
+    if (typeof Blob === 'undefined' || !URL.createObjectURL) { toast('Bu tarayıcıda indirme desteklenmiyor', 'bad'); return; }
+    const doc = projeBundleFiles(row.files || {});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+    a.download = (row.ad || 'proje') + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch {} }, 4000);
+    toast('⬇️ Proje tek dosya halinde indirildi (css/js gömülü): ' + a.download, 'ok');
+  } catch { toast('İndirme başarısız', 'bad'); }
+}
+async function projeYayinla(slug, row, btn) {
+  if (!getSettings().githubToken) {
+    toast("🌍 Yayın için kendi GitHub token'ını gir: Ayarlar → 🐙 GitHub (token yalnız bu cihazda kalır)", 'bad');
+    go('set');
+    return;
+  }
+  if (btn) btn.disabled = true;
+  toast('🌍 Proje yayınlanıyor: ' + slug + '/ …');
+  try {
+    const url = await gh.publishProject(slug, row.files || {});
+    toast('🌍 Yayında: ' + url + ' (ilk açılışta Pages 1-2 dk sürebilir)', 'ok', 8000);
+    try { window.open(url, '_blank', 'noopener'); } catch { /* popup engeli sorun değil */ }
+  } catch (err) {
+    toast('Yayın hatası: ' + String(err.message || err).slice(0, 90), 'bad');
+  }
+  if (btn) btn.disabled = false;
+}
+function projeKartTikla(card, e) {
+  const slug = card.dataset.proje;
+  const row = all('projects').find((x) => x.ad === slug);
+  if (!row) return;
+  if (e.target.closest('.projprev')) projeAc(slug, false);
+  else if (e.target.closest('.projtest')) projeTestCalistir(slug, card, e.target.closest('.projtest'));
+  else if (e.target.closest('.projdl')) projeIndir(row);
+  else if (e.target.closest('.projpub')) projeYayinla(slug, row, e.target.closest('.projpub'));
 }
 
 /* ---------------- v56: 📄 PDF metin çıkarma (pdf.js CDN) ---------------- */

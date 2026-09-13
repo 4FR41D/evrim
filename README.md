@@ -123,6 +123,14 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   hedef 350-600 satır. Frontier araç bütçesi 16K tokena çıktı. site_kontrol'e ZENGİNLİK taraması
   eklendi: eksik ileri düzey özellikler raporlanır → beyin bir zenginleştirme turu atar (küçük
   demolar şişirilmez). Canlı kanıt: kahveci-pro.html — 445 satır, zenginlik 9/9, ilk turda sıfır kusur.
+- **📦 v76 ÇOK DOSYALI PROJE + TEST (kalan fark kapandı):** `proje_uret` — index.html + style.css +
+  app.js AYRI dosyalar + `testler` [{ad, js}]; araç projeyi kaydeder, dosyaları tek belgede paketler,
+  gizli sandbox iframe'de GERÇEKTEN ÇALIŞTIRIR ve testleri içinde koşar (JS hataları + statik denetim:
+  referans/kopya dosya, CDN yasağı, test sözdizimi). Başarısız rapor → beyin düzeltir, aynı ad ile
+  tekrar çağırır — DOSYALAR BİRLEŞİR, proje turlar halinde büyür (iteratif inşaat). `proje_test` testi
+  yeniden koşar. Proje kartı: 👁 Önizle / ✅ Test / ⬇️ İndir (tek dosya bundle) / 🌍 Yayınla
+  (publishProject → klasör olarak Pages'e, her dosya ayrı PUT). BASE_PROMPT v18: uygulama
+  isteklerinde proje_uret + en az 3 test ZORUNLU + localStorage kalıcılık/erişilebilirlik standartları.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

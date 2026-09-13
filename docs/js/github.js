@@ -210,3 +210,31 @@ export async function publishSite(slug, html) {
   catch (e) { if (e.status === 404) { try { await ghSend('POST', `/repos/${me.login}/${repoName}/pages`, { source: { branch, path: '/' } }); } catch { /* ilk push'ta Pages sonra da açılabilir */ } } }
   return `https://${String(me.login).toLowerCase()}.github.io/${repoName}/${path}`;
 }
+
+// v76: ÇOK DOSYALI PROJE yayını — her dosya <slug>/<yol> altına; klasör adresi döner
+export async function publishProject(slug, files) {
+  if (!(getSettings().githubToken || '').trim()) throw new Error("Ayarlar → GitHub token gir (kendi tokenın; github.com/settings/tokens, repo yetkisi)");
+  const me = await ghSend('GET', '/user');
+  const repoName = 'evrim-siteler';
+  let repo;
+  try { repo = await ghSend('GET', `/repos/${me.login}/${repoName}`); }
+  catch (e) {
+    if (e.status !== 404) throw e;
+    repo = await ghSend('POST', '/user/repos', { name: repoName, public: true, description: 'EVRIM ile ürettiğim siteler ve projeler — canlı adresler', auto_init: true });
+    await new Promise((z) => setTimeout(z, 2500));
+  }
+  const branch = repo?.default_branch || 'main';
+  const folder = String(slug).replace(/[^A-Za-z0-9_-]/g, '-');
+  for (const [p, content] of Object.entries(files || {})) {
+    const clean = String(p).replace(/^\/+/, '').replace(/\.\./g, '');
+    if (!clean) continue;
+    const full = `/repos/${me.login}/${repoName}/contents/${folder}/${clean}`;
+    let sha;
+    try { sha = (await ghSend('GET', `${full}?ref=${branch}`)).sha; } catch (e) { if (e.status !== 404) throw e; }
+    // eslint-disable-next-line no-await-in-loop
+    await ghSend('PUT', full, { message: `📦 ${folder}/${clean} (EVRIM projesi)`, content: b64(String(content)), branch, ...(sha ? { sha } : {}) });
+  }
+  try { await ghSend('GET', `/repos/${me.login}/${repoName}/pages`); }
+  catch (e) { if (e.status === 404) { try { await ghSend('POST', `/repos/${me.login}/${repoName}/pages`, { source: { branch, path: '/' } }); } catch { /* sonraki push'ta açılır */ } } }
+  return `https://${String(me.login).toLowerCase()}.github.io/${repoName}/${folder}/`;
+}
