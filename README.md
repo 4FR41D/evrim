@@ -136,6 +136,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   her test taze sayfa örneğinde koşar (önceki testin DOM/localStorage kalıntısı taşmaz). Canlı kanıt:
   todo-app — frontier beyin 3 dosya + 4 gerçek test üretti; 3 düzeltme turuyla 4/4 YEŞİL'e ulaştı,
   https://4fr41d.github.io/evrim-siteler/todo-app/ adresinde yayında.
+- **🔬 v78 ikili beyin labı + daha derin döngü:** bench artık İKİ beyni ölçüyor — frontier
+  (nemotron-3-super:free, SABİT model = karşılaştırılabilir trend, ayrı kota havuzu) + gpt-oss-120b
+  (trend sürekliliği); tek jüri (20b) ikisini de aynı ölçütle puanlar → adil A/B. Groq günlük kotası
+  bitse bile frontier ölçümü sürer (dürüst null semantiği korundu). ozet.json/ARASTIRMA.md/jsonl'ye
+  frontierOrt + frontierTrend eklendi. MAX_STEPS 6→8: proje inşaatının üret→test→düzelt turları
+  ajan döngüsüne sığar.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

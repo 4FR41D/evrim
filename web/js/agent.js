@@ -24,7 +24,7 @@ async function fetchT(url, opts = {}, ms = 25000) {
 }
 import { houseStatus } from './house.js';
 
-const MAX_STEPS = 6;   // v64: daha derin ajan döngüsü (çok adımlı görevler için)
+const MAX_STEPS = 8;   // v78: proje inşaatı üret+test+düzeltme turları için daha derin döngü
 
 /* ------------------------------------------------------------------ */
 /* ARAÇ TANIMLARI (modele giden şema)                                  */

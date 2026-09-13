@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* EVRIM Araştırma Labı — 7/24 kendi kendine öğrenme döngüsü (GitHub Actions'ta 6 saatte bir).
-   1) BENCH    : sabit sorular (lab/bench.json) → mevcut beyin cevaplar → LLM jüri 0-10 puanlar
+   1) BENCH    : sabit sorular (lab/bench.json) → İKİ beyin cevaplar (frontier + gpt-oss-120b, tek jüri) → 0-10 puan
    2) İÇERİK   : 2 derse doğrulanmış YENİ quiz sorusu üretir → web/data/mufredat.json (ekQuizler)
    3) ÖNERİ    : düşük puanlardan somut iyileştirme önerileri çıkarır → lab/ONERILER.md
    Anahtar: repoda gömülü ev anahtarı (housekey.js) — CI'da secret gerekmez.
@@ -18,6 +18,36 @@ function houseKey() {
   return m ? Buffer.from(m[1], 'base64').toString('utf8') : '';
 }
 const KEY = houseKey();
+// v78 İKİLİ BEYİN: uygulamanın varsayılan beyni frontier (OpenRouter :free) — lab da onu ölçmeli.
+// SABİT model (rotasyon yok) → frontier trend çizgisi koşular arası karşılaştırılabilir.
+// Ayrı kota havuzu: Groq günlük kotası bitse bile frontier ölçümü sürer (jüri Groq'ta kalır = aynı hakem).
+const FRONTIER_BEYIN = 'nvidia/nemotron-3-super-120b-a12b:free';
+function frontierKey() {
+  const src = fs.readFileSync('web/js/housekey.js', 'utf8');
+  const m = src.match(/const b64 = '([^']+)'/);
+  return m ? Buffer.from(m[1], 'base64').toString('utf8') : '';
+}
+const FKEY = frontierKey();
+let frontierDown = false;
+async function frontierSoru(messages, { temp = 0, max = 3500 } = {}) {
+  if (!FKEY || frontierDown) return null;
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + FKEY, 'HTTP-Referer': 'https://github.com/4FR41D/evrim', 'X-Title': 'EVRIM-lab' },
+      body: JSON.stringify({ model: FRONTIER_BEYIN, messages, temperature: temp, max_tokens: max }),
+    });
+    if (r.status === 429 || r.status === 402 || r.status === 403) {
+      frontierDown = true;
+      console.log('lab: frontier kota/erişim limiti (' + r.status + ') — bu koşuda frontier ölçümü atlanacak');
+      return null;
+    }
+    if (!r.ok) return null;
+    const j = await r.json();
+    const c = j?.choices?.[0]?.message?.content;
+    return c && String(c).trim() ? String(c) : null;
+  } catch { return null; }
+}
 
 async function groq(model, messages, { temp = 0, max = 900, reason = 'high', solo = false } = {}) {
   // yedek zinciri: istenen → 20b → 120b (compound'un TPM kotası düşük: 30K/dk — jüri uzun metinde 429 yer)
@@ -74,6 +104,7 @@ function basePrompt() {   // uygulamanın GERÇEK beyin promptu (store.js) — b
 }
 
 /* ---------- 1) BENCH ---------- */
+const BENCH_NOT = '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)';
 async function bench() {
   const sorular = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
   // v70: AĞIR sorular (yüksek max) ÖNCE — kota gün içinde tükeniyor, en değerli ölçümler taze kotasıyla yapılsın
@@ -82,29 +113,42 @@ async function bench() {
   for (let si = 0; si < sorular.length; si++) {
     const b = sorular[si];
     if (si > 0) await new Promise((z) => setTimeout(z, 10000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
-    if (globalThis.__TPD) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
-    let cevap = await groq(BEYIN, [
-      { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
+    const mesajlar = [
+      { role: 'system', content: basePrompt() + BENCH_NOT },
       { role: 'user', content: b.soru },
-    ], { temp: 0, max: b.max || 3500, solo: true });   // solo: bench YALNIZ 120b'yi ölçer (yedek modele düşünce ölçüm kimliği bozulmasın)
-    if (!cevap && !globalThis.__TPD) {   // kota/ağ dalgalanması: bekle → aynı limitle tekrar → KADEME DÜŞÜR (kısa ölçüm > ölçümsüz)
-      await new Promise((z) => setTimeout(z, 20000));
-      cevap = await groq(BEYIN, [
-        { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
-        { role: 'user', content: b.soru },
-      ], { temp: 0, max: b.max || 3500, solo: true });
-      if (!cevap) {
-        const dusukMax = (b.max || 3500) > 4000 ? 4500 : 2500;
+    ];
+    // --- FRONTIER (uygulamanın varsayılan beyni, ayrı kota havuzu) — TPD'den BAĞIMSIZ önce o ölçülür
+    let fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 });
+    if (!fCevap && !frontierDown) { await new Promise((z) => setTimeout(z, 15000)); fCevap = await frontierSoru(mesajlar, { temp: 0, max: b.max || 3500 }); }
+    // --- 120b (trend sürekliliği; Groq kotası bittiyse dürüst atlama)
+    let cevap = null;
+    if (!globalThis.__TPD) {
+      cevap = await groq(BEYIN, mesajlar, { temp: 0, max: b.max || 3500, solo: true });   // solo: bench YALNIZ 120b'yi ölçer
+      if (!cevap && !globalThis.__TPD) {   // kota/ağ dalgalanması: bekle → tekrar → KADEME DÜŞÜR (kısa ölçüm > ölçümsüz)
         await new Promise((z) => setTimeout(z, 20000));
-        cevap = await groq(BEYIN, [
-          { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
-          { role: 'user', content: b.soru + (dusukMax <= 2500 ? ' (cevabı kısa tut)' : '') },
-        ], { temp: 0, max: dusukMax, solo: true });
+        cevap = await groq(BEYIN, mesajlar, { temp: 0, max: b.max || 3500, solo: true });
+        if (!cevap) {
+          const dusukMax = (b.max || 3500) > 4000 ? 4500 : 2500;
+          await new Promise((z) => setTimeout(z, 20000));
+          cevap = await groq(BEYIN, [
+            { role: 'system', content: basePrompt() + BENCH_NOT },
+            { role: 'user', content: b.soru + (dusukMax <= 2500 ? ' (cevabı kısa tut)' : '') },
+          ], { temp: 0, max: dusukMax, solo: true });
+        }
       }
     }
-    if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
-    const p = await juriPuan(b, cevap);
-    sonuc.push({ id: b.id, puan: p?.puan ?? 0, neden: p?.neden || 'jüri parse edilemedi' });
+    if (!cevap && !fCevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)', frontierPuan: null, frontierNeden: 'cevap alınamadı (ağ/kota)' }); continue; }
+    // jüri TEK ve aynı (20b) → iki beyin arasındaki kıyas adil; jüri Groq kotası bittiyse puan null kalır
+    let p = null, fp = null;
+    if (cevap) p = await juriPuan(b, cevap);
+    if (fCevap) fp = await juriPuan(b, fCevap);
+    sonuc.push({
+      id: b.id,
+      puan: cevap ? (p?.puan ?? 0) : 0,
+      neden: cevap ? (p?.neden || 'jüri parse edilemedi') : 'cevap alınamadı (ağ/kota)',
+      frontierPuan: fCevap ? (fp?.puan ?? (fp === null && globalThis.__TPD ? null : 0)) : null,
+      frontierNeden: fCevap ? (fp?.neden || 'jüri parse edilemedi') : 'cevap alınamadı (ağ/kota)',
+    });
   }
   return sonuc;
 }
@@ -246,9 +290,11 @@ async function oneriler(sonuc, ort) {
 /* ---------- günlük + özet ---------- */
 function logla(sonuc, ort, icerikSonuc) {
   // ağ/kota kaynaklı 0'lar PUAN DEĞİLDİR → null yazılır (oto-yama tetiği bunları SAYMAZ)
-  fs.appendFileSync('lab/sonuclar.jsonl', JSON.stringify({ t: now(), beyin: BEYIN, ort, yeniSoru: icerikSonuc.yeni, sorular: sonuc.map((x) => [x.id, x.neden === 'cevap alınamadı (ağ/kota)' ? null : x.puan]) }) + '\n');
+  const fGecerli = sonuc.filter((x) => x.frontierPuan !== null && x.frontierNeden !== 'cevap alınamadı (ağ/kota)');
+  const ortF = fGecerli.length ? Math.round((fGecerli.reduce((t, x) => t + x.frontierPuan, 0) / fGecerli.length) * 10) / 10 : null;
+  fs.appendFileSync('lab/sonuclar.jsonl', JSON.stringify({ t: now(), beyin: BEYIN, ort, frontierBeyin: FRONTIER_BEYIN, frontierOrt: ortF, yeniSoru: icerikSonuc.yeni, sorular: sonuc.map((x) => [x.id, x.neden === 'cevap alınamadı (ağ/kota)' ? null : x.puan]), frontierSorular: sonuc.map((x) => [x.id, x.frontierPuan]) }) + '\n');
   const calisma = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').length;
-  const satir = `| ${now().slice(0, 16).replace('T', ' ')} | ${ort}/10 | +${icerikSonuc.yeni} | ${sonuc.map((x) => `${x.id.split('-')[0]}:${x.puan}`).join(' ')} |`;
+  const satir = `| ${now().slice(0, 16).replace('T', ' ')} | ${ort}/10 · F:${ortF ?? '-'}/10 | +${icerikSonuc.yeni} | ${sonuc.map((x) => `${x.id.split('-')[0]}:${x.puan}${x.frontierPuan !== null ? '/F' + x.frontierPuan : ''}`).join(' ')} |`;
   let md = fs.existsSync('lab/ARASTIRMA.md') ? fs.readFileSync('lab/ARASTIRMA.md', 'utf8') : '';
   const baslik = '# 🔬 EVRIM Araştırma Günlüğü\n\n7/24 otomatik döngü (GitHub Actions, 6 saatte bir): bench + jüri puanı + yeni quiz + öneriler.\n\n| Çalışma (UTC) | Bench ort. | Yeni soru | Detay |\n|---|---|---|---|\n';
   if (!md.includes('| Çalışma (UTC) |')) md = baslik;
@@ -256,9 +302,10 @@ function logla(sonuc, ort, icerikSonuc) {
   const ust = md.slice(0, md.indexOf('| Çalışma (UTC) |') >= 0 ? md.indexOf('| Çalışma (UTC) |') : md.length);
   const tablo = [...govde.slice(0, 1), satir, ...govde.slice(1)].slice(0, 62);   // başlık satırından sonra EN ÜSTE ekle (kronolojik)
   fs.writeFileSync('lab/ARASTIRMA.md', (ust.endsWith('\n') || ust === '' ? ust : ust + '\n') + tablo.join('\n') + '\n');
-  const trend = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').slice(-8)
-    .map((l) => { try { return JSON.parse(l).ort; } catch { return null; } }).filter((x) => x !== null).join(' → ');
-  const ozet = { tarih: now(), ortPuan: ort, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN };
+  const jsonlSatirlar = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').slice(-8).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  const trend = jsonlSatirlar.map((j) => j.ort).filter((x) => x !== null && x !== undefined).join(' → ');
+  const frontierTrend = jsonlSatirlar.map((j) => j.frontierOrt).filter((x) => x !== null && x !== undefined).join(' → ');
+  const ozet = { tarih: now(), ortPuan: ort, frontierOrt: ortF, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, frontierTrend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN, frontierBeyin: FRONTIER_BEYIN };
   fs.writeFileSync('lab/ozet.json', JSON.stringify(ozet, null, 1) + '\n');
   return { calisma, ozet };
 }
