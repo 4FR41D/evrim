@@ -35,7 +35,7 @@ async function groq(model, messages, { temp = 0, max = 900, reason = 'high' } = 
       if (r.status === 429 || r.status >= 500) {
         const t = await r.text().catch(() => '');
         const ra = t.match(/try again in ([\d.]+)s/);           // Groq ne zaman deneneceğini söylüyor
-        await new Promise((z) => setTimeout(z, Math.min(Math.ceil((ra ? Number(ra[1]) : 5) + 1) * 1000, 30000)));
+        await new Promise((z) => setTimeout(z, Math.min(Math.ceil((ra ? Number(ra[1]) : 5) + 1) * 1000, 60000)));
         continue;
       }
       const j = await r.json();
@@ -74,7 +74,7 @@ async function bench() {
   const sonuc = [];
   for (let si = 0; si < sorular.length; si++) {
     const b = sorular[si];
-    if (si > 0) await new Promise((z) => setTimeout(z, 6000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
+    if (si > 0) await new Promise((z) => setTimeout(z, 10000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
     let cevap = await groq(BEYIN, [
       { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
@@ -218,10 +218,12 @@ async function icerik() {
 /* ---------- 3) ÖNERİ ---------- */
 async function oneriler(sonuc, ort) {
   const dusukler = sonuc.filter((x) => x.puan < 7).map((x) => `${x.id}: ${x.puan}/10 — ${x.neden}`).join('\n') || 'tümü ≥7';
-  const t = await groq(JURI, [
+  const istek = [
     { role: 'system', content: 'Sen EVRIM uygulamasının geliştirme danışmanısın. Türkçe yaz.' },
     { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. GERÇEK dosyalar YALNIZ şunlardır (başka dosya/Python YOKTUR, .py önerme): web/js/{app,agent,llm,store,rag,learn,wasm,evolve}.js, lab/{run.mjs,bench.json}, tests/suite.mjs, web/data/{mufredat,katalog}.json. Ortam: tarayıcı (ES modules, localStorage, jsdom test) + Node 20 CI. Buna göre 3-5 SOMUT, ücretsiz, bu dosyalarda yapılabilir iyileştirme öner — her biri tek satır, "- " ile başla, hangi dosyada ne değişeceğini söyle.` },
-  ], { temp: 0.5, max: 700, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin
+  ];
+  let t = await groq(JURI, istek, { temp: 0.5, max: 700, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin
+  if (!t) { await new Promise((z) => setTimeout(z, 30000)); t = await groq(JURI, istek, { temp: 0.5, max: 700, reason: 'low' }); }   // kota tekrarı
   if (t) fs.writeFileSync('lab/ONERILER.md', `# 💡 Lab Önerileri\n\n_Son güncelleme: ${now()} — bench ortalaması ${ort}/10_\n\n${t.trim()}\n`);
 }
 
