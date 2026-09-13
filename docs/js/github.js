@@ -168,3 +168,45 @@ export async function dailySummary(full) {
   );
   return { summary, counts: { commitsToday: recent.length, openIssues: issues.length } };
 }
+
+/* ---------------- v71: 🌍 SİTE YAYINLAMA (GitHub Pages, sunucusuz) ----------------
+   Kullanıcının KENDİ token'ıyla (yalnız onun cihazında durur) çalışır:
+   1) evrim-siteler reposu yoksa oluşturur (public, auto_init)  2) <slug>.html yükler/günceller
+   3) Pages'i açar  4) canlı adresi döner. Owner token'ı GEREKMEZ, app'e gömülü anahtar YOKTUR. */
+function b64(str) {
+  const bytes = new TextEncoder().encode(String(str));
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  return btoa(bin);
+}
+async function ghSend(method, path, body) {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { ...headers(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data?.message || `HTTP ${res.status}`); e.status = res.status; throw e; }
+  return data;
+}
+export async function publishSite(slug, html) {
+  if (!(getSettings().githubToken || '').trim()) throw new Error('Ayarlar → GitHub token gir (kendi tokenın; github.com/settings/tokens, repo yetkisi)');
+  const me = await ghSend('GET', '/user');
+  const repoName = 'evrim-siteler';
+  let repo;
+  try { repo = await ghSend('GET', `/repos/${me.login}/${repoName}`); }
+  catch (e) {
+    if (e.status !== 404) throw e;
+    repo = await ghSend('POST', '/user/repos', { name: repoName, public: true, description: 'EVRIM ile ürettiğim siteler — canlı adresler', auto_init: true });
+    await new Promise((z) => setTimeout(z, 2500));   // ilk commit/branch oluşsun
+  }
+  const branch = repo?.default_branch || 'main';
+  const path = `${String(slug).replace(/[^A-Za-z0-9_-]/g, '-')}.html`;
+  const full = `/repos/${me.login}/${repoName}/contents/${path}`;
+  let sha;
+  try { sha = (await ghSend('GET', `${full}?ref=${branch}`)).sha; } catch (e) { if (e.status !== 404) throw e; }
+  await ghSend('PUT', full, { message: `🌍 ${path} (EVRIM ile üretildi)`, content: b64(html), branch, ...(sha ? { sha } : {}) });
+  try { await ghSend('GET', `/repos/${me.login}/${repoName}/pages`); }
+  catch (e) { if (e.status === 404) { try { await ghSend('POST', `/repos/${me.login}/${repoName}/pages`, { source: { branch, path: '/' } }); } catch { /* ilk push'ta Pages sonra da açılabilir */ } } }
+  return `https://${String(me.login).toLowerCase()}.github.io/${repoName}/${path}`;
+}

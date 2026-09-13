@@ -406,8 +406,10 @@
 
       <div class="card">
         <h3>🐙 GitHub (isteğe bağlı)</h3>
-        <p class="hint">Public repolar için token gerekmez. Kendi <b>özel</b> repolarını okumak ve
-          saatte 60 istek limitini aşmak için token ekle. Bu sürümde GitHub’a yazma yoktur.</p>
+        <p class="hint">Public repolar için token gerekmez. Kendi <b>özel</b> repolarını okumak,
+          saatte 60 istek limitini aşmak ve sitelerini <b>🌍 internette yayınlamak</b> için token ekle
+          (ücretsiz: github.com/settings/tokens → classic → <b>repo</b> yetkisi). Token yalnız bu
+          cihazda saklanır; yayın, senin <code>kullanici.github.io/evrim-siteler/</code> adresinde açılır.</p>
         <label>Token</label>
         <input id="setGhToken" type="password" placeholder="ghp_... / github_pat_...">
         <label>Varsayılan repo</label>
@@ -555,6 +557,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="js/app.js"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=70').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=71').catch(()=>{}))}</script>
 </body>
 </html>

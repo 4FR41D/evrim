@@ -106,7 +106,7 @@ function md(src) {
   s = s.replace(/\[([^\]]*)\]\(evrimsite:([A-Za-z0-9çğıöşü_-]+)\)/g, (_, alt, slug) => {
     const row = all('sites').find((x) => x.ad === slug);
     return row
-      ? `<div class="sitecard" data-site="${slug}"><b>🏗️ ${slug}</b> <span class="muted">· ${Math.round(String(row.html || '').length / 1024)} KB · canlı önizleme hazır</span><div class="row" style="margin-top:8px"><button class="btn sm siteprev">👁 Önizle</button><button class="btn sm ghost sitefs">⛶ Tam ekran</button><button class="btn sm ghost sitedl">⬇️ İndir</button></div></div>`
+      ? `<div class="sitecard" data-site="${slug}"><b>🏗️ ${slug}</b> <span class="muted">· ${Math.round(String(row.html || '').length / 1024)} KB · canlı önizleme hazır</span><div class="row" style="margin-top:8px"><button class="btn sm siteprev">👁 Önizle</button><button class="btn sm ghost sitefs">⛶ Tam ekran</button><button class="btn sm ghost sitedl">⬇️ İndir</button><button class="btn sm ghost sitepub">🌍 Yayınla</button></div></div>`
       : `<span class="muted">[site bu cihazda yok: ${slug}]</span>`;
   });
   // v56: ```grafik bloğu -> inline SVG (tabloların görsel hâli)
@@ -1535,7 +1535,27 @@ $('#msgs')?.addEventListener('click', (e) => {
   if (e.target.closest('.siteprev')) siteAc(slug, false);
   else if (e.target.closest('.sitefs')) siteAc(slug, true);
   else if (e.target.closest('.sitedl')) siteIndir(row);
+  else if (e.target.closest('.sitepub')) siteYayinla(slug, row, e.target.closest('.sitepub'));
 });
+
+/* v71: 🌍 siteyi GitHub Pages'e yayınla — kullanıcının KENDİ token'ıyla (cihazında kalır) */
+async function siteYayinla(slug, row, btn) {
+  if (!getSettings().githubToken) {
+    toast('🌍 Yayın için kendi GitHub token\'ını gir: Ayarlar → 🐙 GitHub (token yalnız bu cihazda kalır)', 'bad');
+    go('set');
+    return;
+  }
+  if (btn) btn.disabled = true;
+  toast('🌍 Yayınlanıyor: ' + slug + '.html …');
+  try {
+    const url = await gh.publishSite(slug, String(row.html || ''));
+    toast('🌍 Yayında: ' + url + ' (ilk açılışta Pages 1-2 dk sürebilir)', 'ok', 8000);
+    try { window.open(url, '_blank', 'noopener'); } catch { /* popup engeli sorun değil — adres toast'ta */ }
+  } catch (err) {
+    toast('Yayın hatası: ' + String(err.message || err).slice(0, 90), 'bad');
+  }
+  if (btn) btn.disabled = false;
+}
 
 /* ---------------- v56: 📄 PDF metin çıkarma (pdf.js CDN) ---------------- */
 function loadScript(src) {

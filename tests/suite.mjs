@@ -1965,5 +1965,47 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+/* ================= 56) v71 🌍 SİTE YAYINLAMA: GitHub Pages'e PUT + Pages aç + canlı adres ================= */
+{
+  const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url); const m = (opts?.method || 'GET').toUpperCase();
+    if (u.includes('api.github.com')) {
+      calls.push(m + ' ' + u.replace('https://api.github.com', '').split('?')[0]);
+      const H = { get: () => 'application/json' };
+      if (m === 'GET' && u.endsWith('/user')) return { ok: true, status: 200, headers: H, json: async () => ({ login: 'TestUser' }) };
+      if (m === 'GET' && u.endsWith('/repos/TestUser/evrim-siteler')) return { ok: true, status: 200, headers: H, json: async () => ({ default_branch: 'main' }) };
+      if (m === 'POST' && u.endsWith('/user/repos')) return { ok: true, status: 201, headers: H, json: async () => ({ default_branch: 'main' }) };
+      if (m === 'GET' && u.includes('/contents/site1.html')) return { ok: false, status: 404, headers: H, json: async () => ({}) };
+      if (m === 'PUT' && u.includes('/contents/site1.html')) {
+        const b = JSON.parse(opts.body);
+        if (!b.content || !b.message) return { ok: false, status: 422, headers: H, json: async () => ({ message: 'eksik' }) };
+        return { ok: true, status: 201, headers: H, json: async () => ({ content: { sha: 'abc' } }) };
+      }
+      if (m === 'GET' && u.includes('/pages')) return { ok: false, status: 404, headers: H, json: async () => ({}) };
+      if (m === 'POST' && u.includes('/pages')) return { ok: true, status: 201, headers: H, json: async () => ({}) };
+      return { ok: false, status: 404, headers: H, json: async () => ({}) };
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ githubToken: 'ghp_test' }));
+  w.localStorage.setItem('evrim:profiles', JSON.stringify([{ id: 'pr1', name: 'T', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:activeProfile', 'pr1');
+  w.localStorage.setItem('evrim:sites', JSON.stringify([{ id: 'st1', ad: 'site1', html: '<!doctype html><html lang="tr"><head><title>Deneme</title></head><body>merhaba dünya</body></html>', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:conversations', JSON.stringify([{ id: 'c1', title: 't', profileId: 'pr1', createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:messages', JSON.stringify([{ id: 'm1', conversationId: 'c1', role: 'assistant', content: 'Site hazır: [site1](evrimsite:site1)', createdAt: new Date().toISOString() }]));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(500);
+  const pub = $(w, '.sitepub');
+  ok('56. kartta 🌍 Yayınla düğmesi var', !!pub);
+  pub?.click();
+  await wait(600);
+  ok('56. dosya PUT ile yüklendi', calls.some((c) => c === 'PUT /repos/TestUser/evrim-siteler/contents/site1.html'));
+  ok('56. Pages etkinleştirildi', calls.some((c) => c === 'POST /repos/TestUser/evrim-siteler/pages'));
+  ok('56. canlı adres gösterildi', w.document.body.textContent.includes('testuser.github.io/evrim-siteler/site1.html'));
+  ok('56. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

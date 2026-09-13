@@ -94,6 +94,10 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   ajanı artık kilitlemiyor, araç Türkçe "ağ zaman aşımı" hatasıyla hızlıca geri dönüyor.
   Ayrıca bench ölçüm bütünlüğü: cevaplar YALNIZ 120b'den ölçülür (yedek modele düşünce kimlik
   bozulmasın), günlük kota bitince ölçümler dürüstçe atlanır.
+- **🌍 v71 site yayınlama (GitHub Pages):** site kartındaki yeni **🌍 Yayınla** düğmesi, üretilen
+  siteyi kullanıcının KENDİ GitHub token'ıyla (cihazında kalır, app'e gömülü anahtar yok)
+  `kullanici.github.io/evrim-siteler/<slug>.html` adresinde canlıya alır: repo yoksa oluşturur,
+  dosyayı yükler/günceller, Pages'i açar, adresi gösterir. Tamamen tarayıcıdan, sunucusuz.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

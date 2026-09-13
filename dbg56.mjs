@@ -1,0 +1,27 @@
+import { JSDOM } from 'jsdom';
+import fs from 'fs';
+const html = fs.readFileSync('/home/user/evrim/web/index.html', 'utf8');
+const bundle = fs.readFileSync('/home/user/evrim/tests/bundle.js', 'utf8');
+const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/' });
+const w = dom.window;
+w.matchMedia = () => ({ matches: false, addEventListener(){}, removeEventListener(){} });
+w.Element.prototype.scrollTo = function () {};
+w.HTMLElement.prototype.scrollIntoView = function () {};
+w.confirm = () => true; w.alert = () => {};
+Object.defineProperty(w.HTMLScriptElement.prototype, 'src', { set() { setTimeout(() => this.dispatchEvent(new w.Event('load')), 0); }, get() { return ''; }, configurable: true });
+w.prompt = () => 'x';
+w.__EVHOUSEKEY = '';
+w.errors = [];
+w.addEventListener('error', (e) => w.errors.push(e.error?.stack || e.message));
+w.fetch = async (url) => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' });
+w.localStorage.setItem('evrim:settings', JSON.stringify({ githubToken: 'ghp_test' }));
+w.localStorage.setItem('evrim:sites', JSON.stringify([{ id: 'st1', ad: 'site1', html: '<!doctype html><html lang="tr"><head><title>Deneme</title></head><body>merhaba dünya</body></html>', createdAt: new Date().toISOString() }]));
+w.localStorage.setItem('evrim:conversations', JSON.stringify([{ id: 'c1', title: 't', createdAt: new Date().toISOString() }]));
+w.localStorage.setItem('evrim:messages', JSON.stringify([{ id: 'm1', conversationId: 'c1', role: 'assistant', content: 'Site hazır: [site1](evrimsite:site1)', createdAt: new Date().toISOString() }]));
+try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+await new Promise(z=>setTimeout(z,800));
+const msgs = w.document.querySelector('#msgs');
+console.log('msgs çocuk sayısı:', msgs.children.length);
+console.log('sitecard var mı:', !!msgs.querySelector('.sitecard'));
+console.log('HTML parçası:', msgs.innerHTML.slice(0, 400));
+console.log('errors:', w.errors.slice(0,2));
