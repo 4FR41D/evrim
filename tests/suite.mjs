@@ -69,7 +69,7 @@ function fakeRes(body, toolCall, finalText) {
   $(w, '#send').click();
   await wait(3000);
   const sys = calls.find((c) => c.body?.tools)?.body?.messages?.[0]?.content || '';
-  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 14') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
+  ok('1. beyin v14 sistem promptunda', sys.includes('CEVAP BİÇİMİ VE DÜRÜSTLÜK') && sys.includes('Sürüm: 15') && sys.includes('PROFESYONEL CEVAP ZANAATI') && sys.includes('web_ara'));
   ok('1. web_oku araç listesinde', (calls.find((c) => c.body?.tools)?.body?.tools || []).some((t) => t.function.name === 'web_oku'));
   const toolMsg = calls.filter((c) => c.body?.stream)[1]?.body?.messages?.find((m) => m.role === 'tool');
   const res = toolMsg ? JSON.parse(toolMsg.content) : null;

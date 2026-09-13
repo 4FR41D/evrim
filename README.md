@@ -72,6 +72,11 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   puanlardan somut iyileştirme önerileri yazılır. Sonuçlar otomatik repoya işlenir; tam test paketi
   (299 test) regresyon kapısı olarak çalışır, geçmeden hiçbir şey commit edilmez. Günlük:
   `lab/ARASTIRMA.md` · Öneriler: `lab/ONERILER.md` · Ayarlar'da "🔬 Araştırma Labı" kartı.
+- **🔁 v67 kapalı döngü (lab ölçtü → uygulandı):** lab'ın yakaladığı "elma tuzağı" zaafı beyin
+  v15 kuralıyla giderildi (BİLMECE/ŞAŞIRTMACA: önce "soru ne istiyor?" cümlesi, sonra cevap —
+  canlı A/B ile doğrulandı: kural öncesi yanlış, sonrası doğru); bench artık uygulamanın GERÇEK
+  BASE_PROMPT'uyla ölçüyor ve aynı aileden YENİ soru (portakal-tuzak) eklendi — ezber değil
+  genelleme ölçülür.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

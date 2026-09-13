@@ -1,5 +1,5 @@
 /* EVRIM web — service worker (çevrimdışı kabuk, göreli yollar) */
-const CACHE = 'evrim-web-v66';
+const CACHE = 'evrim-web-v67';
 const BASE = new URL('.', location.href).pathname;   // "/evrim/" veya "/"
 const A = ['index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/app.js', 'js/store.js', 'js/llm.js', 'js/free.js', 'js/local.js', 'js/nano.js', 'js/puter.js', 'js/evolve.js', 'js/learn.js', 'js/github.js', 'js/agent.js', 'js/profile.js', 'js/personas.js', 'js/shell.js', 'js/rag.js'];

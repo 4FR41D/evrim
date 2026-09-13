@@ -62,19 +62,25 @@ function jsonCikar(t) {
   try { return JSON.parse(s.slice(a, b + 1)); } catch { return null; }
 }
 
+function basePrompt() {   // uygulamanın GERÇEK beyin promptu (store.js) — bench birebir onu ölçer
+  const src = fs.readFileSync('web/js/store.js', 'utf8');
+  const m = src.match(/const BASE_PROMPT = `([\s\S]*?)`;/);
+  return m ? m[1].replace(/\$\{BASE_PROMPT_VERSION\}/g, 'lab').replace(/\\`/g, '`') : 'Sen EVRIM asistanısın. Türkçe, doğru, net cevapla.';
+}
+
 /* ---------- 1) BENCH ---------- */
 async function bench() {
   const sorular = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
   const sonuc = [];
   for (const b of sorular) {
     let cevap = await groq(BEYIN, [
-      { role: 'system', content: 'Sen EVRIM asistanısın. Türkçe, doğru, net ve iyi yapılandırılmış cevapla.' },
+      { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
     ], { temp: 0, max: 3500 });
     if (!cevap) {   // CI'da kota/ağ dalgalanması: bir tekrar (20 sn sonra)
       await new Promise((z) => setTimeout(z, 20000));
       cevap = await groq(BEYIN, [
-        { role: 'system', content: 'Sen EVRIM asistanısın. Türkçe, doğru, net ve iyi yapılandırılmış cevapla.' },
+        { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
         { role: 'user', content: b.soru },
       ], { temp: 0, max: 3500 });
     }
