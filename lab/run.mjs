@@ -85,16 +85,104 @@ async function bench() {
       ], { temp: 0, max: 3500 });
     }
     if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
-    const juriIstek = [
-      { role: 'system', content: 'Acımasız ama adil jürisin. Yalnızca TEK satır JSON yaz, başka hiçbir şey yazma: {"puan": <0-10 tam sayı>, "neden": "<1 cümle>"}' },
-      { role: 'user', content: `Soru: ${b.soru}\nBeklenen ölçüt: ${b.beklenti}\n\nCevap (kırpılmış olabilir):\n${cevap.slice(0, 1200)}` },
-    ];
-    // jüri modeli 20b (reasoning LOW): compound küçük gövdede bile 413/429 verebiliyor (canlı doğrulandı)
-    let p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));
-    if (!p) p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));   // bir tekrar
+    const p = await juriPuan(b, cevap);
     sonuc.push({ id: b.id, puan: p?.puan ?? 0, neden: p?.neden || 'jüri parse edilemedi' });
   }
   return sonuc;
+}
+
+// jüri modeli 20b (reasoning LOW): compound küçük gövdede bile 413/429 verebiliyor (canlı doğrulandı)
+async function juriPuan(b, cevap) {
+  const juriIstek = [
+    { role: 'system', content: 'Acımasız ama adil jürisin. Yalnızca TEK satır JSON yaz, başka hiçbir şey yazma: {"puan": <0-10 tam sayı>, "neden": "<1 cümle>"}' },
+    { role: 'user', content: `Soru: ${b.soru}\nBeklenen ölçüt: ${b.beklenti}\n\nCevap (kırpılmış olabilir):\n${String(cevap).slice(0, 1200)}` },
+  ];
+  let p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));
+  if (!p) p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));   // bir tekrar
+  return p;
+}
+
+/* ---------- 1b) OTO-YAMA: kalıcı zayıflığı lab KENDİSİ düzeltir (v68) ----------
+   Tetik: bir bench maddesi SON 3 çalıştırmada ≤3 puan aldıysa.
+   Akış: kural adayı üret → ADAY prompt ile hedef + 2 regresyon sorusunu 2'şer kez ölç →
+         hepsi ≥7 ise UYGULA (store.js kural + sürüm, suite s1 sürüm, sw/index cache sürüm).
+   Güvenlik: A/B eşiği geçilmezse hiçbir dosyaya dokunulmaz; workflow'taki 299 testlik
+   regresyon kapısı son sözü söyler — suite geçmezse commit edilmez, workspace çöpe gider. */
+async function otoYama(sonuc) {
+  try {
+    if (process.env.LAB_OTO_YAMA === 'kapali') return null;
+    const benchDosya = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
+    const src0 = fs.readFileSync('web/js/store.js', 'utf8');
+    if ((src0.match(/OTO-KURAL/g) || []).length >= 3) return null;   // prompt şişmesin: en fazla 3 oto-kural
+    let hedef = process.env.LAB_FORCE_YAMA || '';
+    if (!hedef) {
+      const satirlar = fs.existsSync('lab/sonuclar.jsonl')
+        ? fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
+        : [];
+      const onceki = satirlar.slice(-3);
+      if (onceki.length >= 3) {
+        const say = {};
+        for (const sat of onceki) for (const [id, p] of (sat.sorular || [])) if (p <= 3) say[id] = (say[id] || 0) + 1;
+        hedef = Object.keys(say).find((k) => say[k] >= 3) || '';
+      }
+    }
+    if (!hedef) return null;
+    const b = benchDosya.find((x) => x.id === hedef);
+    if (!b) return null;
+    const mevcut = basePrompt();
+    const not = '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)';
+    const dusuk = sonuc.find((x) => x.id === hedef);
+    // 1) kural adayı (tek satır, güvenli karakterler)
+    const k = await groq('groq/compound', [
+      { role: 'system', content: 'Türkçe sistem promptu kuralı yazan uzmansın. Yalnızca TEK satır yaz (madde işaretsiz, max 220 karakter, tırnak/backtick/$ kullanma).' },
+      { role: 'user', content: `Asistan şu bench sorusunda sürekli başarısız:\nSoru: ${b.soru}\nBeklenen: ${b.beklenti}\nJüri notu: ${dusuk?.neden || '-'}\n\nBu zaafı giderecek GENEL (soruyu birebir tekrar etmeyen, aynı aileden soruları da kapsayan) tek bir davranış kuralı yaz. Kanıtlanmış etkili biçim: önce sorunun ne istediğini tek cümleyle yeniden ifade ettir, sonra cevaplat. Örnek stil: "X tarzı sorularda önce ... yaz, sonra ...".` },
+    ], { temp: 0.7, max: 600, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin (canlı doğrulandı)
+    let kural = String(k || '').trim().split('\n')[0].replace(/[`$"]/g, '').slice(0, 250);
+    if (kural.length < 25) return { hedef, uygulandi: false, neden: 'kural adayı üretilemedi (kota/format)' };
+    if (src0.includes(kural.slice(0, 40))) return { hedef, uygulandi: false, neden: 'aynı kural zaten var' };
+    // 2) aday prompt
+    const i = mevcut.indexOf('\n\n## BİÇİM');
+    if (i < 0) return { hedef, uygulandi: false, neden: 'prompt çapası bulunamadı' };
+    const aday = mevcut.slice(0, i) + `\n- OTO-KURAL (lab A/B doğrulamalı, ${new Date().toISOString().slice(0, 10)}): ${kural}` + mevcut.slice(i);
+    // 3) A/B: hedef + 2 regresyon sorusu, 2'şer ölçüm
+    const regresyon = benchDosya.filter((x) => ['matematik-tuzak', 'yuzde-tuzak'].includes(x.id));
+    const detay = [];
+    let gecti = true;
+    for (const t of [b, ...regresyon]) {
+      if (!gecti) { detay.push(`${t.id}:atlandı`); continue; }   // eşik bir kez bozulduysa kota harcama
+      let toplam = 0, n = 0;
+      for (let r = 0; r < 2 && gecti; r++) {
+        await new Promise((z) => setTimeout(z, 8000));   // kota nefesi (A/B ağır çağrılar: 3500 token + jüri)
+        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: 3500 });
+        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: 3500 }); }
+        if (!cvp) { detay.push(`${t.id}:ağ/kota`); gecti = false; break; }
+        const p = await juriPuan(t, cvp);
+        toplam += p?.puan ?? 0; n++;
+      }
+      const ort = n ? toplam / n : 0;
+      detay.push(`${t.id}:${ort}`);
+      if (ort < 7) gecti = false;
+    }
+    if (!gecti) return { hedef, uygulandi: false, kural, detay };
+    // 4) UYGULA: store.js (kural + sürüm) + suite s1 + sw/index cache (mekanik bump)
+    const v = Number(src0.match(/BASE_PROMPT_VERSION = (\d+)/)[1]);
+    let src = src0.replace(`BASE_PROMPT_VERSION = ${v}`, `BASE_PROMPT_VERSION = ${v + 1}`);
+    const i2 = src.indexOf('\n\n## BİÇİM');
+    src = src.slice(0, i2) + `\n- OTO-KURAL (lab A/B doğrulamalı, ${new Date().toISOString().slice(0, 10)}): ${kural}` + src.slice(i2);
+    fs.writeFileSync('web/js/store.js', src);
+    let st = fs.readFileSync('tests/suite.mjs', 'utf8');
+    st = st.replace(`Sürüm: ${v}`, `Sürüm: ${v + 1}`);
+    fs.writeFileSync('tests/suite.mjs', st);
+    const sw0 = fs.readFileSync('web/sw.js', 'utf8');
+    const cv = Number(sw0.match(/evrim-web-v(\d+)/)[1]);
+    fs.writeFileSync('web/sw.js', sw0.replace(`evrim-web-v${cv}`, `evrim-web-v${cv + 1}`));
+    let ix = fs.readFileSync('web/index.html', 'utf8');
+    ix = ix.replace(`sw.js?v=${cv}`, `sw.js?v=${cv + 1}`);
+    fs.writeFileSync('web/index.html', ix);
+    return { hedef, uygulandi: true, kural, detay, beyinSurum: v + 1, cacheSurum: cv + 1 };
+  } catch (e) {
+    return { hata: String(e?.message || e).slice(0, 140) };
+  }
 }
 
 /* ---------- 2) İÇERİK: ek quiz üretimi ---------- */
@@ -130,7 +218,7 @@ async function oneriler(sonuc, ort) {
   const dusukler = sonuc.filter((x) => x.puan < 7).map((x) => `${x.id}: ${x.puan}/10 — ${x.neden}`).join('\n') || 'tümü ≥7';
   const t = await groq(JURI, [
     { role: 'system', content: 'Sen EVRIM uygulamasının geliştirme danışmanısın. Türkçe yaz.' },
-    { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. Buna göre 3-5 SOMUT, ücretsiz yapılabilir iyileştirme öner — her biri tek satır, "- " ile başla, kod/değişiklik önerisi düzeyinde somut olsun.` },
+    { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. GERÇEK dosyalar YALNIZ şunlardır (başka dosya/Python YOKTUR, .py önerme): web/js/{app,agent,llm,store,rag,learn,wasm,evolve}.js, lab/{run.mjs,bench.json}, tests/suite.mjs, web/data/{mufredat,katalog}.json. Ortam: tarayıcı (ES modules, localStorage, jsdom test) + Node 20 CI. Buna göre 3-5 SOMUT, ücretsiz, bu dosyalarda yapılabilir iyileştirme öner — her biri tek satır, "- " ile başla, hangi dosyada ne değişeceğini söyle.` },
   ], { temp: 0.5, max: 500 });
   if (t) fs.writeFileSync('lab/ONERILER.md', `# 💡 Lab Önerileri\n\n_Son güncelleme: ${now()} — bench ortalaması ${ort}/10_\n\n${t.trim()}\n`);
 }
@@ -147,7 +235,9 @@ function logla(sonuc, ort, icerikSonuc) {
   const ust = md.slice(0, md.indexOf('| Çalışma (UTC) |') >= 0 ? md.indexOf('| Çalışma (UTC) |') : md.length);
   const tablo = [...govde.slice(0, 1), satir, ...govde.slice(1)].slice(0, 62);   // başlık satırından sonra EN ÜSTE ekle (kronolojik)
   fs.writeFileSync('lab/ARASTIRMA.md', (ust.endsWith('\n') || ust === '' ? ust : ust + '\n') + tablo.join('\n') + '\n');
-  const ozet = { tarih: now(), ortPuan: ort, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, sonBench: sonuc, beyin: BEYIN };
+  const trend = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').slice(-8)
+    .map((l) => { try { return JSON.parse(l).ort; } catch { return null; } }).filter((x) => x !== null).join(' → ');
+  const ozet = { tarih: now(), ortPuan: ort, calismaSayisi: calisma, ekSoruToplam: icerikSonuc.toplam, trend, sonYama: globalThis.__SONYAMA || null, sonBench: sonuc, beyin: BEYIN };
   fs.writeFileSync('lab/ozet.json', JSON.stringify(ozet, null, 1) + '\n');
   return { calisma, ozet };
 }
@@ -163,6 +253,9 @@ try {
   console.log('lab: içerik üretimi…');
   const ic = await icerik();
   console.log('lab: yeni soru =', ic.yeni, 'toplam ek =', ic.toplam);
+  const yama = await otoYama(sonuc);
+  globalThis.__SONYAMA = yama || null;
+  console.log('lab: oto-yama =', yama ? JSON.stringify(yama).slice(0, 400) : 'tetiklenmedi (kalıcı zayıflık yok)');
   await oneriler(sonuc, ort);
   const { calisma } = logla(sonuc, ort, ic);
   console.log(`lab: tamam — çalıştırma #${calisma}`);

@@ -32,7 +32,7 @@ jobs:
         run: |
           git config user.name "evrim-lab[bot]"
           git config user.email "4fr41d@users.noreply.github.com"
-          git add lab web/data/mufredat.json
+          git add -A   # oto-yama store.js/suite/sw/index dosyalarına da dokunabilir (data/settings.json gitignore'da)
           if ! git diff --cached --quiet; then
             git commit -m "lab: $(date -u +%F-%H) — bench + yeni quiz + öneriler"
             for i in 1 2 3; do

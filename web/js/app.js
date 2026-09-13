@@ -1256,7 +1256,11 @@ function renderSettings() {
     fetch('https://raw.githubusercontent.com/4FR41D/evrim/main/lab/ozet.json?t=' + Date.now())
       .then((r) => (r.ok ? r.json() : null))
       .then((o) => {
-        if (o?.tarih) labStat.textContent = `Son çalıştırma: ${String(o.tarih).slice(0, 16).replace('T', ' ')} UTC · Bench: ${o.ortPuan}/10 · Lab soruları: ${o.ekSoruToplam ?? 0} · Çalıştırma: ${o.calismaSayisi ?? '?'}`;
+        if (o?.tarih) {
+          labStat.textContent = `Son çalıştırma: ${String(o.tarih).slice(0, 16).replace('T', ' ')} UTC · Bench: ${o.ortPuan}/10 · Lab soruları: ${o.ekSoruToplam ?? 0} · Çalıştırma: ${o.calismaSayisi ?? '?'}`;
+          if (o.trend) labStat.textContent += `\n📈 Trend: ${o.trend}`;
+          if (o.sonYama?.uygulandi) labStat.textContent += `\n🔧 Son oto-yama: ${o.sonYama.hedef} düzeltildi (beyin v${o.sonYama.beyinSurum})`;
+        }
         else labStat.textContent = 'Henüz lab çalıştırması yok (döngü 6 saatte bir çalışır)';
       })
       .catch(() => { labStat.textContent = 'Lab durumu alınamadı (çevrimdışı?)'; });

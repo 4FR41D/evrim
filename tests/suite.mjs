@@ -1947,7 +1947,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
 {
   const w = makeWin({ fetch: async (url) => {
     const u = String(url);
-    if (u.includes('raw.githubusercontent.com') && u.includes('lab/ozet.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ tarih: '2026-09-13T06:17:00.000Z', ortPuan: 9.2, calismaSayisi: 7, ekSoruToplam: 12, sonBench: [] }) };
+    if (u.includes('raw.githubusercontent.com') && u.includes('lab/ozet.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ tarih: '2026-09-13T06:17:00.000Z', ortPuan: 9.2, calismaSayisi: 7, ekSoruToplam: 12, trend: '4 → 6.8 → 9.2', sonYama: { uygulandi: true, hedef: 'elma-tuzak', beyinSurum: 16 }, sonBench: [] }) };
     return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
   } });
   try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
@@ -1956,6 +1956,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
   ok('55. lab kartı arayüzde var', !!$(w, '#labStat'));
   const ls = String($(w, '#labStat')?.textContent || '');
   ok('55. lab özeti GitHub\'dan çekilip gösterildi', ls.includes('9.2/10') && ls.includes('12'));
+  ok('55. trend + oto-yama bilgisi gösterildi', ls.includes('4 → 6.8 → 9.2') && ls.includes('elma-tuzak'));
   const MUF = JSON.parse(fs.readFileSync(ROOT + '/web/data/mufredat.json', 'utf8'));
   const ekler = MUF.dersler.flatMap((d) => d.ekQuizler || []);
   const bozuk = ekler.filter((q) => !q.soru || !Array.isArray(q.secenekler) || q.secenekler.length !== 4 || !Number.isInteger(q.dogru) || q.dogru < 0 || q.dogru > 3 || !q.aciklama);
