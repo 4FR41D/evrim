@@ -2225,7 +2225,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
       if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
       if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
       round++;
-      if (round === 1) return fakeRes(body, { name: 'proje_uret', args: { ad: 'gorev-takip', dosyalar: { 'index.html': INDEX, 'style.css': CSS, 'app.js': JSS }, testler: TESTS } });
+      if (round === 1) return fakeRes(body, { name: 'proje_uret', args: { ad: 'gorev-takip', dosyalar: { 'index.html': INDEX, 'style.css': CSS, 'app.js': JSS }, testler: JSON.stringify(TESTS) } });   // v76.1: string gelirse normalizasyon
       return fakeRes(body, null, 'gorev-takip projesi hazır: 3 dosya (index.html, style.css, app.js) ve 3 test kaydedildi, otomatik denetimden geçti. Kart aşağıda — Önizle, Test, Yayınla, İndir düğmeleri var. [proje](evrimproje:gorev-takip)');
     }
     if (u.includes('api.github.com')) {

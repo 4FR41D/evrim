@@ -526,21 +526,28 @@ export async function projeQA(files, testler) {
       ifr.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals');
       ifr.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:844px;visibility:hidden';
       document.body.appendChild(ifr);
-      const yuklendi = await new Promise((res) => { ifr.onload = () => res(true); setTimeout(() => res(false), 4000); ifr.srcdoc = projeBundleFiles(files); });
-      if (yuklendi) {
-        await new Promise((z) => setTimeout(z, 700));   // DOMContentLoaded + listener'lar otursun
-        const w = ifr.contentWindow;
-        const jsErrors = [];
-        try { w.addEventListener('error', (ev) => jsErrors.push(String(ev.message || '').slice(0, 100))); } catch {}
-        for (const t of (testler || [])) {
-          try {
-            const fn = new w.Function('"use strict";' + String(t?.js || '') + '\nreturn true;');
-            const out = fn();
-            r.testler.push({ ad: String(t?.ad || 'test'), gecti: out !== false });
-          } catch (e) { r.testler.push({ ad: String(t?.ad || 'test'), gecti: false, hata: String(e.message || e).slice(0, 120) }); }
-        }
-        if (jsErrors.length) r.kusurlar.push('çalışma zamanı JS hatası: ' + jsErrors.join(' | '));
-      } else r.render = 'atlandi';
+      // v76.2 TEST İZOLASYONU: her test TAZE sayfa örneğinde koşar (önceki testlerin DOM/localStorage kalıntısı taşmaz)
+      const doc = projeBundleFiles(files);
+      const jsErrors = [];
+      for (const t of (testler || [])) {
+        // eslint-disable-next-line no-await-in-loop
+        const yuklendi = await new Promise((res) => { ifr.onload = () => res(true); setTimeout(() => res(false), 4000); ifr.srcdoc = doc; });
+        if (!yuklendi) { r.render = 'atlandi'; break; }
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((z) => setTimeout(z, 350));   // DOMContentLoaded + listener'lar otursun
+        try {
+          const w = ifr.contentWindow;
+          try { w.addEventListener('error', (ev) => jsErrors.push(String(ev.message || '').slice(0, 100))); } catch {}
+          const fn = new w.Function('"use strict";' + String(t?.js || '') + '\nreturn true;');
+          const out = fn();
+          r.testler.push({ ad: String(t?.ad || 'test'), gecti: out !== false });
+        } catch (e) { r.testler.push({ ad: String(t?.ad || 'test'), gecti: false, hata: String(e.message || e).slice(0, 120) }); }
+      }
+      if (jsErrors.length) r.kusurlar.push('çalışma zamanı JS hatası: ' + jsErrors.join(' | '));
+      if (r.render === 'yapildi' && !(testler || []).length) {
+        const yuklendi0 = await new Promise((res) => { ifr.onload = () => res(true); setTimeout(() => res(false), 4000); ifr.srcdoc = doc; });
+        if (yuklendi0) await new Promise((z) => setTimeout(z, 500));
+      }
       ifr.remove();
     } else r.render = 'atlandi';
   } catch { r.render = 'atlandi'; }
@@ -1087,9 +1094,21 @@ const EXEC = {
       remove('projects', row.id);
       return { ok: true, silinen: slug, not: 'Silindiğini tek satırda söyle.' };
     }
+    // v76.1: serbest modeller iç içe yapıları JSON-string olarak gönderebiliyor → normalleştir
+    let dos = dosyalar;
+    if (typeof dos === 'string') { try { dos = JSON.parse(dos); } catch { dos = null; } }
+    let tst = testler;
+    if (typeof tst === 'string') {
+      try { tst = JSON.parse(tst); }
+      catch {
+        try { tst = JSON.parse(tst.replace(/\\'/g, "'")); }   // \' kaçışı JSON'da geçersiz — serbest model tik'i
+        catch { try { tst = JSON.parse(tst.replace(/\}\s*\]\s*$/, '"}]')); } catch { tst = null; } }   // kapanış tırnağı düşmüşse onar
+      }
+    }
+    if (typeof dos === 'string' && !dos) { /* noop */ }
     const yeni = {};
-    if (dosyalar && typeof dosyalar === 'object') {
-      for (const [p, c] of Object.entries(dosyalar)) {
+    if (dos && typeof dos === 'object') {
+      for (const [p, c] of Object.entries(dos)) {
         const n = String(p).replace(/^\/+/, '').replace(/\.\./g, '').replace(/[^A-Za-z0-9._/-]/g, '');
         if (n && typeof c === 'string' && c.trim()) yeni[n] = c;
       }
@@ -1097,8 +1116,8 @@ const EXEC = {
     const varMi = all('projects').find((x) => x.ad === slug);
     if (!varMi && !yeni['index.html']) return { hata: 'index.html ZORUNLU — dosyalar: {"index.html":"...","style.css":"...","app.js":"..."} biçiminde TAM içerikleri ver' };
     const merged = varMi ? { ...(varMi.files || {}), ...yeni } : { ...yeni };
-    const tList = (Array.isArray(testler) && testler.length)
-      ? testler.filter((t) => t && t.ad && typeof t.js === 'string')
+    const tList = (Array.isArray(tst) && tst.length)
+      ? tst.filter((t) => t && t.ad && typeof t.js === 'string').slice(0, 12)   // çılgın test listelerini sınırla
       : (varMi?.testler || []);
     if (varMi) update('projects', varMi.id, { files: merged, testler: tList, ts: Date.now() });
     else insert('projects', { ad: slug, files: merged, testler: tList, ts: Date.now(), createdAt: now() });

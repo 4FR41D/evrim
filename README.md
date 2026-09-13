@@ -131,6 +131,11 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   yeniden koşar. Proje kartı: 👁 Önizle / ✅ Test / ⬇️ İndir (tek dosya bundle) / 🌍 Yayınla
   (publishProject → klasör olarak Pages'e, her dosya ayrı PUT). BASE_PROMPT v18: uygulama
   isteklerinde proje_uret + en az 3 test ZORUNLU + localStorage kalıcılık/erişilebilirlik standartları.
+  v76.1/v76.2 sağlamlaştırma (canlı demodan çıkan gerçek hatalarla): testler/dosyalar JSON-string
+  gelirse normalizasyon + \' ve kapanış-tırnağı onarımı + test listesi sınırı (12); TEST İZOLASYONU —
+  her test taze sayfa örneğinde koşar (önceki testin DOM/localStorage kalıntısı taşmaz). Canlı kanıt:
+  todo-app — frontier beyin 3 dosya + 4 gerçek test üretti; 3 düzeltme turuyla 4/4 YEŞİL'e ulaştı,
+  https://4fr41d.github.io/evrim-siteler/todo-app/ adresinde yayında.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
