@@ -1600,5 +1600,56 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 48) v60: 🌅 günlük brifing + 🎧 sesli sohbet + 🧠 ilgili hafıza ================= */
+{
+  const w = makeWin({ fetch: async () => ({ ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' }) });
+  w.localStorage.setItem('evrim:todos', JSON.stringify([{ id: 't1', baslik: 'market alisverisi', done: false, ts: Date.now(), createdAt: new Date().toISOString() }]));
+  w.localStorage.setItem('evrim:habits', JSON.stringify([{ id: 'h1', ad: 'su ic', tarihler: [], createdAt: new Date().toISOString() }]));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  ok('48. 🎧 sesli sohbet düğmesi var', !!$(w, '#voiceChatBtn'));
+  ok('48. 🌅 brifing düğmesi var', !!$(w, '#btnBrief'));
+  $(w, '#voiceChatBtn').click(); await wait(100); // SpeechRecognition yok → zarif toast
+  ok('48. SR yokken sesli sohbet çökmüyor', w.errors.length === 0);
+  $(w, '#npName').value = 'Brifing'; $(w, '#npCreate').click();
+  await wait(1400); // otomatik brifing 700ms gecikmeli
+  const msgs48 = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  const brf = msgs48.find((m) => m.model === '🌅 brifing');
+  ok('48. otomatik günlük brifing geldi', !!brf && String(brf.content).includes('market alisverisi') && String(brf.content).includes('🔥'));
+  ok('48. brifing alışkanlığı gösteriyor', !!brf && String(brf.content).includes('su ic'));
+  ok('48. brifing günde bir (flag yazıldı)', !!w.localStorage.getItem('evrim:sonBrifing'));
+  ok('48. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+{
+  let sysSent = '';
+  const MEMS = [
+    { id: 'mA', content: 'Kullanıcı kahve sevmez', kind: 'fact', source: 'test', strength: 0.99, hits: 1, archived: false },
+    { id: 'mB', content: 'Python döngü konusunu öğreniyor', kind: 'fact', source: 'test', strength: 0.4, hits: 1, archived: false },
+  ];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (body?.stream && !sysSent) { const sm = (body.messages || []).find((m) => m.role === 'system'); if (sm) sysSent = String(sm.content); }
+      return fakeRes(body, null, 'Python döngüleri: for ve while.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.localStorage.setItem('evrim:memories', JSON.stringify(MEMS));
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Ilgili'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'Python döngüleri anlat'; $(w, '#send').click();
+  await wait(4200);
+  ok('48. sistem promptuna hafıza girdi', sysSent.includes('kahve') && sysSent.includes('Python döngü'));
+  ok('48. ilgili hafıza güçsüz olsa da öne çıktı', sysSent.indexOf('Python döngü') < sysSent.indexOf('kahve'));
+  ok('48. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

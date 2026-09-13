@@ -56,13 +56,26 @@ export function recordFeedback({ messageId, value, comment }) {
 }
 
 /** O anki kişilik + hafıza + beceriler -> tam sistem promptu */
-export function buildSystemPrompt() {
+export function buildSystemPrompt(userText = '') {
   const a = activeLLM();
   // Küçük cihaz-içi model: uzun prompt onu boğar -> sade sürüm + az hafıza
   const tiny = a.id === 'local' || a.id === 'nano';
   const base = tiny ? { text: COMPACT_PROMPT } : currentPrompt();
   const s = getSettings();
-  const active = memories().slice(0, tiny ? 8 : MAX_ACTIVE_MEMORIES);
+  // v60: İLGİLİ HAFIZA — mesajla kelime örtüşen kayıtlar öne çıkar (güç + ilgi birlikte sıralar)
+  const t60 = String(userText || '').toLocaleLowerCase('tr');
+  const rel60 = (m) => {
+    if (!t60) return 0;
+    const cw = String(m.content || '').toLocaleLowerCase('tr').split(/[^a-zçğıöşü0-9]+/).filter((x) => x.length > 3);
+    let sc = 0;
+    for (const wd of cw) if (t60.includes(wd)) sc++;
+    return Math.min(sc, 4);
+  };
+  const active = memories()
+    .map((m) => ({ m, s: (m.strength || 0) + rel60(m) * 0.35 }))
+    .sort((x, y) => y.s - x.s)
+    .slice(0, tiny ? 8 : MAX_ACTIVE_MEMORIES)
+    .map((x) => x.m);
   const by = (k) => active.filter((m) => m.kind === k);
 
   const out = [base.text, ''];

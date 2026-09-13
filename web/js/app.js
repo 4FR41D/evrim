@@ -405,7 +405,7 @@ async function send(text) {
     const history = all('messages').filter((m) => m.conversationId === conversationId).slice(-24)
       .map((m) => ({ role: m.role, content: m.content }));
     const pers = personaPrompt(currentPersonaId());
-    const sysPrompt = evo.buildSystemPrompt()
+    const sysPrompt = evo.buildSystemPrompt(content)
       + (summary ? `\n\n## ÖNCEKİ KONUŞMA ÖZETİ (bağlam)\n${summary}` : '')
       + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '');
     const messages = [{ role: 'system', content: sysPrompt }, ...history];
@@ -554,6 +554,7 @@ async function send(text) {
       model: res.model || null, steps: (res.steps || []).map((s) => ({ tool: s.tool, ms: s.ms })),
     });
     const node = addMsg(botMsg);
+    if (voiceChat) vcSpeak(reply);   // 🎧 sesli sohbet: cevabı yüksek sesle oku
     // v33: arka planda tercih/bilgi çıkarımı — her uzun cevaptan sonra sessizce öğren
     if (String(reply).length > 300) {
       const nAssist = all('messages').filter((m) => m.conversationId === conversationId && m.role === 'assistant').length;
@@ -1279,6 +1280,111 @@ $('#micBtn')?.addEventListener('click', () => {
   } catch { toast('Ses tanıma başlatılamadı', 'err'); }
 });
 
+/* ---------------- v60: 🎧 SESLİ SOHBET MODU (eller serbest döngü) ---------------- */
+let voiceChat = false; let vcRec = null; let vcSpeaking = false; let vcBusy = false;
+
+function vcStop() {
+  voiceChat = false;
+  const b = $('#voiceChatBtn'); if (b) b.classList.remove('on');
+  if (vcRec) { try { vcRec.stop(); } catch {} vcRec = null; }
+  try { speechSynthesis.cancel(); } catch {}
+}
+function vcListen() {
+  if (!voiceChat) return;
+  const SR = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
+  if (!SR) return;
+  try {
+    const r = new SR();
+    r.lang = 'tr-TR'; r.interimResults = false; r.maxAlternatives = 1; r.continuous = false;
+    r.onresult = async (e) => {
+      let t = '';
+      for (const res of e.results) if (res.isFinal) t += res[0].transcript + ' ';
+      t = t.trim();
+      if (!t) return;
+      vcBusy = true;
+      try { $('#input').value = ''; await send(t); } catch {}
+      setTimeout(() => { vcBusy = false; if (voiceChat && !vcSpeaking && !vcRec) vcListen(); }, 600);
+    };
+    r.onend = () => { vcRec = null; if (voiceChat && !vcSpeaking && !vcBusy) setTimeout(vcListen, 400); };
+    r.onerror = (e) => {
+      vcRec = null;
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') { vcStop(); toast('Mikrofon izni yok — sesli sohbet kapatıldı', 'err'); }
+      else if (voiceChat && !vcSpeaking && !vcBusy) setTimeout(vcListen, 800);
+    };
+    r.start(); vcRec = r;
+  } catch {}
+}
+function vcSpeak(txt) {
+  if (!voiceChat) return;
+  const clean = String(txt || '')
+    .replace(/```[\s\S]*?```/g, ' kod bloğu. ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[#*_`>|~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim().slice(0, 900);
+  if (!clean) return;
+  let spoke = false;
+  try {
+    if (typeof SpeechSynthesisUtterance === 'function' && globalThis.speechSynthesis) {
+      vcSpeaking = true;
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = 'tr-TR';
+      const bitir = () => { if (spoke) return; spoke = true; vcSpeaking = false; if (voiceChat) setTimeout(vcListen, 350); };
+      u.onend = bitir; u.onerror = bitir;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      return;
+    }
+  } catch {}
+  // TTS yoksa cevap ekranda kalır, dinlemeye devam
+  if (!spoke) { vcSpeaking = false; if (voiceChat) setTimeout(vcListen, 800); }
+}
+$('#voiceChatBtn')?.addEventListener('click', () => {
+  if (voiceChat) { vcStop(); toast('🎧 Sesli sohbet kapandı'); return; }
+  const SR = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
+  if (!SR) { toast('Bu tarayıcıda ses tanıma yok — Android Chrome gerekir (🎙️ tek seferlik dikte yine de çalışır)', 'err'); return; }
+  voiceChat = true;
+  const b = $('#voiceChatBtn'); if (b) b.classList.add('on');
+  toast('🎧 Sesli sohbet AÇIK — konuş; cevabı sesli okuyup tekrar dinlerim. Kapatmak için 🎧 bas.', 'ok');
+  vcListen();
+});
+
+/* ---------------- v60: 🌅 GÜNLÜK BRİFİNG (tamamen yerel — model/bulut gerekmez) ---------------- */
+function brifingMetin() {
+  const bugun = new Date().toLocaleDateString('sv-SE');
+  const rs = all('reminders').filter((r) => !r.done && r.dueAt > Date.now()).sort((a, b) => a.dueAt - b.dueAt).slice(0, 5);
+  const td = all('todos').filter((x) => !x.done).slice(0, 6);
+  const hs = all('habits');
+  const son24 = all('expenses').filter((e) => (e.ts || 0) > Date.now() - 86400000).reduce((a, e) => a + Number(e.tutar || 0), 0);
+  const ls = learn.learningStats();
+  const L = ['🌅 **Günün brifingi**', '', `🔥 **${ls.seri} günlük seri** · bugün tekrar bekleyen kart: **${ls.due}**`];
+  if (rs.length) L.push('', '⏰ **Hatırlatıcılar:**', ...rs.map((r) => `- ${r.mesaj} — ${new Date(r.dueAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`));
+  if (td.length) L.push('', '🗓️ **Bekleyen görevler:**', ...td.map((t2, i) => `${i + 1}. ${t2.baslik}`));
+  if (hs.length) L.push('', '💧 **Alışkanlıklar:**', ...hs.map((h) => `- ${h.ad}: ${(h.tarihler || []).includes(bugun) ? 'bugün ✅' : 'bugün bekliyor ⬜'}`));
+  if (son24 > 0) L.push('', `💸 Son 24 saat harcama: **${son24.toLocaleString('tr-TR')} ₺**`);
+  if (L.length <= 3) L.push('', 'Bugünlük kayıt yok — "görev ekle", "X alışkanlığı ekle" veya "9\'da hatırlat" diyerek günü planla.');
+  return L.join('\n');
+}
+function brifingVarMi() {
+  return all('reminders').some((r) => !r.done) || all('todos').some((x) => !x.done) || all('habits').length > 0 || all('expenses').length > 0;
+}
+function brifingEkle() {
+  if (!conversationId) {
+    conversationId = insert('conversations', {
+      title: '🌅 Günlük brifing',
+      profileId: activeProfile()?.id || null,
+      personaId: currentPersonaId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).id;
+    try { renderSidebar(); } catch {}
+  }
+  const m = insert('messages', { conversationId, role: 'assistant', content: brifingMetin(), model: '🌅 brifing', createdAt: new Date().toISOString() });
+  addMsg(m);
+  requestAnimationFrame(scrollBottom);
+}
+$('#btnBrief')?.addEventListener('click', () => brifingEkle());
+
 /* ---------------- v56: 📄 PDF metin çıkarma (pdf.js CDN) ---------------- */
 function loadScript(src) {
   return new Promise((res, rej) => {
@@ -1470,6 +1576,16 @@ async function bootApp() {
   go('chat');
   renderSettings();
   refreshStatus();
+  // 🌅 v60: günde bir otomatik brifing (yalnız gösterilecek veri varsa — tamamen yerel)
+  setTimeout(() => {
+    try {
+      const gk = new Date().toLocaleDateString('sv-SE');
+      if (activeProfile() && brifingVarMi() && localStorage.getItem('evrim:sonBrifing') !== gk) {
+        localStorage.setItem('evrim:sonBrifing', gk);
+        brifingEkle();
+      }
+    } catch {}
+  }, 700);
   if (booted) return;
   booted = true;
   // Cihaz WebGPU destekliyor mu? (yerel model mümkün mü)

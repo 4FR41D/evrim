@@ -43,6 +43,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **🎯 Eğitim paneli (v59):** hazır eğitim paketleri (💻 Yazılım Öğretmeni, 📝 Sınav Koçu,
   💼 İş Asistanı, ✍️ Yazar/Editör), "şu konuda uzmanlaş" alanı, öğrenilen tüm kural +
   hafıza kayıtlarının listesi ve tek tek silinmesi. Kurallar beynin sistem promptuna işlenir.
+- **Beyin v60:** 🧠 ilgili hafıza (mesajla örtüşen kayıtlar promptta öne çıkar),
+  🎧 sesli sohbet modu (eller serbest: dinle → cevapla → seslendir → tekrar dinle),
+  🌅 günlük brifing (günde bir, tamamen yerel: seri + hatırlatıcı + görev + alışkanlık + harcama).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
