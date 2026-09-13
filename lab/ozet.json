@@ -1,30 +1,35 @@
 {
- "tarih": "2026-09-13T12:55:32.521Z",
+ "tarih": "2026-09-13T13:35:24.917Z",
  "ortPuan": 10,
- "calismaSayisi": 10,
+ "calismaSayisi": 11,
  "ekSoruToplam": 12,
- "trend": "6 → 7.6 → 6.8 → 9.7 → 10 → 10 → 10 → 10",
+ "trend": "7.6 → 6.8 → 9.7 → 10 → 10 → 10 → 10 → 10",
  "sonYama": null,
  "sonBench": [
   {
+   "id": "site-tasarim",
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
+  },
+  {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden daha büyüktür"
+   "neden": "Cevap doğru, 9.9 sayısı 9.11'den büyüktür."
   },
   {
    "id": "yuzde-tuzak",
-   "puan": 10,
-   "neden": "Doğru hesaplama: 100 TL +20% = 120 TL, sonra 20% indirim = 96 TL"
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-siralama",
-   "puan": 10,
-   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "elma-tuzak",
-   "puan": 10,
-   "neden": "Soru, aldığın elmaların sayısını soruyor; 2 elma aldın, bu yüzden cevap 2."
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "plan-yapma",
@@ -35,11 +40,6 @@
    "id": "portakal-tuzak",
    "puan": 10,
    "neden": "Cevap doğru: aldığın 3 portakal senin elinde."
-  },
-  {
-   "id": "site-tasarim",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b"
