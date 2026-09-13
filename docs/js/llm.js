@@ -360,24 +360,35 @@ export async function rawChat(messages, opts = {}) {
   if (a.def.format === 'openai') {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${a.key}` };
     if (a.id === 'openrouter') { headers['HTTP-Referer'] = location.origin; headers['X-Title'] = 'EVRIM'; }
-    const queue = a.id === 'openrouter'
+    let queue = a.id === 'openrouter'
       ? (opts._queue || await rankedFreeModels()).slice(0, 5)
       : a.id === 'groq'
         ? [model, ...PROVIDERS.groq.models.filter((m) => m !== model)]
         : [model];
+    // v64: düz metin cevabında (araçsız + JSON'suz) Groq bileşik AI sistemi de sıraya girer.
+    // (compound tool calling DESTEKLEMİYOR — 2026-09-13'te canlı doğrulandı; araç turlarına sokma!)
+    if (a.id === 'groq' && !supportsTools && !opts.json && !queue.includes('groq/compound')) {
+      queue = [queue[0], 'groq/compound', ...queue.slice(1)];
+    }
     let lastErr = null;
     for (let qi = 0; qi < queue.length; qi++) {
       const mid = queue[qi];
       // v52: küçük ITPM limitli modeller (20b/qwen27b) yalnız çekirdek araç setini alır → 413 kökten önlenir
       const toolsForModel = (SMALL_ITPM_RE.test(mid) && Array.isArray(opts.toolsSlim) && opts.toolsSlim.length)
         ? opts.toolsSlim : opts.tools;
+      // v64: BEYİN GÜCÜ — gpt-oss modelleri reasoning_effort ile DERİN DÜŞÜNÜR (canlı doğrulandı:
+      // 9.11 vs 9.9 tuzağını high modda doğru cevapladı). Düşünce tokenları completion bütçesini
+      // yediği için gpt-oss'ta max_tokens tabanı yükseltilir, yoksa cevap kesilir.
+      const small64 = SMALL_ITPM_RE.test(mid);
+      const oss64 = /^openai\/gpt-oss/i.test(mid);
+      let maxTok64 = opts.maxTokens ?? 900;
+      if (small64) maxTok64 = Math.min(Math.max(maxTok64, 1500), 4000);
+      else if (toolsForModel?.length) maxTok64 = Math.max(maxTok64, 8000);   // v62: büyük araç argümanları
+      else if (oss64) maxTok64 = Math.max(maxTok64, 4000);                    // v64: düşünce payı
       const body = {
         model: mid, messages, temperature: opts.temperature ?? 0.7,
-        // v62: araç turlarında büyük argümanlar (site kodu vb.) kesilip JSON'u bozuyordu → üst sınır 8000
-        // (küçük ITPM modelleri dakikalık token limiti yüzünden 4000'de tutulur)
-        max_tokens: SMALL_ITPM_RE.test(mid)
-          ? Math.min(Math.max(opts.maxTokens ?? 900, 1500), 4000)
-          : (toolsForModel?.length ? Math.max(opts.maxTokens ?? 900, 8000) : (opts.maxTokens ?? 900)),
+        max_tokens: maxTok64,
+        ...(oss64 ? { reasoning_effort: small64 ? 'medium' : (opts.reasoning || 'high') } : {}),
         ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
         ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
         ...(supportsTools ? { tools: toolsForModel, tool_choice: 'auto' } : {}),

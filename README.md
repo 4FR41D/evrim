@@ -56,6 +56,10 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   (tek dosya + profesyonel tasarım rehberi); `site_uret` çekirdek araç setine girdi (küçük modeller de
   site üretir); model yine de ham kod yazarsa **yakalayıcı** devreye girer: HTML+CSS otomatik tek
   dosyaya çevrilir, mesajın altına canlı önizleme kartı (👁/⛶/⬇️) eklenir — önizleme ASLA kaçmaz.
+- **🧠 v64 beyin gücü:** gpt-oss-120b artık `reasoning_effort: high` ile DERİN DÜŞÜNEREK cevap
+  veriyor (canlı doğrulandı: 9.11 vs 9.9 tuzağını çözüyor); düşünce tokenları için max_tokens tabanı
+  yükseltildi; düz cevap turlarında `groq/compound` (bileşik AI sistemi) yedek sıraya eklendi
+  (araç çağrısı desteklemediği için yalnız araçsız turlarda); ajan döngüsü 4→6 adım.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

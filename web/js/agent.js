@@ -15,7 +15,7 @@ import { localStatus } from './local.js';
 import { puterStatus } from './puter.js';
 import { houseStatus } from './house.js';
 
-const MAX_STEPS = 4;
+const MAX_STEPS = 6;   // v64: daha derin ajan döngüsü (çok adımlı görevler için)
 
 /* ------------------------------------------------------------------ */
 /* ARAÇ TANIMLARI (modele giden şema)                                  */

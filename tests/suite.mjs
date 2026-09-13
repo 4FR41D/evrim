@@ -1810,5 +1810,63 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+
+/* ================= 52) v64: beyin gücü — reasoning_effort + compound rotasyonu ================= */
+{
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      return fakeRes(body, null, 'Derin düşünceli cevap: 9.9 büyüktür.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Beyin64'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = '9.11 ile 9.9 hangisi büyük'; $(w, '#send').click();
+  await wait(4200);
+  const sc = calls.filter((c) => c?.stream);
+  ok('52. reasoning_effort=high gönderildi (gpt-oss-120b)', sc.length >= 1 && sc[0].reasoning_effort === 'high' && sc[0].model === 'openai/gpt-oss-120b');
+  ok('52. düşünce payı: max_tokens ≥ 4000', sc[0].max_tokens >= 4000);
+  const msgs = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('52. cevap geldi', msgs.some((m) => m.role === 'assistant' && String(m.content).includes('9.9')));
+  ok('52. hata yok (A)', w.errors.length === 0);
+  w.close?.();
+}
+{
+  const sseRes = (text) => ({ ok: true, status: 200, headers: { get: () => 'text/event-stream' }, json: async () => ({}), text: async () => text,
+    body: { getReader() { let d = false; return { read: async () => d ? { done: true, value: undefined } : (d = true, { done: false, value: new TextEncoder().encode(text) }), cancel: async () => {} }; } } });
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return sseRes('data: {"error":{"code":"tool_use_failed","message":"Failed to parse tool call arguments as JSON"}}\n\ndata: [DONE]\n\n');
+      if (round === 2) return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'rate limit exceeded' } }), text: async () => '' };
+      return fakeRes(body, null, 'Compound derin cevap verdi.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Compound'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'bana kısa bir şiir yaz'; $(w, '#send').click();
+  await wait(5000);
+  const sc = calls.filter((c) => c?.stream);
+  ok('52. araçsız tekrarda compound sıraya girdi', sc.length >= 3 && sc[1].model === 'openai/gpt-oss-120b' && !sc[1].tools && sc[2].model === 'groq/compound');
+  const msgs = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('52. compound cevabı kullanıcıya ulaştı', msgs.some((m) => m.role === 'assistant' && String(m.content).includes('Compound derin cevap')));
+  ok('52. hata yok (B)', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
