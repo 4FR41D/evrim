@@ -2007,5 +2007,43 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+/* ================= 57) v72 SİTE KONTROL: kusurlu site → denetim raporu + DÜZELT; temiz site → GEÇTİ ================= */
+{
+  const BOZUK = '<html><head><title>t</title></head><body><h1>x</h1><a href="#yok">git</a><img src="a.png"><img src="b.png"></body></html>';
+  const TEMIZ = '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>t</title></head><body><h1>Merhaba</h1><p>İçerik burada.</p></body></html>';
+  const bodies = [];
+  let round = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      round++;
+      if (round === 1) return fakeRes(body, { name: 'site_uret', args: { ad: 'bozuk-demo', kod: BOZUK } });
+      if (round === 2) return fakeRes(body, null, 'Site hazır (denetim raporu model tarafından görüldü).');
+      if (round === 3) return fakeRes(body, { name: 'site_uret', args: { ad: 'temiz-demo', kod: TEMIZ } });
+      return fakeRes(body, null, 'Temiz site de hazır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'bana demo site yap'; $(w, '#send').click();
+  await wait(9000);   // QA iframe zaman aşımı (3.5s) + akış
+  const toolMsgA = bodies.filter((b) => b?.stream).map((b) => (b.messages || []).find((m) => m.role === 'tool')).filter(Boolean).pop();
+  const icerikA = String(toolMsgA?.content || '');
+  ok('57. kusurlar raporlandı: viewport+ölü link+alt', icerikA.includes('viewport meta yok') && icerikA.includes('ölü iç link') && icerikA.includes('#yok') && icerikA.includes('2 görselde alt yok'));
+  ok('57. DÜZELT talimatı + aynı ad ile tekrar çağrı', icerikA.includes('DÜZELT') && icerikA.includes('bozuk-demo'));
+  $(w, '#input').value = 'temiz site yap'; $(w, '#send').click();
+  await wait(9000);
+  const toolMsgB = bodies.filter((b) => b?.stream).map((b) => (b.messages || []).filter((m) => m.role === 'tool').pop()).filter(Boolean).pop();
+  const icerikB = String(toolMsgB?.content || '');
+  ok('57. temiz site denetimden geçti', icerikB.includes('DENETİMDEN GEÇTİ') && icerikB.includes('temiz-demo'));
+  ok('57. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

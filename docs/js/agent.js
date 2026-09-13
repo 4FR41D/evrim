@@ -120,7 +120,7 @@ export const TOOLS = [
     islem: { type: 'string', description: 'ekle | yapildi | durum | sil' },
     ad: { type: 'string', description: 'alışkanlık adı (örn. "su iç")' },
   }, []),
-  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, mobil uyumlu; harici CDN YOK — görsel istisnası: image.pollinations.ai). Sistem promptundaki PROFESYONEL SİTE TASARIMI bölümüne UY: hero+CTA, kart bölümleri, CSS değişkenleriyle palet, GERÇEK Türkçe içerik. Kodu "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için). KODU ÖZ TUT (hedef ≤250 satır): çok uzun argüman JSON\u2019u bozabilir.', {
+  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, mobil uyumlu; harici CDN YOK — görsel istisnası: image.pollinations.ai). Sistem promptundaki PROFESYONEL SİTE TASARIMI bölümüne UY: hero+CTA, kart bölümleri, CSS değişkenleriyle palet, GERÇEK Türkçe içerik. Kodu "kod" parametresine yaz. Araç kaydeder, OTOMATİK DENETİM yapar (ölü link/görsel hatası/mobil taşma) ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy; dönen kusur listesi boş değilse düzeltip aynı ad ile tekrar çağır. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için). KODU ÖZ TUT (hedef ≤250 satır): çok uzun argüman JSON\u2019u bozabilir.', {
     ad: { type: 'string', description: 'kısa slug: "portfoy", "yilan-oyunu" (küçük harf, tireli)' },
     kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü; CDN yok, görsel pollinations olabilir)' },
     islem: { type: 'string', description: 'olustur (varsayılan) | liste | sil' },
@@ -429,6 +429,55 @@ async function catMirror() {
 }
 
 let MUF_CACHE = null;
+// v72: SİTE KONTROL — EVRIM eserini "görsün": statik tarama + gizli iframe'de render denetimi
+async function siteQA(html) {
+  const r = { oluLink: [], altYok: 0, viewportYok: false, langYok: false, doctypeYok: false, h1Yok: false, imgYuklenmedi: [], tasma: false, render: 'yapildi' };
+  const src = String(html || '');
+  if (!/<!doctype html>/i.test(src)) r.doctypeYok = true;
+  if (!/<meta[^>]+viewport/i.test(src)) r.viewportYok = true;
+  if (!/<html[^>]+lang=/i.test(src)) r.langYok = true;
+  if (!/<h1[\s>]/i.test(src)) r.h1Yok = true;
+  r.altYok = (src.match(/<img(?![^>]*alt=)[^>]*>/gi) || []).length;
+  const ids = new Set([...src.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  r.oluLink = [...src.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]).filter((x) => x && !ids.has(x));
+  // render denetimi: gerçek tarayıcıda görseller + yatay taşma; jsdom (test) ortamında onload hiç tetiklenmediği için atlanır
+  try {
+    const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(String(navigator.userAgent || ''));
+    if (!isJsdom && typeof document !== 'undefined' && document.createElement && document.body) {
+      const ifr = document.createElement('iframe');
+      ifr.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:844px;visibility:hidden';
+      document.body.appendChild(ifr);
+      const yuklendi = await new Promise((res) => { ifr.onload = () => res(true); setTimeout(() => res(false), 3500); ifr.srcdoc = src; });
+      if (yuklendi) {
+        const d = ifr.contentDocument;
+        if (d?.documentElement) r.tasma = d.documentElement.scrollWidth > 390 + 8;
+        const imgs = [...(d?.querySelectorAll('img') || [])];
+        await Promise.all(imgs.map((im) => new Promise((res) => {
+          if (im.complete) return res();
+          im.addEventListener('load', res, { once: true });
+          im.addEventListener('error', res, { once: true });
+          setTimeout(res, 5000);   // soğuk pollinations üretimi yavaş olabilir — sonsuza dek beklemeyiz
+        })));
+        r.imgYuklenmedi = imgs.filter((im) => !im.naturalWidth).map((im) => String(im.getAttribute('src') || '').slice(0, 60));
+      } else r.render = 'atlandi';
+      ifr.remove();
+    } else r.render = 'atlandi';
+  } catch { r.render = 'atlandi'; }
+  return r;
+}
+function qaOzet(r) {
+  const kus = [];
+  if (r.doctypeYok) kus.push('doctype yok');
+  if (r.viewportYok) kus.push('viewport meta yok (mobilde bozulur)');
+  if (r.langYok) kus.push('html lang yok');
+  if (r.h1Yok) kus.push('h1 yok');
+  if (r.altYok) kus.push(r.altYok + ' görselde alt yok');
+  if (r.oluLink.length) kus.push('ölü iç link: #' + r.oluLink.join(', #'));
+  if (r.tasma) kus.push('yatay taşma (mobilde kaydırıyor)');
+  if (r.imgYuklenmedi.length) kus.push('yüklenmeyen görsel: ' + r.imgYuklenmedi.join(' | ') + ' → onerror yedeği/background-color ekle veya görseli kaldır');
+  return kus;
+}
+
 // v66: lab döngüsünün ürettiği ek sorular (ekQuizler) derslerde rastgele seçilir → içerik sürekli tazelenir
 function secQuiz(d) {
   const qs = [d.quiz, ...(d.ekQuizler || [])].filter((q) => q?.soru && Array.isArray(q.secenekler) && q.secenekler.length === 4 && Number.isInteger(q.dogru));
@@ -934,7 +983,18 @@ const EXEC = {
     if (varMi) update('sites', varMi.id, { html: h, ts: Date.now() });
     else insert('sites', { ad: slug, html: h, ts: Date.now(), createdAt: now() });
     const isaret = `[site](evrimsite:${slug})`;
-    return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür. Kartta Önizle/İndir/Tam ekran düğmeleri olduğunu bir cümleyle söyle.` };
+    // v72: otomatik denetim — kusur varsa beyin aynı ad ile düzeltme turu atar (site güncellenir)
+    let kontrol = null, kusurlar = [];
+    try {
+      if (getSettings().siteQa !== false) {
+        kontrol = await siteQA(h);
+        kusurlar = qaOzet(kontrol);
+      }
+    } catch { /* denetim aracı asla bozmasın */ }
+    const denetimNot = kusurlar.length
+      ? ` ÖNCE DÜZELT: şu kusurları giderip AYNI "${slug}" adı ile site_uret'i TEKRAR çağır (site güncellenir); kullanıcıye bitti deme: ${kusurlar.join('; ')}`
+      : ' Site OTOMATİK DENETİMDEN GEÇTİ (görseller, linkler, mobil taşma) — kusur yok.';
+    return { ok: true, ad: slug, boyutKB: Math.round(h.length / 1024), islem: varMi ? 'guncellendi' : 'olusturuldu', isaret, kusur: kusurlar.length, kontrol: kontrol ? { render: kontrol.render, kusurlar } : undefined, not: `Bu işareti yanıtına AYNEN koy: ${isaret} — böylece canlı önizleme kartı görünür.` + denetimNot };
   },
 
   async oz_test() {

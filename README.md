@@ -98,6 +98,11 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   siteyi kullanıcının KENDİ GitHub token'ıyla (cihazında kalır, app'e gömülü anahtar yok)
   `kullanici.github.io/evrim-siteler/<slug>.html` adresinde canlıya alır: repo yoksa oluşturur,
   dosyayı yükler/günceller, Pages'i açar, adresi gösterir. Tamamen tarayıcıdan, sunucusuz.
+- **👁️ v72 site denetimi (EVRIM eserini görüyor):** `site_uret` artık üretilen siteyi OTOMATİK
+  DENETİYOR — gizli iframe'de render edip yüklenmeyen görselleri, ölü iç linkleri, mobil yatay
+  taşmayı, eksik viewport/alt/lang/h1'i yakalıyor; kusur raporu beyne dönüyor ve beyin aynı ad ile
+  düzeltme turu atıyor (site güncelleniyor). Statik tarama her ortamda, render denetimi gerçek
+  tarayıcıda çalışır. Böylece "tek atışta üret-umut et" devri bitti: üret → denetle → düzelt → yayınla.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
