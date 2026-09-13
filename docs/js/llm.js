@@ -373,7 +373,11 @@ export async function rawChat(messages, opts = {}) {
         ? opts.toolsSlim : opts.tools;
       const body = {
         model: mid, messages, temperature: opts.temperature ?? 0.7,
-        max_tokens: opts.maxTokens ?? 900,
+        // v62: araç turlarında büyük argümanlar (site kodu vb.) kesilip JSON'u bozuyordu → üst sınır 8000
+        // (küçük ITPM modelleri dakikalık token limiti yüzünden 4000'de tutulur)
+        max_tokens: SMALL_ITPM_RE.test(mid)
+          ? Math.min(Math.max(opts.maxTokens ?? 900, 1500), 4000)
+          : (toolsForModel?.length ? Math.max(opts.maxTokens ?? 900, 8000) : (opts.maxTokens ?? 900)),
         ...(a.id === 'openrouter' ? { reasoning: { exclude: true } } : {}),
         ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
         ...(supportsTools ? { tools: toolsForModel, tool_choice: 'auto' } : {}),
@@ -411,7 +415,18 @@ export async function rawChat(messages, opts = {}) {
           throw new Error(msg);
         }
         if (useStream) {
-          const r = await streamOpenAI(res, opts.onChunk, mid, supportsTools);
+          let r;
+          try {
+            r = await streamOpenAI(res, opts.onChunk, mid, supportsTools);
+          } catch (eStream) {
+            const em62 = String(eStream?.message || eStream);
+            if (/tool_use_failed|Failed to parse tool call/i.test(em62) && !opts._toolFailRetry) {
+              // v62: model araç çağrısı JSON'unu bozdu → araçsız tek tekrar (kullanıcı cevapsız kalmasın)
+              opts.onProgress?.(0, '⚠️ Model araç JSON\u2019unu bozdu → araçsız yeniden deneniyor…');
+              return rawChat(messages, { ...opts, _toolFailRetry: true, tools: null, toolsSlim: null });
+            }
+            throw eStream;
+          }
           if (a.id === 'openrouter') perfRecord(mid, true, Date.now() - t0);
           return { content: stripReasoning(r.content), toolCalls: r.toolCalls, model: mid };
         }

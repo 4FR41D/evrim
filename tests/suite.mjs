@@ -1690,5 +1690,71 @@ function makeBroker() {
   w.close?.();
 }
 
+
+/* ================= 50) v62: tool_use_failed → araçsız tekrar + kesik JSON onarımı ================= */
+{
+  const sseRes = (text) => ({ ok: true, status: 200, headers: { get: () => 'text/event-stream' }, json: async () => ({}), text: async () => text,
+    body: { getReader() { let d = false; return { read: async () => d ? { done: true, value: undefined } : (d = true, { done: false, value: new TextEncoder().encode(text) }), cancel: async () => {} }; } } });
+  let round = 0; const calls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return sseRes('data: {"error":{"code":"tool_use_failed","message":"Failed to parse tool call arguments as JSON"}}\n\ndata: [DONE]\n\n');
+      return fakeRes(body, null, 'Araçsız yedek cevap: site planını metin olarak anlattım.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Hata62'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'bana site yap'; $(w, '#send').click();
+  await wait(4200);
+  const sc = calls.filter((c) => c?.stream);
+  ok('50. araç turunda max_tokens ≥ 8000 (kesilme kökten önlendi)', sc.length >= 1 && sc[0].max_tokens >= 8000);
+  ok('50. tool_use_failed → araçsız tekrar denendi', sc.length >= 2 && !sc[1].tools);
+  const msgsA = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('50. kullanıcı cevapsız kalmadı', msgsA.some((m) => m.role === 'assistant' && String(m.content).includes('Araçsız yedek cevap')));
+  ok('50. hata yok (A)', w.errors.length === 0);
+  w.close?.();
+}
+{
+  const sseRes = (text) => ({ ok: true, status: 200, headers: { get: () => 'text/event-stream' }, json: async () => ({}), text: async () => text,
+    body: { getReader() { let d = false; return { read: async () => d ? { done: true, value: undefined } : (d = true, { done: false, value: new TextEncoder().encode(text) }), cancel: async () => {} }; } } });
+  let round = 0; const calls = [];
+  const rawArgs = '{"ad":"kisitli","kod":"<!doctype html><html><body><h1>TestTamir</h1></body></html>"'; // sondaki } kesik
+  const truncStream = () => {
+    const c1 = { delta: { tool_calls: [{ index: 0, id: 'tc9', type: 'function', function: { name: 'site_uret', arguments: rawArgs } }] }, finish_reason: null };
+    const c2 = { delta: {}, finish_reason: 'tool_calls' };
+    const text = [c1, c2].map((c) => `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', model: 'm', choices: [{ index: 0, ...c }] })}\n\n`).join('') + 'data: [DONE]\n\n';
+    return sseRes(text);
+  };
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; calls.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      round++;
+      if (round === 1) return truncStream();
+      return fakeRes(body, null, 'Siten onarıldı ve hazır: [site](evrimsite:kisitli)');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#npName').value = 'Tamir62'; $(w, '#npCreate').click(); await wait(250);
+  $(w, '#input').value = 'küçük bir test sitesi yap'; $(w, '#send').click();
+  await wait(4200);
+  const sites = JSON.parse(w.localStorage.getItem('evrim:sites') || '[]');
+  ok('50. kesik JSON onarıldı → site kaydedildi', sites.length === 1 && sites[0].ad === 'kisitli' && sites[0].html.includes('TestTamir'));
+  ok('50. önizleme kartı render edildi', !!$(w, '#msgs .sitecard[data-site="kisitli"]'));
+  ok('50. hata yok (B)', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

@@ -49,6 +49,9 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
 - **🏗️ Site üretimi + canlı önizleme (v61):** "bana portföy sitesi yap" → beyin tek dosya HTML
   üretir (`site_uret`), sohbet içinde **sandbox iframe ile canlı önizleme** kartı açılır
   (👁 Önizle / ⛶ Tam ekran / ⬇️ İndir). "Başlığı mavi yap" → aynı adla güncellenir.
+- **🩹 v62 hata onarımı:** `tool_use_failed / Failed to parse tool call arguments as JSON` kökten çözüldü —
+  araç turlarında max_tokens 900→8000 (kesilme bitti), kesik JSON otomatik onarılır (`repairJSON`),
+  yine de bozulursa araçsız tek tekrar → kullanıcı asla cevapsız kalmaz.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

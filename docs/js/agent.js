@@ -111,7 +111,7 @@ export const TOOLS = [
     islem: { type: 'string', description: 'ekle | yapildi | durum | sil' },
     ad: { type: 'string', description: 'alışkanlık adı (örn. "su iç")' },
   }, []),
-  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, harici kaynak/CDN YOK, mobil uyumlu) ve "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için).', {
+  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, harici kaynak/CDN YOK, mobil uyumlu) ve "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için). KODU ÖZ TUT (hedef ≤250 satır): çok uzun argüman JSON\u2019u bozabilir.', {
     ad: { type: 'string', description: 'kısa slug: "portfoy", "yilan-oyunu" (küçük harf, tireli)' },
     kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü, harici kaynak yok)' },
     islem: { type: 'string', description: 'olustur (varsayılan) | liste | sil' },
@@ -531,6 +531,28 @@ export function mediaGet(id) {
     if (all[id]) { mediaMem.set(id, all[id]); return all[id]; }
   } catch { /* yok */ }
   return null;
+}
+
+/* v62: kesik/bozuk araç JSON'unu onar — açık dizeyi kapat, eksik parantezleri tamamla */
+function repairJSON(str) {
+  let t = String(str || '').trim();
+  const i = t.indexOf('{');
+  if (i < 0) return null;
+  t = t.slice(i);
+  let out = ''; let inStr = false; let esc = false; const stack = [];
+  for (const ch of t) {
+    out += ch;
+    if (esc) { esc = false; continue; }
+    if (inStr && ch === '\\') { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  if (inStr) out += '"';
+  out = out.replace(/,\s*$/, '').replace(/:\s*$/, ':null');
+  while (stack.length) out += stack.pop();
+  try { return JSON.parse(out); } catch { return null; }
 }
 
 const EXEC = {
@@ -1924,7 +1946,18 @@ export async function agentChat(messages, opts = {}) {
     for (const tc of r.toolCalls) {
       const id = tc.id || `call_${step}_${steps.length}`;
       let args = {};
-      try { args = JSON.parse(tc.arguments || '{}'); } catch { args = {}; }
+      try { args = JSON.parse(tc.arguments || '{}'); }
+      catch {
+        // v62: kesik JSON → onarımı dene; olmazsa modele hata geri besle (tur yanmasın)
+        args = repairJSON(tc.arguments);
+        if (!args) {
+          const hmsg = { error: 'Araç çağrısı argümanları geçerli JSON değildi. Aynı aracı DAHA KISA ve geçerli JSON ile yeniden çağır (kod parametresini öz tut).' };
+          steps.push({ tool: tc.name, args: {}, result: hmsg, ms: 0 });
+          opts.onTool?.(tc.name, 'done', hmsg, 0, {});
+          msgs.push({ role: 'tool', tool_call_id: id, content: JSON.stringify(hmsg) });
+          continue;
+        }
+      }
       opts.onTool?.(tc.name, 'running', args);
       let result;
       const t0 = performance.now();
