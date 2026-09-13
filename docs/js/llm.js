@@ -11,7 +11,7 @@ import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI }
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 import { houseStatus, probeHouse } from './house.js';
 import { wasmStatus, loadWasm, wasmChat } from './wasm.js';
-import { HOUSE_KEY, HOUSE_PROVIDER } from './housekey.js';
+import { HOUSE_KEY, HOUSE_PROVIDER, FRONTIER_KEY, FRONTIER_MODEL } from './housekey.js';
 
 export const PROVIDERS = {
   puter: {
@@ -66,13 +66,15 @@ export const PROVIDERS = {
     format: 'openai',
   },
   gemini: {
-    name: 'Google Gemini',
-    url: (m, k) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(k)}`,
-    defaultModel: 'gemini-2.0-flash',
-    models: ['gemini-2.0-flash', 'gemini-1.5-flash'],
-    signup: 'https://aistudio.google.com/app/apikey',
+    // v73: OpenAI-uyumlu uç nokta (canlı doğrulandı: CORS + tools + stream) → ajan döngüsü aynen çalışır
+    name: 'Google Gemini (frontier)',
+    url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    defaultModel: 'gemini-2.5-flash',
+    models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'],
+    signup: 'https://aistudio.google.com/apikey',
     prefix: 'AIza',
-    format: 'gemini',
+    format: 'openai',
+    ctx: 1000000,   // DEV BAĞLAM: 1M token pencere
   },
 };
 
@@ -86,6 +88,11 @@ export function detectProvider(key) {
 /** O an hangi beyin kullanılacak? */
 let houseDownUntil = 0;
 export function markHouseDown(ms = 60000) { houseDownUntil = Date.now() + ms; }
+
+// v73: frontier katmanı kota/hata durumu — dolunca Groq ev beynine otomatik düşülür
+let frontierDownUntil = 0;
+export function markFrontierDown(ms = 600000) { frontierDownUntil = Date.now() + ms; }
+export function frontierStatus() { return { hasKey: !!FRONTIER_KEY, down: Date.now() < frontierDownUntil, model: FRONTIER_MODEL }; }
 
 export function active() {
   const s = getSettings();
@@ -124,6 +131,11 @@ export function active() {
     return { id: 'nano', key: '', def: PROVIDERS.nano, model: 'Gemini Nano (Chrome)' };
   }
 
+  // 0y) v73 FRONTIER: ücretsiz Gemini ev anahtarı varsa ÖNCELİK onun (frontier kalite + 1M bağlam).
+  // Kota/hata durumunda markFrontierDown ile soğur, zincir Groq ev anahtarına düşer.
+  if (!userKey && FRONTIER_KEY && Date.now() > frontierDownUntil) {
+    return { id: 'gemini', key: FRONTIER_KEY, def: PROVIDERS.gemini, model: FRONTIER_MODEL || PROVIDERS.gemini.defaultModel, frontier: true };
+  }
   // 0z) Ev anahtarı: sağlayıcıyı kendim wire ederim (kullanıcı hiçbir şey seçmez)
   if (houseKey && PROVIDERS[HOUSE_PROVIDER]) {
     return { id: HOUSE_PROVIDER, key, def: PROVIDERS[HOUSE_PROVIDER], model: PROVIDERS[HOUSE_PROVIDER].defaultModel, houseKey: true };
@@ -364,7 +376,19 @@ export async function rawChat(messages, opts = {}) {
       ? (opts._queue || await rankedFreeModels()).slice(0, 5)
       : a.id === 'groq'
         ? [model, ...PROVIDERS.groq.models.filter((m) => m !== model)]
-        : [model];
+        : a.id === 'gemini'
+          ? (opts._queue || [...new Set([model, 'gemini-2.5-flash-lite'])])   // v73: lite ayrı kota havuzu olabilir
+          : [model];
+    // v73: frontier kota/hatasında ev beynine düşüş (bir kez)
+    const frontierFall = () => {
+      if (!a.frontier || opts._frontierFell) return null;
+      markFrontierDown(600000);
+      if (HOUSE_KEY && Date.now() > houseDownUntil) {
+        opts.onProgress?.(0, '🚀 Frontier kota/hata → ev beynine geçiliyor…');
+        return rawChat(messages, { ...opts, _frontierFell: true });
+      }
+      return null;
+    };
     // v64: düz metin cevabında (araçsız + JSON'suz) Groq bileşik AI sistemi de sıraya girer.
     // (compound tool calling DESTEKLEMİYOR — 2026-09-13'te canlı doğrulandı; araç turlarına sokma!)
     if (a.id === 'groq' && !supportsTools && !opts.json && !queue.includes('groq/compound')) {
@@ -385,6 +409,7 @@ export async function rawChat(messages, opts = {}) {
       if (small64) maxTok64 = Math.min(Math.max(maxTok64, 1500), 4000);
       else if (toolsForModel?.length) maxTok64 = Math.max(maxTok64, 8000);   // v62: büyük araç argümanları
       else if (oss64) maxTok64 = Math.max(maxTok64, 4000);                    // v64: düşünce payı
+      if (a.id === 'gemini') maxTok64 = Math.max(maxTok64, toolsForModel?.length ? 12000 : 8000);  // v73: 2.5 düşünme bütçesi çıktıdan yer → geniş pay
       const body = {
         model: mid, messages, temperature: opts.temperature ?? 0.7,
         max_tokens: maxTok64,
@@ -423,6 +448,7 @@ export async function rawChat(messages, opts = {}) {
             return rawChat(messages, { ...opts, _schemaRetry: true, tools: null });
           }
           if (a.houseKey && ROTATABLE.test(`${res.status} ${msg}`)) markHouseDown(60000);
+          { const fb = frontierFall(); if (fb) return fb; }   // v73
           throw new Error(msg);
         }
         if (useStream) {
@@ -461,9 +487,11 @@ export async function rawChat(messages, opts = {}) {
           return rawChat(messages, { ...opts, _retriedSame: true, _queue: queue.slice(qi) });
         }
         if (rotatable && qi < queue.length - 1) { opts.onProgress?.(0, `⚠️ ${mid.split('/').pop()} yanıt vermedi → sıradaki…`); continue; }
+        { const fb = frontierFall(); if (fb) return fb; }   // v73
         throw e;
       }
     }
+    { const fb = frontierFall(); if (fb) return fb; }   // v73
     throw lastErr || new Error('Hiçbir ücretsiz model yanıt vermedi (günlük kota dolmuş olabilir)');
   }
 
@@ -537,6 +565,8 @@ async function streamOpenAI(res, onChunk, model, wantTools = false) {
 }
 
 /** "Düşünce" metni cevaba sızarsa temizle (reasoning:exclude çalışmazsa yedek) */
+export function isBigCtx(a = active()) { return (a?.def?.ctx || 0) >= 200000; }
+
 export function stripReasoning(text) {
   let t = String(text || '');
   const marks = [

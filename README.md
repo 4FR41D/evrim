@@ -103,6 +103,13 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   taşmayı, eksik viewport/alt/lang/h1'i yakalıyor; kusur raporu beyne dönüyor ve beyin aynı ad ile
   düzeltme turu atıyor (site güncelleniyor). Statik tarama her ortamda, render denetimi gerçek
   tarayıcıda çalışır. Böylece "tek atışta üret-umut et" devri bitti: üret → denetle → düzelt → yayınla.
+- **🚀 v73 frontier katmanı + DEV BAĞLAM:** Gemini sağlayıcısı OpenAI-uyumlu uca taşındı
+  (CORS + araç çağrıları + akış canlı doğrulandı) → ajan döngüsü frontier modellerle aynen çalışır
+  (gemini-2.5-flash / flash-lite / 2.5-pro, **1M token bağlam**). `housekey.js`'e ücretsiz FRONTIER
+  anahtarı yuvası eklendi: anahtar gömülünce TÜM kullanıcılar kutudan çıkar çıkmaz frontier beyin alır;
+  kota/hata durumunda flash→lite kuyruğu, sonra otomatik Groq ev beynine düşüş (10 dk soğuma).
+  Dev bağlam: frontier aktifken geçmiş 24→60 mesaj, RAG 4→12 parça, çıktı bütçesi 8-12K token.
+  Kullanıcı kendi AIza anahtarını Ayarlar'a yapıştırırsa da doğrudan frontier modu açılır.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

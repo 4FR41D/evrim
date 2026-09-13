@@ -10,6 +10,7 @@ import {
   fetchFreeModels, bestFreeModel,
   probeNano, nanoStatus, createNano, hasNanoAPI,
   probeKeyless, probePuter, puterStatus, puterSignIn, markPuterDown, markHouseDown, rawChat,
+  isBigCtx,
 } from './llm.js';
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
@@ -444,11 +445,13 @@ async function send(text) {
       }
     } catch { /* özet opsiyonel */ }
 
-    const history = all('messages').filter((m) => m.conversationId === conversationId).slice(-24)
+    // v73 DEV BAĞLAM: frontier beyin (1M pencere) aktifken 2.5 kat geçmiş + 3 kat RAG gönderilir
+    const bigCtx = isBigCtx();
+    const history = all('messages').filter((m) => m.conversationId === conversationId).slice(bigCtx ? -60 : -24)
       .map((m) => ({ role: m.role, content: m.content }));
     const pers = personaPrompt(currentPersonaId());
     let ragCtx = '';
-    try { ragCtx = await ragQuery(content); } catch {}   // v65: derin hafıza (vektörel RAG, çevrimdışı)
+    try { ragCtx = await ragQuery(content, bigCtx ? 12 : 4); } catch {}   // v65: derin hafıza; v73: frontier'da geniş bütçe
     const sysPrompt = evo.buildSystemPrompt(content)
       + (ragCtx ? `\n\n## İLGİLİ BAĞLAM (derin hafıza — vektörel arama)\n${ragCtx}` : '')
       + (summary ? `\n\n## ÖNCEKİ KONUŞMA ÖZETİ (bağlam)\n${summary}` : '')

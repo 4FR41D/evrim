@@ -2045,5 +2045,61 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+/* ================= 58) v73 FRONTIER: gemini-2.5 ev anahtarı (1M bağlam) + kota düşünce Groq yedeği ================= */
+{
+  // A) frontier mutlu yol: istek generativelanguage compat ucuna, model gemini-2.5-flash, araçlar açık
+  const gem = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('generativelanguage')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      gem.push({ u, auth: opts?.headers?.Authorization, body });
+      if (!body?.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      return fakeRes(body, null, 'FRONTIER CEVAP: kuantum süperpozisyonla çalışır.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVFRONTIERKEY = 'AIzaFRONTIERTEST';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'Kuantum bilgisayarı iki cümlede anlat'; $(w, '#send').click();
+  await wait(1600);
+  const txtA = w.document.querySelector('#msgs')?.textContent || '';
+  ok('58A. frontier cevabı render edildi', txtA.includes('FRONTIER CEVAP'));
+  ok('58A. compat uç nokta + gemini-2.5-flash', gem.length >= 1 && gem[0].u.includes('/v1beta/openai/chat/completions') && gem[0].body?.model === 'gemini-2.5-flash');
+  ok('58A. Bearer frontier anahtarı', gem[0]?.auth === 'Bearer AIzaFRONTIERTEST');
+  ok('58A. ajan araçları frontier ile çalışıyor (tools gövdede)', (gem[0]?.body?.tools || []).length > 5);
+  ok('58A. hata yok', w.errors.length === 0);
+  w.close?.();
+
+  // B) kota 429 → tüm gemini kuyruğu düşer → Groq ev beynine otomatik yedek
+  const gemCalls = []; let groqStream = 0;
+  const w2 = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('generativelanguage')) {
+      gemCalls.push(u);
+      return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'You exceeded your current quota' } }), text: async () => '{}' };
+    }
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body?.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      groqStream++;
+      return fakeRes(body, null, 'GROQ YEDEK CEVAP devrede.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w2.__EVFRONTIERKEY = 'AIzaQUOTA'; w2.__EVHOUSEKEY = 'gsk_house_test';
+  try { w2.eval(bundle); } catch (e) { w2.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w2, '#input').value = 'Fotosentezi iki cümlede anlat'; $(w2, '#send').click();
+  await wait(2500);
+  const txtB = w2.document.querySelector('#msgs')?.textContent || '';
+  ok('58B. kota düşünce Groq yedeği cevap verdi', txtB.includes('GROQ YEDEK CEVAP') && groqStream >= 1);
+  ok('58B. gemini kuyruğu denendi (flash+lite)', gemCalls.length >= 2);
+  ok('58B. hata yok', w2.errors.length === 0);
+  w2.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

@@ -10,3 +10,15 @@ export const HOUSE_KEY = (typeof globalThis !== 'undefined' && '__EVHOUSEKEY' in
   ? globalThis.__EVHOUSEKEY
   : EMBEDDED;
 export const HOUSE_PROVIDER = 'groq';
+
+/* v73 FRONTIER KATMANI: ücretsiz Google Gemini anahtarı (1M bağlam, frontier sınıfı).
+   Sahip bir kez aistudio.google.com/apikey'den ücretsiz anahtar alır → buraya gömülür →
+   TÜM kullanıcılar kutudan çıktığı gibi frontier beyin + dev bağlam kullanır.
+   Kota dolarsa otomatik Groq ev anahtarına düşer (markFrontierDown). Boşsa katman pasiftir. */
+const EMBEDDED_FRONTIER = (() => {
+  try { const b64 = ''; return (b64 && typeof atob === 'function') ? atob(b64) : ''; } catch { return ''; }
+})();
+export const FRONTIER_KEY = (typeof globalThis !== 'undefined' && '__EVFRONTIERKEY' in globalThis)
+  ? globalThis.__EVFRONTIERKEY
+  : EMBEDDED_FRONTIER;
+export const FRONTIER_MODEL = 'gemini-2.5-flash';
