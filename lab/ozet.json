@@ -1,25 +1,25 @@
 {
- "tarih": "2026-09-13T11:25:00.854Z",
+ "tarih": "2026-09-13T12:07:26.060Z",
  "ortPuan": 10,
- "calismaSayisi": 7,
- "ekSoruToplam": 11,
- "trend": "4 → 6 → 6 → 7.6 → 6.8 → 9.7 → 10",
+ "calismaSayisi": 8,
+ "ekSoruToplam": 12,
+ "trend": "4 → 6 → 6 → 7.6 → 6.8 → 9.7 → 10 → 10",
  "sonYama": null,
  "sonBench": [
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden büyüktür"
+   "neden": "9.9 > 9.11 çünkü ondalık karşılaştırmada 9.90, 9.11'den büyüktür"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 10,
-   "neden": "Doğru hesaplama: 100 TL → 120 TL (20% zam) → 96 TL (20% indirim)."
+   "neden": "İlk %20 zam 120 TL, ardından %20 indirim 96 TL olur."
   },
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Zeynep en kısa, çünkü Mert Zeynep'ten uzun, Ayşe Mert'ten uzun, Ali Ayşe'den uzun."
+   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
   },
   {
    "id": "elma-tuzak",
@@ -35,6 +35,11 @@
    "id": "portakal-tuzak",
    "puan": 10,
    "neden": "Cevap doğru: aldığın 3 portakal senin elinde."
+  },
+  {
+   "id": "site-tasarim",
+   "puan": 10,
+   "neden": "Tüm kriterleri eksiksiz ve doğru şekilde karşılayan, mobil uyumlu, erişilebilir, gerçek Türkçe içerikli HTML belgesi."
   }
  ],
  "beyin": "openai/gpt-oss-120b"

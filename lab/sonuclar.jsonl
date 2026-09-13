@@ -5,3 +5,4 @@
 {"t":"2026-09-13T09:57:03.656Z","beyin":"openai/gpt-oss-120b","ort":6.8,"yeniSoru":2,"sorular":[["matematik-tuzak",10],["yuzde-tuzak",10],["mantik-siralama",10],["elma-tuzak",0],["plan-yapma",4]]}
 {"t":"2026-09-13T10:34:52.974Z","beyin":"openai/gpt-oss-120b","ort":9.7,"yeniSoru":2,"sorular":[["matematik-tuzak",10],["yuzde-tuzak",10],["mantik-siralama",10],["elma-tuzak",10],["plan-yapma",8],["portakal-tuzak",10]]}
 {"t":"2026-09-13T11:25:00.853Z","beyin":"openai/gpt-oss-120b","ort":10,"yeniSoru":0,"sorular":[["matematik-tuzak",10],["yuzde-tuzak",10],["mantik-siralama",10],["elma-tuzak",10],["plan-yapma",0],["portakal-tuzak",10]]}
+{"t":"2026-09-13T12:07:26.059Z","beyin":"openai/gpt-oss-120b","ort":10,"yeniSoru":1,"sorular":[["matematik-tuzak",10],["yuzde-tuzak",10],["mantik-siralama",10],["elma-tuzak",10],["plan-yapma",0],["portakal-tuzak",10],["site-tasarim",10]]}
