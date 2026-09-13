@@ -230,16 +230,26 @@ async function kodAyar() {
     const parca = String(o.id.split('/')[1] || '').replace(/:free$/, '').split('-')[0];
     if (parca.length > 3 && !eskiSkip.includes(parca)) yeniSkip.push(parca);
   }
-  const basarili = olcumler.filter((o) => o.ok).sort((a, b) => a.ms - b.ms).map((o) => o.id);
+  // Faz 4: EWMA ölçüm geçmişi — tek koşuluk prob gürültüsü yumuşatılır (geçmiş ayar.json'da taşınır)
+  let tarihce = {};
+  try { const oa = JSON.parse(fs.readFileSync('lab/ayar.json', 'utf8')); if (oa && typeof oa.tarihce === 'object') tarihce = oa.tarihce; } catch { /* ilk koşu */ }
+  const ewma = {};
+  for (const o of olcumler.filter((x) => x.ok)) {
+    const h = tarihce[o.id];
+    const e = h && Number(h.ewma) > 0 ? Math.round(0.6 * Number(h.ewma) + 0.4 * o.ms) : o.ms;
+    ewma[o.id] = e;
+    tarihce[o.id] = { ewma: e, n: Math.min(10, (Number(h?.n) || 0) + 1) };
+  }
+  const basarili = olcumler.filter((o) => o.ok).sort((a, b) => ewma[a.id] - ewma[b.id]).map((o) => o.id);
   if (!basarili.length) {
-    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'başarılı ölçüm yok — liste korundu', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms, hata: o.hata })) }, null, 1) + '\n');
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'başarılı ölçüm yok — liste korundu', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms, hata: o.hata })), tarihce }, null, 1) + '\n');
     return { degisiklik: false, sebep: 'başarılı ölçüm yok' };
   }
   const korunmus = eskiSira.filter((id) => !olcumler.some((o) => o.id === id && kisitli(o)));
   const yeniSira = [...basarili, ...korunmus.filter((id) => !basarili.includes(id))].slice(0, 8);
   const siraDegisti = JSON.stringify(yeniSira) !== JSON.stringify(eskiSira);
   if (!siraDegisti && !yeniSkip.length) {
-    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'sıra zaten optimal', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'sıra zaten optimal', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })), tarihce }, null, 1) + '\n');
     return { degisiklik: false, sebep: 'değişiklik gerekmedi', olcum: olcumler.length };
   }
   // --- YAMA ---
@@ -256,10 +266,10 @@ async function kodAyar() {
   } catch (e) {
     fs.writeFileSync(LLM_PATH, yedek);
     console.log('lab-ayar: KAPI REDDETTİ → llm.js geri alındı');
-    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'kapı reddetti (geri alındı)', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+    fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: false, sebep: 'kapı reddetti (geri alındı)', olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })), tarihce }, null, 1) + '\n');
     return { degisiklik: false, sebep: 'kapı reddetti — geri alındı' };
   }
-  fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: true, yeniSira, yeniSkip, olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })) }, null, 1) + '\n');
+  fs.writeFileSync('lab/ayar.json', JSON.stringify({ tarih: now(), degisiklik: true, yeniSira, yeniSkip, olcumler: olcumler.map((o) => ({ id: o.id, ok: o.ok, ms: o.ms })), tarihce }, null, 1) + '\n');
   return { degisiklik: true, yeniSira, yeniSkip, olcum: olcumler.length };
 }
 

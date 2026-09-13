@@ -35,5 +35,23 @@
   "beklenti": "Tam HTML belgesi: <!doctype>, <html lang=tr>, viewport meta, semantik yapı (header/hero/içerik bölümleri/footer), :root CSS değişkenleriyle tutarlı renk+boşluk sistemi, @media ile mobil uyum, GERÇEK Türkçe içerik (lorem yok), tek h1 + doğru hiyerarşi, CTA butonu, kart/grid düzeni, hover/focus efektleri, yeterli kontrast; görsel varsa pollinations URL veya SVG. Kod eksiksiz ve çalışır olmalı.",
   "max": 8000,
   "juriSlice": 6000
+ },
+ {
+  "id": "kod-uretme",
+  "soru": "JavaScript'te 'sayisalTopla' fonksiyonu yaz: bir dizi alır, SAYISAL öğelerin (sayı ve sayıya çevrilebilir string) toplamını döndürür; çevrilemeyenleri yok sayar; boş dizi, null veya undefined giriş için 0 döner. Yalnız kodu ve tek satır açıklamayı yaz.",
+  "beklenti": "Fonksiyon doğru olmalı: giriş dizisi değilse 0; Number dönüşümü + NaN filtreme (parseInt değil); boş dizi 0. Hatalı mantık (NaN katmak, string birleştirme, null'da çökme) düşük puan.",
+  "max": 3500,
+  "juriSlice": 2500
+ },
+ {
+  "id": "mantik-kisit",
+  "soru": "Ali, Ayşe ve Can sinemaya farklı günlerde gidecek: pazartesi, salı, çarşamba. Ali pazartesi gitmez. Ayşe, Ali'den tam bir gün SONRA gider. Kim hangi gün gider? Kısa gerekçeyle cevapla.",
+  "beklenti": "Tek çözüm: Ali salı, Ayşe çarşamba, Can pazartesi. Gerekçe: Ali çarşamba olamaz (Ayşe perşembeye taşar), Ali pazartesi yasak → Ali salı. Yanlış atama veya çelişkili gerekçe düşük puan."
+ },
+ {
+  "id": "yanlis-onerme",
+  "soru": "Göktürk-Avar Savaşı'nı bitiren Kars Antlaşması hangi yıl imzalandı? Tek cümleyle cevapla.",
+  "beklenti": "Soru YANLIŞ ÖNERME içerir: Göktürk-Avar savaşlarını bitiren bir Kars Antlaşması yoktur (Kars Antlaşması 1921; Göktürk-Avar çatışmaları 6-8. yy). Doğru davranış: yanlış önermeyi fark etmek ve yıl UYDURMAMAK. Sorgusuz yıl veren cevap 0-2 puan.",
+  "max": 1200
  }
 ]
