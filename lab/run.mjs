@@ -19,9 +19,10 @@ function houseKey() {
 }
 const KEY = houseKey();
 
-async function groq(model, messages, { temp = 0, max = 900, reason = 'high' } = {}) {
+async function groq(model, messages, { temp = 0, max = 900, reason = 'high', solo = false } = {}) {
   // yedek zinciri: istenen → 20b → 120b (compound'un TPM kotası düşük: 30K/dk — jüri uzun metinde 429 yer)
-  const zincir = [model, 'openai/gpt-oss-20b', BEYIN].filter((m, i, arr) => arr.indexOf(m) === i);
+  // solo=true: SADECE istenen model (bench cevapları 120b'yi ölçmeli — yedek modele düşerse ölçüm bozulur!)
+  const zincir = solo ? [model] : [model, 'openai/gpt-oss-20b', BEYIN].filter((m, i, arr) => arr.indexOf(m) === i);
   for (const m of zincir) {
     try {
       const body = { model: m, messages, temperature: temp, max_tokens: max };
@@ -34,6 +35,10 @@ async function groq(model, messages, { temp = 0, max = 900, reason = 'high' } = 
       });
       if (r.status === 429 || r.status >= 500) {
         const t = await r.text().catch(() => '');
+        if (r.status === 429 && /tokens per day|per day|daily/i.test(t) && !globalThis.__TPD) {
+          globalThis.__TPD = true;
+          console.log('lab: GÜNLÜK KOTA bitti — kalan ölçümler atlanacak (yarın tazelenir)');
+        }
         const ra = t.match(/try again in ([\d.]+)s/);           // Groq ne zaman deneneceğini söylüyor
         await new Promise((z) => setTimeout(z, Math.min(Math.ceil((ra ? Number(ra[1]) : 5) + 1) * 1000, 60000)));
         continue;
@@ -77,23 +82,24 @@ async function bench() {
   for (let si = 0; si < sorular.length; si++) {
     const b = sorular[si];
     if (si > 0) await new Promise((z) => setTimeout(z, 10000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
+    if (globalThis.__TPD) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
     let cevap = await groq(BEYIN, [
       { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
-    ], { temp: 0, max: b.max || 3500 });
-    if (!cevap) {   // kota/ağ dalgalanması: bekle → aynı limitle tekrar → KADEME DÜŞÜR (kısa ölçüm > ölçümsüz)
+    ], { temp: 0, max: b.max || 3500, solo: true });   // solo: bench YALNIZ 120b'yi ölçer (yedek modele düşünce ölçüm kimliği bozulmasın)
+    if (!cevap && !globalThis.__TPD) {   // kota/ağ dalgalanması: bekle → aynı limitle tekrar → KADEME DÜŞÜR (kısa ölçüm > ölçümsüz)
       await new Promise((z) => setTimeout(z, 20000));
       cevap = await groq(BEYIN, [
         { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
         { role: 'user', content: b.soru },
-      ], { temp: 0, max: b.max || 3500 });
+      ], { temp: 0, max: b.max || 3500, solo: true });
       if (!cevap) {
         const dusukMax = (b.max || 3500) > 4000 ? 4500 : 2500;
         await new Promise((z) => setTimeout(z, 20000));
         cevap = await groq(BEYIN, [
           { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
           { role: 'user', content: b.soru + (dusukMax <= 2500 ? ' (cevabı kısa tut)' : '') },
-        ], { temp: 0, max: dusukMax });
+        ], { temp: 0, max: dusukMax, solo: true });
       }
     }
     if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
@@ -165,8 +171,8 @@ async function otoYama(sonuc) {
       let toplam = 0, n = 0;
       for (let r = 0; r < 2 && gecti; r++) {
         await new Promise((z) => setTimeout(z, 8000));   // kota nefesi (A/B ağır çağrılar: 3500 token + jüri)
-        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500 });
-        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500 }); }
+        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500, solo: true });
+        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500, solo: true }); }
         if (!cvp) { detay.push(`${t.id}:ağ/kota`); gecti = false; break; }
         const p = await juriPuan(t, cvp);
         toplam += p?.puan ?? 0; n++;
