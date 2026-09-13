@@ -149,6 +149,22 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   patlarsa yama OTOMATİK GERİ ALINIR. Kill-switch: lab/AYAR_KAPALI. Sıklık: günde 1 (lab/ayar.json).
   İlk canlı koşu: 8 model ölçüldü, sıra yenilendi (ultra-550b en hızlı), nex-n2.5-mini havuza girdi.
   Yol haritası: Faz 2 = sabit/mekanizma mikro-yamaları, Faz 3 = test-doğrulamalı fonksiyon yamaları.
+- **🧬 v80 ÖNERİ-YAMA (Faz 2):** lab, ONERILER.md maddelerini KENDİSİ koda çevirir — beyaz listedeki
+  dosyayı tam bağlamla frontier beyne gönderir, cerrahi {bul→değiştir} JSON yaması alır, doğrular
+  (tek geçiş/boyut/korunan bölge), uygular, 3 kapıdan geçirir (node --check + esbuild + TAM suite);
+  geçemezse OTOMATİK GERİ ALIR. Günlük sınır (lab/yamalar.json) + kill-switch (lab/YAMA_KAPALI).
+  İlk prova: model, localStorage→IndexedDB önerisini teknik gerekçeyle DÜRÜSTÇE REDDETTİ — kör yama yok.
+  Oto-yama da frontier beyne terfi etti (tetik + kural + A/B; Groq çapraz yedek).
+- **🧬 v81 BÖLGE-YAMA (Faz 3):** büyük dosyalar (agent.js 145K, app.js 119K) öneri-yamaya açıldı —
+  dosya bütün gönderilmez; lab fonksiyon indeksini çıkarır (agent.js: 27, app.js: 64 bölge), frontier
+  ilgili fonksiyonu seçer, yama yalnız o bölgeye uygulanır. Prova kancaları: LAB_FORCE_YAMA/LAB_FORCE_BEYIN.
+  İlk frontier oto-yama provası (elma-tuzak): kural üretimi çalıştı, A/B kotaya takıldı → güvenli red
+  (ölçümsüz yama yok).
+- **🧬 v82 ÇOKLU MADDE:** öneri-yama tek koşuda 3 maddeye kadar dener — yumuşak ret sonraki maddeye
+  geçer, sert sonuç (uygulandı/kapı reddi) günü bitirir, frontier cevapsızsa kota korunur.
+- **🧬 v83 ÖLÇÜM TABANI:** bench 7→10 soru: kod-uretme (kenar durumlu fonksiyon), mantik-kisit (çok
+  adımlı kısıt tatmini), yanlis-onerme (uydurma öncülde dürüstlük — yıl uyduran 0-2 alır). kodAyar
+  EWMA geçmişi: prob gürültüsüyle rota flip-flop yapmaz (0.6 eski + 0.4 yeni, ayar.json ile taşınır).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
