@@ -1,46 +1,63 @@
 {
- "tarih": "2026-09-13T16:19:09.102Z",
+ "tarih": "2026-09-13T20:53:58.488Z",
  "ortPuan": 0,
- "calismaSayisi": 12,
+ "frontierOrt": 8.3,
+ "calismaSayisi": 13,
  "ekSoruToplam": 12,
- "trend": "6.8 → 9.7 → 10 → 10 → 10 → 10 → 10 → 0",
+ "trend": "9.7 → 10 → 10 → 10 → 10 → 10 → 0 → 0",
+ "frontierTrend": "8.3",
  "sonYama": null,
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 10,
+   "frontierNeden": "Tüm kriterler eksiksiz ve doğru şekilde karşılandı."
   },
   {
    "id": "matematik-tuzak",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 10,
+   "frontierNeden": "9.9, 9.11'den büyük çünkü ondalık kısmı 0.9, 0.11'den yüksek."
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 10,
+   "frontierNeden": "Son fiyat 96 TL'dir"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 10,
+   "frontierNeden": "Zeynep en kısa çünkü sıralama Ali > Ayşe > Mert > Zeynep"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 0,
+   "frontierNeden": "Cevap 2 değil, 1 olarak verilmiş"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 8,
+   "frontierNeden": "Plan net, yerel yerler ve yemekler belirtilmiş, tempo uygulanabilir, ancak detay eksik."
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)"
+   "neden": "cevap alınamadı (ağ/kota)",
+   "frontierPuan": 10,
+   "frontierNeden": "Cevap doğru: aldığın 3 portakal senin elinde."
   }
  ],
- "beyin": "openai/gpt-oss-120b"
+ "beyin": "openai/gpt-oss-120b",
+ "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free"
 }
