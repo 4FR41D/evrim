@@ -16,6 +16,7 @@ const $$ = (w, s) => [...w.document.querySelectorAll(s)];
 function makeWin(overrides = {}) {
   const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/' });
   const w = dom.window;
+  w.__EVFRONTIERKEY = '';   // v74: legacy testlerde frontier katmanı KAPALI (s58/s59 açıkça açar)
   w.matchMedia = () => ({ matches: false, addEventListener(){}, removeEventListener(){} });
   w.Element.prototype.scrollTo = function () {};
   w.HTMLElement.prototype.scrollIntoView = function () {};
@@ -2060,6 +2061,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
     return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
   } });
   w.__EVFRONTIERKEY = 'AIzaFRONTIERTEST';
+  w.__EVFRONTIERPROV = 'gemini'; w.__EVFRONTIERMODEL = 'gemini-2.5-flash';   // v74 varsayılanı openrouter; bu test gemini yolunu doğrular
   try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
   await wait(400);
   $(w, '#input').value = 'Kuantum bilgisayarı iki cümlede anlat'; $(w, '#send').click();
@@ -2090,6 +2092,7 @@ Beğenmezsen renkleri değiştirebilirim.`;
     return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
   } });
   w2.__EVFRONTIERKEY = 'AIzaQUOTA'; w2.__EVHOUSEKEY = 'gsk_house_test';
+  w2.__EVFRONTIERPROV = 'gemini'; w2.__EVFRONTIERMODEL = 'gemini-2.5-flash';   // gemini kuyruğu testi
   try { w2.eval(bundle); } catch (e) { w2.errors.push('THROW: ' + e.stack); }
   await wait(400);
   $(w2, '#input').value = 'Fotosentezi iki cümlede anlat'; $(w2, '#send').click();
@@ -2098,6 +2101,66 @@ Beğenmezsen renkleri değiştirebilirim.`;
   ok('58B. kota düşünce Groq yedeği cevap verdi', txtB.includes('GROQ YEDEK CEVAP') && groqStream >= 1);
   ok('58B. gemini kuyruğu denendi (flash+lite)', gemCalls.length >= 2);
   ok('58B. hata yok', w2.errors.length === 0);
+  w2.close?.();
+}
+
+/* ================= 59) v74 OPENROUTER FRONTIER: varsayılan beyin :free kuyruğu + kota düşünce Groq yedeği ================= */
+{
+  // A) mutlu yol: frontier=openrouter (gömülü varsayılan), model :free kuyruğundan, araçlar açık
+  const orCalls = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      orCalls.push({ u, auth: opts?.headers?.Authorization, body });
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [{ id: 'nvidia/nemotron-3-super-120b-a12b:free', context_length: 262144, name: 'nm' }, { id: 'nex-agi/nex-n2.5-pro:free', context_length: 262144, name: 'nx' }] }) };
+      if (!body?.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      return fakeRes(body, null, 'OR FRONTIER CEVAP: nemotron devrede.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVFRONTIERKEY = 'sk-or-v1-TESTKEY';   // provider/model gömülü varsayılardan gelir (openrouter/auto)
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'Görelilik kuramını iki cümlede anlat'; $(w, '#send').click();
+  await wait(2500);
+  const txtA = w.document.querySelector('#msgs')?.textContent || '';
+  const comp = orCalls.filter((c) => !c.u.includes('/models'));
+  ok('59A. openrouter frontier cevabı render edildi', txtA.includes('OR FRONTIER CEVAP'));
+  ok('59A. :free model + ölçülmüş öncelik sırası', comp.length >= 1 && String(comp[0].body?.model || '').endsWith(':free') && comp[0].body.model === 'nvidia/nemotron-3-super-120b-a12b:free');
+  ok('59A. Bearer frontier anahtarı', String(comp[0]?.auth || '').startsWith('Bearer sk-or-v1-'));
+  ok('59A. ajan araçları açık + araç çıktı payı', (comp[0]?.body?.tools || []).length > 5 && comp[0]?.body?.max_tokens >= 8000);
+  ok('59A. hata yok', w.errors.length === 0);
+  w.close?.();
+
+  // B) tüm :free kuyruğu 429 → frontier soğur → Groq ev beyni cevaplar
+  const orQ = []; let groqStream = 0;
+  const w2 = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('openrouter.ai')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [{ id: 'nvidia/nemotron-3-super-120b-a12b:free', context_length: 262144, name: 'nm' }] }) };
+      orQ.push(body?.model);
+      return { ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'daily free limit reached' } }), text: async () => '{}' };
+    }
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null;
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body?.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      groqStream++;
+      return fakeRes(body, null, 'GROQ YEDEK CEVAP devrede.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w2.__EVFRONTIERKEY = 'sk-or-v1-QUOTA'; w2.__EVHOUSEKEY = 'gsk_house_test';
+  try { w2.eval(bundle); } catch (e) { w2.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w2, '#input').value = 'Fotosentezi iki cümlede anlat'; $(w2, '#send').click();
+  await wait(3000);
+  const txtB = w2.document.querySelector('#msgs')?.textContent || '';
+  ok('59B. kota düşünce Groq yedeği cevap verdi', txtB.includes('GROQ YEDEK CEVAP') && groqStream >= 1);
+  ok('59B. free kuyruğu denendi', orQ.length >= 1);
+  ok('59B. hata yok', w2.errors.length === 0);
   w2.close?.();
 }
 

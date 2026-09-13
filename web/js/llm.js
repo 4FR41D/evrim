@@ -11,7 +11,7 @@ import { detectNano, nanoStatus, createNano, nanoChat, destroyNano, hasNanoAPI }
 import { probePuter, passiveCheck, puterChat, puterStatus, puterSignIn, puterModels, loadPuter, markPuterDown } from './puter.js';
 import { houseStatus, probeHouse } from './house.js';
 import { wasmStatus, loadWasm, wasmChat } from './wasm.js';
-import { HOUSE_KEY, HOUSE_PROVIDER, FRONTIER_KEY, FRONTIER_MODEL } from './housekey.js';
+import { HOUSE_KEY, HOUSE_PROVIDER, FRONTIER_KEY, FRONTIER_MODEL, FRONTIER_PROVIDER } from './housekey.js';
 
 export const PROVIDERS = {
   puter: {
@@ -64,6 +64,7 @@ export const PROVIDERS = {
     signup: 'https://openrouter.ai/settings/keys',
     prefix: 'sk-or-',
     format: 'openai',
+    ctx: 262144,   // v74: frontier :free havuzu 256K+ bağlam → dev bağlam montajı açılır
   },
   gemini: {
     // v73: OpenAI-uyumlu uç nokta (canlı doğrulandı: CORS + tools + stream) → ajan döngüsü aynen çalışır
@@ -134,7 +135,9 @@ export function active() {
   // 0y) v73 FRONTIER: ücretsiz Gemini ev anahtarı varsa ÖNCELİK onun (frontier kalite + 1M bağlam).
   // Kota/hata durumunda markFrontierDown ile soğur, zincir Groq ev anahtarına düşer.
   if (!userKey && FRONTIER_KEY && Date.now() > frontierDownUntil) {
-    return { id: 'gemini', key: FRONTIER_KEY, def: PROVIDERS.gemini, model: FRONTIER_MODEL || PROVIDERS.gemini.defaultModel, frontier: true };
+    const fId = PROVIDERS[FRONTIER_PROVIDER] ? FRONTIER_PROVIDER : 'gemini';
+    const fDef = PROVIDERS[fId];
+    return { id: fId, key: FRONTIER_KEY, def: fDef, model: FRONTIER_MODEL || fDef.defaultModel, frontier: true };
   }
   // 0z) Ev anahtarı: sağlayıcıyı kendim wire ederim (kullanıcı hiçbir şey seçmez)
   if (houseKey && PROVIDERS[HOUSE_PROVIDER]) {

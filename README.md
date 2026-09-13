@@ -110,6 +110,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   kota/hata durumunda flash→lite kuyruğu, sonra otomatik Groq ev beynine düşüş (10 dk soğuma).
   Dev bağlam: frontier aktifken geçmiş 24→60 mesaj, RAG 4→12 parça, çıktı bütçesi 8-12K token.
   Kullanıcı kendi AIza anahtarını Ayarlar'a yapıştırırsa da doğrudan frontier modu açılır.
+- **🚀 v74 frontier CANLI:** sahibin verdiği ücretsiz OpenRouter anahtarı (kredi $0 — doğrulandı)
+  frontier yuvasına gömüldü → EVRIM'in varsayılan beyni artık frontier sınıfı :free havuzu:
+  nemotron-3-super-120b / nex-n2.5-pro / nemotron-3-ultra-550b (256K-1M bağlam), ölçülmüş öncelik
+  sırası + perf puanıyla otomatik seçim, araç çağrıları canlı doğrulandı. Zincir: :free kuyruğu →
+  kota dolarsa Groq ev beyni (10 dk soğuma) → kullanıcı hiçbir şey fark etmez. Dev bağlam bu
+  beyinlerle otomatik açılır (60 mesaj geçmiş + 12 RAG parçası).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
