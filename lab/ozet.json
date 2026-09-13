@@ -1,23 +1,25 @@
 {
- "tarih": "2026-09-13T10:34:52.974Z",
- "ortPuan": 9.7,
- "calismaSayisi": 6,
+ "tarih": "2026-09-13T11:25:00.854Z",
+ "ortPuan": 10,
+ "calismaSayisi": 7,
  "ekSoruToplam": 11,
+ "trend": "4 → 6 → 6 → 7.6 → 6.8 → 9.7 → 10",
+ "sonYama": null,
  "sonBench": [
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9, 9.11'den büyüktür çünkü ondalık kısmı 0.9, 0.11'den daha fazladır."
+   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden büyüktür"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 10,
-   "neden": "Soruya verilen adımları doğru uygulayarak 100 TL'lik gömleğin son fiyatı 96 TL olarak hesaplandı."
+   "neden": "Doğru hesaplama: 100 TL → 120 TL (20% zam) → 96 TL (20% indirim)."
   },
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Zeynep en kısa, sıralama Ali > Ayşe > Mert > Zeynep"
+   "neden": "Zeynep en kısa, çünkü Mert Zeynep'ten uzun, Ayşe Mert'ten uzun, Ali Ayşe'den uzun."
   },
   {
    "id": "elma-tuzak",
@@ -26,8 +28,8 @@
   },
   {
    "id": "plan-yapma",
-   "puan": 8,
-   "neden": "Plan detaylı ve yerel öğeleri içeriyor, ancak bazı aktiviteler yoğun ve zaman yönetimi zorlayabilir."
+   "puan": 0,
+   "neden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "portakal-tuzak",
