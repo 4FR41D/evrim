@@ -25,7 +25,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/01-introduction-to-genai",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/01-introduction-to-genai/README.md",
-   "yerel": "data/dersler/01.md"
+   "yerel": "data/dersler/01.md",
+   "ekQuizler": [
+    {
+     "soru": "LLM'ler bir metni üretirken hangi adımları izler?",
+     "secenekler": [
+      "a) Girdi metni token'lara bölünür, model her adımda bir sonraki token'ın olasılık dağılımını tahmin eder ve en yüksek olasılıklı token seçilir.",
+      "b) Model tüm metni bir kerede üretir ve ardından geri dönüştürür.",
+      "c) Model sadece kelime sıklığını sayar ve en sık kullanılan kelimeleri seçer.",
+      "d) Model önceden tanımlı bir şablonu doldurur."
+     ],
+     "dogru": 0,
+     "aciklama": "LLM'ler, token'ları ardışık olarak işleyerek her adımda bir sonraki token için olasılık dağılımı üretir; en olası token seçilir ve süreç tekrarlanır."
+    }
+   ]
   },
   {
    "no": 2,
@@ -49,7 +62,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/02-exploring-and-comparing-different-llms",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/02-exploring-and-comparing-different-llms/README.md",
-   "yerel": "data/dersler/02.md"
+   "yerel": "data/dersler/02.md",
+   "ekQuizler": [
+    {
+     "soru": "Bir doğal dil işleme projesi için model seçerken, hız ve maliyet arasında denge kurmak isteyen bir geliştirici en iyi yaklaşımı hangi seçenekte bulabilir?",
+     "secenekler": [
+      "a) Kapalı kaynaklı, büyük boyutlu bir modeli tercih etmek",
+      "b) Açık kaynaklı, küçük boyutlu bir modeli tercih etmek",
+      "c) Kullanım durumuna göre kapalı veya açık kaynaklı modeller arasında seçim yapmak",
+      "d) Her zaman en büyük ve en karmaşık modeli seçmek"
+     ],
+     "dogru": 2,
+     "aciklama": "Model seçimi yaparken, projenin gereksinimleri ve kısıtlamaları dikkate alınmalıdır. Hız ve maliyet arasında denge kurmak isteyen bir geliştirici, kullanım durumuna göre kapalı veya açık kaynaklı modeller arasında seçim yapmalıdır."
+    }
+   ]
   },
   {
    "no": 3,
@@ -73,7 +99,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/03-using-generative-ai-responsibly",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/03-using-generative-ai-responsibly/README.md",
-   "yerel": "data/dersler/03.md"
+   "yerel": "data/dersler/03.md",
+   "ekQuizler": [
+    {
+     "soru": "Üretken AI sistemlerinde 'halüsinasyon' terimi neyi tanımlar?",
+     "secenekler": [
+      "a) Modelin eğitim verisinde bulunmayan fakat gerçek gibi görünen bilgi üretmesi",
+      "b) Modelin yanıt verirken sistem çökmesi",
+      "c) Modelin veri gizliliği ihlali",
+      "d) Modelin işlem süresinin uzaması"
+     ],
+     "dogru": 0,
+     "aciklama": "Halüsinasyon, AI modelinin eğitim verisinde yer almayan ancak doğru gibi sunulan hatalı veya uydurma içerik üretmesidir."
+    }
+   ]
   },
   {
    "no": 4,
@@ -98,7 +137,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/04-prompt-engineering-fundamentals",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/04-prompt-engineering-fundamentals/README.md",
-   "yerel": "data/dersler/04.md"
+   "yerel": "data/dersler/04.md",
+   "ekQuizler": [
+    {
+     "soru": "İyi bir promptun temel öğeleri nelerdir?",
+     "secenekler": [
+      "talimat ve çıktı biçimi",
+      "bağlam ve few-shot örnek",
+      "talimat, bağlam, few-shot örnek ve çıktı biçimi",
+      "sadece talimat"
+     ],
+     "dogru": 2,
+     "aciklama": "İyi bir prompt, net talimat, ilgili bağlam, few‑shot (örnek) girdileri ve istenen çıktı biçimini içerir; bu dört öğe birlikte cevabın kalitesini artırır."
+    }
+   ]
   },
   {
    "no": 5,
@@ -122,7 +174,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/05-advanced-prompts",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/05-advanced-prompts/README.md",
-   "yerel": "data/dersler/05.md"
+   "yerel": "data/dersler/05.md",
+   "ekQuizler": [
+    {
+     "soru": "Zincir-düşünce (CoT) yöntemi, bir modelin yanıt verirken hangi özelliğini geliştirir?",
+     "secenekler": [
+      "a) Mantıksal adımları ardışık olarak açıklama yeteneği",
+      "b) Sadece kısa ve öz cevaplar üretme",
+      "c) Önceden belirlenmiş sabit kalıpları tekrar etme",
+      "d) Rastgele kelime seçimi"
+     ],
+     "dogru": 0,
+     "aciklama": "CoT, modelin problem çözme sürecinde ara adımları ve mantıksal akışı açıkça göstererek yanıtın tutarlılığını ve doğruluğunu artırır."
+    }
+   ]
   },
   {
    "no": 6,
@@ -146,7 +211,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/06-text-generation-apps",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/06-text-generation-apps/README.md",
-   "yerel": "data/dersler/06.md"
+   "yerel": "data/dersler/06.md",
+   "ekQuizler": [
+    {
+     "soru": "Temperature parametresi artırıldığında modelin çıktısında ne olur?",
+     "secenekler": [
+      "a) Çıktı daha rastgele ve çeşitlilik artar",
+      "b) Çıktı daha tutarlı ve deterministik olur",
+      "c) Çıktı uzunluğu artar",
+      "d) Modelin yanıt süresi uzar"
+     ],
+     "dogru": 0,
+     "aciklama": "Yüksek temperature, olasılık dağılımını yayar ve modelin daha çeşitli, yaratıcı yanıtlar üretmesini sağlar."
+    }
+   ]
   },
   {
    "no": 7,
@@ -170,7 +248,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/07-building-chat-applications",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/07-building-chat-applications/README.md",
-   "yerel": "data/dersler/07.md"
+   "yerel": "data/dersler/07.md",
+   "ekQuizler": [
+    {
+     "soru": "Sohbet bağlamı bir API çağrısına nasıl dahil edilir?",
+     "secenekler": [
+      "a) Mesaj geçmişi token dizisi olarak istek gövdesine eklenir",
+      "b) Bağlam sadece sistem mesajı olarak saklanır ve gönderilmez",
+      "c) Her yanıt sonrası bağlam otomatik olarak silinir",
+      "d) Bağlam yalnızca kullanıcı tarafında tutulur ve sunucuya gönderilmez"
+     ],
+     "dogru": 0,
+     "aciklama": "Bağlam, önceki mesajların token temsili şeklinde API isteğine eklenerek modelin konuşma geçmişini anlamasını sağlar."
+    }
+   ]
   },
   {
    "no": 8,

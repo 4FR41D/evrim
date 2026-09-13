@@ -1250,6 +1250,17 @@ function renderSettings() {
   };
   const rStat = $('#ragStat');
   if (rStat) { const rs = ragStatus(); rStat.textContent = rs.indexed ? `${rs.indexed} kayıt indeksli · ${rs.ready ? 'model bellekte' : 'model ilk kullanımda yüklenir'}` : 'indeks boş — "Hafızayı vektörle" bas'; }
+  const labStat = $('#labStat');   // v66: 7/24 araştırma labı durumu (GitHub'daki otomatik döngüden)
+  if (labStat) {
+    labStat.textContent = 'durum yükleniyor…';
+    fetch('https://raw.githubusercontent.com/4FR41D/evrim/main/lab/ozet.json?t=' + Date.now())
+      .then((r) => (r.ok ? r.json() : null))
+      .then((o) => {
+        if (o?.tarih) labStat.textContent = `Son çalıştırma: ${String(o.tarih).slice(0, 16).replace('T', ' ')} UTC · Bench: ${o.ortPuan}/10 · Lab soruları: ${o.ekSoruToplam ?? 0} · Çalıştırma: ${o.calismaSayisi ?? '?'}`;
+        else labStat.textContent = 'Henüz lab çalıştırması yok (döngü 6 saatte bir çalışır)';
+      })
+      .catch(() => { labStat.textContent = 'Lab durumu alınamadı (çevrimdışı?)'; });
+  }
   const soloEl = $('#setSolo');
   if (soloEl) {
     soloEl.checked = !!getSettings().solo;

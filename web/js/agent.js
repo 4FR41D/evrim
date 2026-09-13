@@ -420,6 +420,12 @@ async function catMirror() {
 }
 
 let MUF_CACHE = null;
+// v66: lab döngüsünün ürettiği ek sorular (ekQuizler) derslerde rastgele seçilir → içerik sürekli tazelenir
+function secQuiz(d) {
+  const qs = [d.quiz, ...(d.ekQuizler || [])].filter((q) => q?.soru && Array.isArray(q.secenekler) && q.secenekler.length === 4 && Number.isInteger(q.dogru));
+  return qs.length ? qs[Math.floor(Math.random() * qs.length)] : d.quiz;
+}
+
 async function mufredat() {
   if (MUF_CACHE) return MUF_CACHE;
   const r = await fetch('data/mufredat.json');
@@ -1789,7 +1795,7 @@ ${kapanis}
       const tamam = m.dersler.filter((x) => done(x.no)).length;
       return {
         ok: true, ders: d.no, toplam: m.dersler.length, tamamlanan: tamam,
-        baslik: d.baslik, ozet: d.ozet, kavramlar: d.kavramlar, quiz: d.quiz, kaynak: m.url,
+        baslik: d.baslik, ozet: d.ozet, kavramlar: d.kavramlar, quiz: secQuiz(d), kaynak: m.url,
         kaynakLink: d.link || m.url, hamMetin: d.ham || null, tamMetin,
         not: 'Önce 2-4 cümleyle öğret + kavramları maddele; sonra quiz sorusunu ve seçeneklerini yaz; cevabı bekleyip nedenini açıklayarak değerlendir, ardından ders_bitir(ders, dogru) çağır. Cevabın sonuna kaynakLink ekle. Derin anlatım istenirse ders_calis(ders, tam:true) çağır — tamMetin YEREL ARŞİVDEN gelir (dış link ölse bile çalışır); onu Türkçe özetle.',
       };

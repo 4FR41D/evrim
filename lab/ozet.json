@@ -1,0 +1,34 @@
+{
+ "tarih": "2026-09-13T09:05:48.013Z",
+ "ortPuan": 7.6,
+ "calismaSayisi": 4,
+ "ekSoruToplam": 7,
+ "sonBench": [
+  {
+   "id": "matematik-tuzak",
+   "puan": 10,
+   "neden": "9.9 (9.90) 9.11'den büyüktür çünkü ondalık karşılaştırmada ikinci basamak 9 > 1."
+  },
+  {
+   "id": "yuzde-tuzak",
+   "puan": 10,
+   "neden": "Doğru hesaplama yapıldı: 100 TL → 120 TL → 96 TL"
+  },
+  {
+   "id": "mantik-siralama",
+   "puan": 10,
+   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
+  },
+  {
+   "id": "elma-tuzak",
+   "puan": 0,
+   "neden": "Cevap yanlış; 2 elma aldın, senin elinde 2 elma var."
+  },
+  {
+   "id": "plan-yapma",
+   "puan": 8,
+   "neden": "Plan gün gün ayrıntılı, yerel mekanlar ve yemekler net, tempo dengeli, ancak bazı saat dilimleri eksik."
+  }
+ ],
+ "beyin": "openai/gpt-oss-120b"
+}

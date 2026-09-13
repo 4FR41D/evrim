@@ -15,6 +15,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "esbuild": "^0.28.2",
     "express": "^4.19.2",
     "jsdom": "^29.1.1"
   }

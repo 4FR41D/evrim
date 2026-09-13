@@ -1942,5 +1942,26 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+/* ================= 55) v66 ARAŞTIRMA LABI: ayar kartı + özet gösterimi + ekQuizler şeması ================= */
+{
+  const w = makeWin({ fetch: async (url) => {
+    const u = String(url);
+    if (u.includes('raw.githubusercontent.com') && u.includes('lab/ozet.json')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ tarih: '2026-09-13T06:17:00.000Z', ortPuan: 9.2, calismaSayisi: 7, ekSoruToplam: 12, sonBench: [] }) };
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#gotoSettings')?.click(); await wait(500);
+  ok('55. lab kartı arayüzde var', !!$(w, '#labStat'));
+  const ls = String($(w, '#labStat')?.textContent || '');
+  ok('55. lab özeti GitHub\'dan çekilip gösterildi', ls.includes('9.2/10') && ls.includes('12'));
+  const MUF = JSON.parse(fs.readFileSync('/home/user/evrim/web/data/mufredat.json', 'utf8'));
+  const ekler = MUF.dersler.flatMap((d) => d.ekQuizler || []);
+  const bozuk = ekler.filter((q) => !q.soru || !Array.isArray(q.secenekler) || q.secenekler.length !== 4 || !Number.isInteger(q.dogru) || q.dogru < 0 || q.dogru > 3 || !q.aciklama);
+  ok('55. ekQuizler şeması geçerli (' + ekler.length + ' soru)', bozuk.length === 0);
+  ok('55. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);

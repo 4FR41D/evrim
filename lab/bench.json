@@ -1,0 +1,7 @@
+[
+  { "id": "matematik-tuzak", "soru": "9.11 mi büyük, 9.9 mu? Nedenini bir cümlede açıkla.", "beklenti": "Doğru cevap 9.9 (yani 9.90 > 9.11). Ondalık karşılaştırması doğru yapılmalı; 9.11'in daha büyük olduğu yanılgısına düşülmemeli." },
+  { "id": "yuzde-tuzak", "soru": "100 TL'lik gömleğe önce %20 zam, sonra yeni fiyat üzerinden %20 indirim yapılıyor. Son fiyat kaç TL?", "beklenti": "Doğru cevap 96 TL (120 → %20 indirim → 96). 100 TL'ye dönmez." },
+  { "id": "mantik-siralama", "soru": "Ali Ayşe'den uzun, Ayşe Mert'ten uzun, Mert Zeynep'ten uzun. En kısa kim? Kısa gerekçe yaz.", "beklenti": "Doğru cevap Zeynep. Sıralama: Ali > Ayşe > Mert > Zeynep." },
+  { "id": "elma-tuzak", "soru": "Bir sepette 3 elma var. 2 tanesini aldın. Kaç elman var?", "beklenti": "Doğru cevap 2 (aldığın elmalar sende). Klasik yanılgı: sepette kalanı (1) cevaplamak." },
+  { "id": "plan-yapma", "soru": "Bana 3 günlük Gaziantep gezi planı öner.", "beklenti": "Gün gün numaralı yapı, Gaziantep'e özgü somut yerler (Zeugma Mozaik Müzesi, Antep Kalesi, Bakırcılar Çarşısı, kebap/baklava gibi yerel yemekler), uygulanabilir tempo, ilk cümlede net giriş (BLUF)." }
+]

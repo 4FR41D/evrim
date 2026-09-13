@@ -66,6 +66,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   kaynak çok dilli gömme modeli (`paraphrase-multilingual-MiniLM-L12-v2`, ~45 MB, opt-in) hafıza
   kayıtlarını vektöre çevirir; sorulara ANLAMCA ilgili kayıtlar "İLGİLİ BAĞLAM" olarak sistem
   promptuna girer. Tamamen cihazda/çevrimdışı çalışır — sunucu ve anahtar yok.
+- **🔬 v66 araştırma labı (7/24 kendi kendine öğrenme):** GitHub Actions üzerinde 6 saatte bir
+  otomatik döngü — sabit bench sorularını mevcut beyin cevaplar, bağımsız LLM jürisi 0-10 puanlar,
+  derslere doğrulanmış YENİ quizler üretilir (`ekQuizler`, kurs modunda rastgele sorulur), düşük
+  puanlardan somut iyileştirme önerileri yazılır. Sonuçlar otomatik repoya işlenir; tam test paketi
+  (299 test) regresyon kapısı olarak çalışır, geçmeden hiçbir şey commit edilmez. Günlük:
+  `lab/ARASTIRMA.md` · Öneriler: `lab/ONERILER.md` · Ayarlar'da "🔬 Araştırma Labı" kartı.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter
