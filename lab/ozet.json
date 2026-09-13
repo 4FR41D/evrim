@@ -1,33 +1,38 @@
 {
- "tarih": "2026-09-13T09:57:03.656Z",
- "ortPuan": 6.8,
- "calismaSayisi": 5,
- "ekSoruToplam": 9,
+ "tarih": "2026-09-13T10:34:52.974Z",
+ "ortPuan": 9.7,
+ "calismaSayisi": 6,
+ "ekSoruToplam": 11,
  "sonBench": [
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 (9.90) 9.11'den büyüktür çünkü ondalık karşılaştırmada ikinci basamak 9 > 1."
+   "neden": "9.9, 9.11'den büyüktür çünkü ondalık kısmı 0.9, 0.11'den daha fazladır."
   },
   {
    "id": "yuzde-tuzak",
    "puan": 10,
-   "neden": "Doğru hesaplama yapıldı: 100 TL → 120 TL → 96 TL"
+   "neden": "Soruya verilen adımları doğru uygulayarak 100 TL'lik gömleğin son fiyatı 96 TL olarak hesaplandı."
   },
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep"
+   "neden": "Zeynep en kısa, sıralama Ali > Ayşe > Mert > Zeynep"
   },
   {
    "id": "elma-tuzak",
-   "puan": 0,
-   "neden": "Cevap yanlış; 2 elma aldın, senin elinde 2 elma var."
+   "puan": 10,
+   "neden": "Cevap doğrudan sorunun talebini karşılıyor: aldığın elmalar 2'dir."
   },
   {
    "id": "plan-yapma",
-   "puan": 4,
-   "neden": "Cevap eksik, örnek plan ve net giriş yok"
+   "puan": 8,
+   "neden": "Plan detaylı ve yerel öğeleri içeriyor, ancak bazı aktiviteler yoğun ve zaman yönetimi zorlayabilir."
+  },
+  {
+   "id": "portakal-tuzak",
+   "puan": 10,
+   "neden": "Cevap doğru: aldığın 3 portakal senin elinde."
   }
  ],
  "beyin": "openai/gpt-oss-120b"

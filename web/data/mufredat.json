@@ -359,7 +359,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/10-building-low-code-ai-applications",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/10-building-low-code-ai-applications/README.md",
-   "yerel": "data/dersler/10.md"
+   "yerel": "data/dersler/10.md",
+   "ekQuizler": [
+    {
+     "soru": "Low-code platformlar kullanmanın temel avantajı nedir?",
+     "secenekler": [
+      "a) Yüksek düzeyde özelleştirme",
+      "b) Hızlı prototipleme ve geliştirme",
+      "c) Geleneksel kodlama becerilerine duyulan ihtiyaç",
+      "d) Sadece büyük ölçekli projeler için uygun olması"
+     ],
+     "dogru": 1,
+     "aciklama": "Low-code platformlar, kod yazma ihtiyacını azaltarak hızlı prototipleme ve geliştirme sağlar."
+    }
+   ]
   },
   {
    "no": 11,
@@ -383,7 +396,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/11-integrating-with-function-calling",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/11-integrating-with-function-calling/README.md",
-   "yerel": "data/dersler/11.md"
+   "yerel": "data/dersler/11.md",
+   "ekQuizler": [
+    {
+     "soru": "Function calling sürecinde hangi bileşen, modelin ürettiği fonksiyon çağrısını alır ve gerçek kodu yürütür?",
+     "secenekler": [
+      "a. Uygulama",
+      "b. Model",
+      "c. Ajan",
+      "d. Araç şeması"
+     ],
+     "dogru": 0,
+     "aciklama": "Model fonksiyon çağrısını üretir, ancak bu çağrıyı alıp kodu çalıştıran ve sonucu geri döndüren bileşen uygulamadır."
+    }
+   ]
   },
   {
    "no": 12,
