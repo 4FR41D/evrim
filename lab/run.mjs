@@ -467,7 +467,19 @@ async function oneriYama() {
     .map((m) => ({ dosya: m[1].trim(), metin: m[2].trim() }))
     .filter((x) => YAMA_BEYAZ.includes(x.dosya) && fs.existsSync(x.dosya));   // Faz 3: boyut filtresi yok - buyuk dosya bolge moduyla yamalanir
   if (!maddeler.length) return { atlandi: 'beyaz listeye uygun öneri yok' };
-  const hedef = maddeler[0];
+  // Faz 3: en fazla 3 madde denenir — yumuşak retler (model/doğrulama/bölge) sonraki maddeye geçer;
+  // sert sonuç (UYGULANDI veya kapı reddi) günü bitirir; frontier cevapsızsa kota bitmiş demektir, dur.
+  const denenen = [];
+  for (const hedef of maddeler.slice(0, 3)) {
+    const r = await oneriYamaTek(hedef);
+    denenen.push({ dosya: hedef.dosya, sonuc: r });
+    if (r?.uygulandi || /kapı reddetti/.test(String(r?.basarisiz || ''))) return { ...r, denenen };
+    if (r?.basarisiz === 'cevap alınamadı') break;
+  }
+  return { uygulanmadi: true, denenen };
+}
+
+async function oneriYamaTek(hedef) {
   const icerik = fs.readFileSync(hedef.dosya, 'utf8');
   console.log(`lab-yama: hedef ${hedef.dosya} (${icerik.length} kr) — öneri: ${hedef.metin.slice(0, 90)}…`);
   // Faz 3: buyuk dosya (>YAMA_BOYUT) butun gonderilmez -> fonksiyon indeksi + bolge secimi

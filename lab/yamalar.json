@@ -1,11 +1,21 @@
 {
- "tarih": "2026-09-13T21:23:25.925Z",
+ "tarih": "2026-09-13T21:53:59.599Z",
  "son": {
-  "t": "2026-09-13T21:23:25.925Z",
+  "t": "2026-09-13T21:53:59.599Z",
   "dosya": "web/js/store.js",
-  "sonuc": "model reddetti: localStorage'nın senkron API'si, IndexedDB'nin temel olarak asenkron yapısıyla doğrudan değiştirilemez; okuma/yazma/silme işlemlerinin senkr"
+  "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-09-13T21:53:59.599Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
+  {
+   "t": "2026-09-13T21:53:39.578Z",
+   "dosya": "web/js/agent.js",
+   "sonuc": "bolge secilemedi: yanit yok"
+  },
   {
    "t": "2026-09-13T21:23:25.925Z",
    "dosya": "web/js/store.js",
