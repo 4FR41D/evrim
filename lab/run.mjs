@@ -67,10 +67,17 @@ async function bench() {
   const sorular = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
   const sonuc = [];
   for (const b of sorular) {
-    const cevap = await groq(BEYIN, [
+    let cevap = await groq(BEYIN, [
       { role: 'system', content: 'Sen EVRIM asistanısın. Türkçe, doğru, net ve iyi yapılandırılmış cevapla.' },
       { role: 'user', content: b.soru },
-    ], { temp: 0, max: 2500 });
+    ], { temp: 0, max: 3500 });
+    if (!cevap) {   // CI'da kota/ağ dalgalanması: bir tekrar (20 sn sonra)
+      await new Promise((z) => setTimeout(z, 20000));
+      cevap = await groq(BEYIN, [
+        { role: 'system', content: 'Sen EVRIM asistanısın. Türkçe, doğru, net ve iyi yapılandırılmış cevapla.' },
+        { role: 'user', content: b.soru },
+      ], { temp: 0, max: 3500 });
+    }
     if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
     const juriIstek = [
       { role: 'system', content: 'Acımasız ama adil jürisin. Yalnızca TEK satır JSON yaz, başka hiçbir şey yazma: {"puan": <0-10 tam sayı>, "neden": "<1 cümle>"}' },
