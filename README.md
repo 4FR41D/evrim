@@ -83,6 +83,11 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   dahil mekanik) — son sözü 300 testlik regresyon kapısı söyler, geçmezse commit edilmez.
   Ayarlar kartında 📈 bench trendi ve 🔧 son oto-yama görünür. Mekanizma klon üzerinde canlı
   doğrulandı (kural üret → A/B 10/10/10 → uygula → suite 300/300).
+- **🎨 v69 profesyonel site tasarımı:** beyin v16'ya "PROFESYONEL SİTE TASARIMI" bölümü eklendi
+  (CSS değişkenleriyle tasarım sistemi, hero+CTA, kart/grid bölümler, gerçek Türkçe içerik — lorem
+  yasak, mobil @media, erişilebilirlik, pollinations görselleri); lab'a `site-tasarim` bench sorusu
+  girdi — tasarım kalitesi artık HER TURDA jüri puanıyla ölçülüyor, kalıcı düşüşte oto-yama devreye
+  girer. Canlı ön prova: 251 satırlık tam donanımlı baklavacı landing page (tüm kontroller yeşil).
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

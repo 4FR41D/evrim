@@ -28,5 +28,12 @@
   "id": "portakal-tuzak",
   "soru": "Masada 5 portakal var. 3 tanesini aldın. Kaç portakalın var?",
   "beklenti": "Doğru cevap 3 (aldığın portakallar sende). Klasik yanılgı: masada kalanı (2) cevaplamak."
+ },
+ {
+  "id": "site-tasarim",
+  "soru": "Gaziantep'te bir baklavacı için tek dosya profesyonel landing page HTML kodu yaz (CSS gömülü, mobil uyumlu). Kodu tek html kod bloğunda ver.",
+  "beklenti": "Tam HTML belgesi: <!doctype>, <html lang=tr>, viewport meta, semantik yapı (header/hero/içerik bölümleri/footer), :root CSS değişkenleriyle tutarlı renk+boşluk sistemi, @media ile mobil uyum, GERÇEK Türkçe içerik (lorem yok), tek h1 + doğru hiyerarşi, CTA butonu, kart/grid düzeni, hover/focus efektleri, yeterli kontrast; görsel varsa pollinations URL veya SVG. Kod eksiksiz ve çalışır olmalı.",
+  "max": 8000,
+  "juriSlice": 6000
  }
 ]

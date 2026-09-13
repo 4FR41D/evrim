@@ -76,13 +76,13 @@ async function bench() {
     let cevap = await groq(BEYIN, [
       { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
-    ], { temp: 0, max: 3500 });
+    ], { temp: 0, max: b.max || 3500 });
     if (!cevap) {   // CI'da kota/ağ dalgalanması: bir tekrar (20 sn sonra)
       await new Promise((z) => setTimeout(z, 20000));
       cevap = await groq(BEYIN, [
         { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
         { role: 'user', content: b.soru },
-      ], { temp: 0, max: 3500 });
+      ], { temp: 0, max: b.max || 3500 });
     }
     if (!cevap) { sonuc.push({ id: b.id, puan: 0, neden: 'cevap alınamadı (ağ/kota)' }); continue; }
     const p = await juriPuan(b, cevap);
@@ -95,7 +95,7 @@ async function bench() {
 async function juriPuan(b, cevap) {
   const juriIstek = [
     { role: 'system', content: 'Acımasız ama adil jürisin. Yalnızca TEK satır JSON yaz, başka hiçbir şey yazma: {"puan": <0-10 tam sayı>, "neden": "<1 cümle>"}' },
-    { role: 'user', content: `Soru: ${b.soru}\nBeklenen ölçüt: ${b.beklenti}\n\nCevap (kırpılmış olabilir):\n${String(cevap).slice(0, 1200)}` },
+    { role: 'user', content: `Soru: ${b.soru}\nBeklenen ölçüt: ${b.beklenti}\n\nCevap (kırpılmış olabilir):\n${String(cevap).slice(0, b.juriSlice || 1200)}` },
   ];
   let p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));
   if (!p) p = puanCikar(await groq('openai/gpt-oss-20b', juriIstek, { temp: 0, max: 800, reason: 'low' }));   // bir tekrar
@@ -153,8 +153,8 @@ async function otoYama(sonuc) {
       let toplam = 0, n = 0;
       for (let r = 0; r < 2 && gecti; r++) {
         await new Promise((z) => setTimeout(z, 8000));   // kota nefesi (A/B ağır çağrılar: 3500 token + jüri)
-        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: 3500 });
-        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: 3500 }); }
+        let cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500 });
+        if (!cvp) { await new Promise((z) => setTimeout(z, 30000)); cvp = await groq(BEYIN, [{ role: 'system', content: aday + not }, { role: 'user', content: t.soru }], { temp: 0, max: t.max || 3500 }); }
         if (!cvp) { detay.push(`${t.id}:ağ/kota`); gecti = false; break; }
         const p = await juriPuan(t, cvp);
         toplam += p?.puan ?? 0; n++;

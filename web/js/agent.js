@@ -111,9 +111,9 @@ export const TOOLS = [
     islem: { type: 'string', description: 'ekle | yapildi | durum | sil' },
     ad: { type: 'string', description: 'alışkanlık adı (örn. "su iç")' },
   }, []),
-  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, harici kaynak/CDN YOK, mobil uyumlu) ve "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için). KODU ÖZ TUT (hedef ≤250 satır): çok uzun argüman JSON\u2019u bozabilir.', {
+  F('site_uret', 'WEB SİTESİ ÜRET + CANLI ÖNİZLEME (tarayıcıda, anahtarsız): kullanıcı site/landing/oyun/animasyon/portföy/sayaç gibi görsel-etkileşimli sayfa isterse çağır. TAM tek dosya HTML üret (CSS+JS gömülü, mobil uyumlu; harici CDN YOK — görsel istisnası: image.pollinations.ai). Sistem promptundaki PROFESYONEL SİTE TASARIMI bölümüne UY: hero+CTA, kart bölümleri, CSS değişkenleriyle palet, GERÇEK Türkçe içerik. Kodu "kod" parametresine yaz. Araç kaydeder ve canlı önizleme kartı işareti döner — işareti yanıtına AYNEN koy. Aynı "ad" ile tekrar çağırırsan site GÜNCELLENİR ("başlığı mavi yap" gibi istekler için). KODU ÖZ TUT (hedef ≤250 satır): çok uzun argüman JSON\u2019u bozabilir.', {
     ad: { type: 'string', description: 'kısa slug: "portfoy", "yilan-oyunu" (küçük harf, tireli)' },
-    kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü, harici kaynak yok)' },
+    kod: { type: 'string', description: 'TAM HTML belgesi: <!doctype html>…</html> (CSS+JS gömülü; CDN yok, görsel pollinations olabilir)' },
     islem: { type: 'string', description: 'olustur (varsayılan) | liste | sil' },
   }, ['ad']),
   F('oz_test', 'EVRIM ÖZ TEST / DUMAN TESTİ (TestSprite ruhu, tarayıcıda): ÇALIŞAN uygulamanın kendisini doğrular — kritik DOM öğeleri, 29 aracın Groq-uyumlu şeması, yürütücü eşlemesi, yerel depolama, katalog/müfredat/ders arşivi dosyaları, ServiceWorker. Sonuç ✅/❌ tablosu döner. Kullanıcı "kendini test et / çalışıyor musun / öz denetim / sistem kontrolü" derse çağır.', {}, []),
