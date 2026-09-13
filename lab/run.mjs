@@ -72,7 +72,9 @@ function basePrompt() {   // uygulamanın GERÇEK beyin promptu (store.js) — b
 async function bench() {
   const sorular = JSON.parse(fs.readFileSync('lab/bench.json', 'utf8'));
   const sonuc = [];
-  for (const b of sorular) {
+  for (let si = 0; si < sorular.length; si++) {
+    const b = sorular[si];
+    if (si > 0) await new Promise((z) => setTimeout(z, 6000));   // TPM nefesi: ağır reasoning çağrıları arası bekleme
     let cevap = await groq(BEYIN, [
       { role: 'system', content: basePrompt() + '\n(Not: bu oturumda araçların yok — hesabı dikkatle kendin yap.)' },
       { role: 'user', content: b.soru },
@@ -122,7 +124,7 @@ async function otoYama(sonuc) {
       const onceki = satirlar.slice(-3);
       if (onceki.length >= 3) {
         const say = {};
-        for (const sat of onceki) for (const [id, p] of (sat.sorular || [])) if (p <= 3) say[id] = (say[id] || 0) + 1;
+        for (const sat of onceki) for (const [id, p] of (sat.sorular || [])) if (p !== null && p <= 3) say[id] = (say[id] || 0) + 1;   // null = ağ/kota, zaaf değil
         hedef = Object.keys(say).find((k) => say[k] >= 3) || '';
       }
     }
@@ -219,13 +221,14 @@ async function oneriler(sonuc, ort) {
   const t = await groq(JURI, [
     { role: 'system', content: 'Sen EVRIM uygulamasının geliştirme danışmanısın. Türkçe yaz.' },
     { role: 'user', content: `Bench ortalaması: ${ort}/10.\nDüşük puanlılar:\n${dusukler}\n\nEVRIM: tarayıcıda çalışan, ücretsiz, mobil öncelikli, araç çağırabilen (37 araç), hafızalı, RAG destekli Türkçe AI asistanı. Beyin: gpt-oss-120b (reasoning high) + groq/compound eleştirmen. GERÇEK dosyalar YALNIZ şunlardır (başka dosya/Python YOKTUR, .py önerme): web/js/{app,agent,llm,store,rag,learn,wasm,evolve}.js, lab/{run.mjs,bench.json}, tests/suite.mjs, web/data/{mufredat,katalog}.json. Ortam: tarayıcı (ES modules, localStorage, jsdom test) + Node 20 CI. Buna göre 3-5 SOMUT, ücretsiz, bu dosyalarda yapılabilir iyileştirme öner — her biri tek satır, "- " ile başla, hangi dosyada ne değişeceğini söyle.` },
-  ], { temp: 0.5, max: 500 });
+  ], { temp: 0.5, max: 700, reason: 'low' });   // reason LOW: oss yedeğinde düşünme bütçeyi yemesin
   if (t) fs.writeFileSync('lab/ONERILER.md', `# 💡 Lab Önerileri\n\n_Son güncelleme: ${now()} — bench ortalaması ${ort}/10_\n\n${t.trim()}\n`);
 }
 
 /* ---------- günlük + özet ---------- */
 function logla(sonuc, ort, icerikSonuc) {
-  fs.appendFileSync('lab/sonuclar.jsonl', JSON.stringify({ t: now(), beyin: BEYIN, ort, yeniSoru: icerikSonuc.yeni, sorular: sonuc.map((x) => [x.id, x.puan]) }) + '\n');
+  // ağ/kota kaynaklı 0'lar PUAN DEĞİLDİR → null yazılır (oto-yama tetiği bunları SAYMAZ)
+  fs.appendFileSync('lab/sonuclar.jsonl', JSON.stringify({ t: now(), beyin: BEYIN, ort, yeniSoru: icerikSonuc.yeni, sorular: sonuc.map((x) => [x.id, x.neden === 'cevap alınamadı (ağ/kota)' ? null : x.puan]) }) + '\n');
   const calisma = fs.readFileSync('lab/sonuclar.jsonl', 'utf8').trim().split('\n').length;
   const satir = `| ${now().slice(0, 16).replace('T', ' ')} | ${ort}/10 | +${icerikSonuc.yeni} | ${sonuc.map((x) => `${x.id.split('-')[0]}:${x.puan}`).join(' ')} |`;
   let md = fs.existsSync('lab/ARASTIRMA.md') ? fs.readFileSync('lab/ARASTIRMA.md', 'utf8') : '';
