@@ -60,6 +60,12 @@ Canlı yayın: **`web/` klasörü → GitHub Pages (`docs/`)**. Sunucu gerekmez.
   veriyor (canlı doğrulandı: 9.11 vs 9.9 tuzağını çözüyor); düşünce tokenları için max_tokens tabanı
   yükseltildi; düz cevap turlarında `groq/compound` (bileşik AI sistemi) yedek sıraya eklendi
   (araç çağrısı desteklemediği için yalnız araçsız turlarda); ajan döngüsü 4→6 adım.
+- **🚀 v65 frontier teknikleri (açık kaynak):** (1) **Çoklu-beyin** — profesyonel modda taslağı
+  `groq/compound` İKİNCİ bir beyin bağımsız eleştirir, final cevap ikisini bireşimler (ensemble/
+  çapraz eleştiri tekniği; `settings.ensemble:false` ile kapanır). (2) **Derin hafıza (RAG)** — açık
+  kaynak çok dilli gömme modeli (`paraphrase-multilingual-MiniLM-L12-v2`, ~45 MB, opt-in) hafıza
+  kayıtlarını vektöre çevirir; sorulara ANLAMCA ilgili kayıtlar "İLGİLİ BAĞLAM" olarak sistem
+  promptuna girer. Tamamen cihazda/çevrimdışı çalışır — sunucu ve anahtar yok.
 - **Ajan modu:** model araç çağırabilir (hafıza, hesap, Vikipedi, tarih, açık API kataloğu…). Adımlar
   mesajın üstünde "🔧 Hesapladı: … 12 ms" şeklinde görünür, kalıcıdır.
 - **Beyin katmanları (öncelik sırası):** senin OpenRouter/Groq anahtarın → Puter

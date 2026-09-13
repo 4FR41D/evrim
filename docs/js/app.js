@@ -14,6 +14,7 @@ import {
 import { testAllFree, freeCacheSnapshot } from './free.js';
 import { houseStatus, probeHouse, startHouseHost, stopHouseHost } from './house.js';
 import { wasmStatus, loadWasm, unloadWasm } from './wasm.js';
+import { ragQuery, ragLoad, ragIndex, ragStatus } from './rag.js';
 import { reflexAnswer } from './reflex.js';
 import { agentChat, toolLabel, TOOLS, mediaGet, webSearch } from './agent.js';
 import { initLogin, initShell, renderSidebar, currentPersonaId, openSetupModal, closeSetupModal, closeDrawer, getPersona } from './shell.js';
@@ -446,7 +447,10 @@ async function send(text) {
     const history = all('messages').filter((m) => m.conversationId === conversationId).slice(-24)
       .map((m) => ({ role: m.role, content: m.content }));
     const pers = personaPrompt(currentPersonaId());
+    let ragCtx = '';
+    try { ragCtx = await ragQuery(content); } catch {}   // v65: derin hafıza (vektörel RAG, çevrimdışı)
     const sysPrompt = evo.buildSystemPrompt(content)
+      + (ragCtx ? `\n\n## İLGİLİ BAĞLAM (derin hafıza — vektörel arama)\n${ragCtx}` : '')
       + (summary ? `\n\n## ÖNCEKİ KONUŞMA ÖZETİ (bağlam)\n${summary}` : '')
       + (pers ? `\n\n## ŞU ANKİ ROLÜN\n${pers}` : '');
     const messages = [{ role: 'system', content: sysPrompt }, ...history];
@@ -524,10 +528,24 @@ async function send(text) {
     const complex = content.length > 120 || /(plan|analiz|rapor|strateji|karşılaştır|karsilastir|tasar|öneri|oneri|değerlendir|degerlendir|müfredat|program)/i.test(content);
     if (complex) {
       try {
-        liveStat.textContent = '🤔 Profesyonel mod: taslak çıkarıp eleştiriyorum…';
+        liveStat.textContent = '🧠 Çoklu-beyin: taslak çıkarılıyor…';
         beat();
         const draft = await agentChat(messages, { temperature: 0.6, maxTokens: 700 });
-        messages.push({ role: 'system', content: `PROFESYONEL SON TUR: şu taslağı eleştirip SON cevabı yaz: ilk cümlede net cevap (BLUF), göreve uygun yapı (plan→numaralı, karşılaştırma→tablo, analiz→başlık+madde), somut örnek/sayı, gerekirse kaynak linki, sonda TEK satır sonraki adım önerisi. Taslak:\n${String(draft.content || '').slice(0, 3000)}` });
+        // v65 ÇOKLU-BEYİN (ensemble/çapraz eleştiri): taslağı İKİNCİ bir beyin bağımsız eleştirir
+        let elestiri = '';
+        if (getSettings().ensemble !== false && activeLLM().id === 'groq') {
+          try {
+            liveStat.textContent = '🧠 Çoklu-beyin: ikinci beyin eleştiriyor…';
+            beat();
+            const cr = await rawChat([
+              ...messages,
+              { role: 'assistant', content: String(draft.content || '').slice(0, 3000) },
+              { role: 'system', content: 'Bağımsız eleştirmensin: yukarıdaki taslağın hata/eksiklerini bul ve SON, DAHA İYİ cevabı Türkçe yaz (BLUF, somut, yapılandırılmış).' },
+            ], { model: 'groq/compound', maxTokens: 900, temperature: 0.4 });
+            elestiri = String(cr?.content || '').trim().slice(0, 1800);
+          } catch { /* eleştiri opsiyonel */ }
+        }
+        messages.push({ role: 'system', content: `PROFESYONEL SON TUR: şu taslağı eleştirip SON cevabı yaz: ilk cümlede net cevap (BLUF), göreve uygun yapı (plan→numaralı, karşılaştırma→tablo, analiz→başlık+madde), somut örnek/sayı, gerekirse kaynak linki, sonda TEK satır sonraki adım önerisi. Taslak:\n${String(draft.content || '').slice(0, 3000)}${elestiri ? `\n\nBAĞIMSIZ ELEŞTİRİ (ikinci beyin — bunu mutlaka dikkate al, taslaktan daha iyiyse onu temel al):\n${elestiri}` : ''}` });
       } catch { /* taslak opsiyonel */ }
     }
 
@@ -1199,6 +1217,39 @@ function renderSettings() {
     pf.checked = getSettings().preferFree !== false;
     pf.onchange = () => { setSettings({ preferFree: pf.checked }); refreshStatus(); };
   }
+  const ragEl = $('#setRag');
+  if (ragEl) {
+    ragEl.checked = !!getSettings().rag;
+    ragEl.onchange = async () => {
+      setSettings({ rag: ragEl.checked });
+      if (ragEl.checked) {
+        let evet = false;
+        try { evet = !!confirm('Derin hafıza için ~45 MB açık kaynak gömme modeli inecek (bir kez, sonra çevrimdışı çalışır). İndirilsin mi?'); } catch { evet = true; }
+        if (evet) {
+          try {
+            toast('🧠 Gömme modeli indiriliyor… %0');
+            await ragLoad((p) => { if (p % 20 === 0) toast(`🧠 Model iniyor… %${p}`); });
+            const n = await ragIndex();
+            toast(`🧠 Derin hafıza hazır — ${n} kayıt vektörlendi`, 'ok');
+          } catch (e) { toast('Model indirilemedi: ' + String(e.message || e).slice(0, 60), 'bad'); }
+        }
+      } else toast('Derin hafıza kapatıldı (vektörler duruyor)', 'ok');
+      renderSettings();
+    };
+  }
+  const riBtn = $('#btnRagIndex');
+  if (riBtn) riBtn.onclick = async () => {
+    riBtn.disabled = true;
+    try {
+      await ragLoad((p) => { if (p % 25 === 0) toast(`🧠 Model hazırlanıyor… %${p}`); });
+      const n = await ragIndex();
+      toast(`📚 ${n} yeni kayıt vektörlendi`, 'ok');
+    } catch (e) { toast('Hata: ' + String(e.message || e).slice(0, 60), 'bad'); }
+    riBtn.disabled = false;
+    renderSettings();
+  };
+  const rStat = $('#ragStat');
+  if (rStat) { const rs = ragStatus(); rStat.textContent = rs.indexed ? `${rs.indexed} kayıt indeksli · ${rs.ready ? 'model bellekte' : 'model ilk kullanımda yüklenir'}` : 'indeks boş — "Hafızayı vektörle" bas'; }
   const soloEl = $('#setSolo');
   if (soloEl) {
     soloEl.checked = !!getSettings().solo;

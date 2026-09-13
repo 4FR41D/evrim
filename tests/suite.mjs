@@ -1868,5 +1868,79 @@ Beğenmezsen renkleri değiştirebilirim.`;
   w.close?.();
 }
 
+/* ================= 53) v65 ÇOKLU-BEYİN: taslak + compound eleştirmen + bireşim ================= */
+{
+  const bodies = [];
+  let streamN = 0;
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) {
+        const sys0 = String(body.messages?.[0]?.content || '');
+        if (body.model === 'groq/compound') return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: 'ELEŞTİRİ: müzeye sabah git, öğleden sonra kalabalık.' } }] }), text: async () => '{}' };
+        if (sys0.includes('KALICI tercih')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: JSON.stringify({ facts: [] }) } }] }), text: async () => '{}' };
+        return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      }
+      streamN++;
+      return fakeRes(body, null, 'SON PLAN: eleştiriden geçmiş hâl — müze sabah, kale öğleden sonra.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#input').value = 'Bana 3 günlük Gaziantep gezi planı öner'; $(w, '#send').click();
+  await wait(5000);
+  ok('53. compound eleştirmen çağrıldı', bodies.some((b) => b?.model === 'groq/compound'));
+  const sc = bodies.filter((b) => b?.stream);
+  ok('53. taslak turu araçlı non-stream + final akış turu var', sc.length >= 1 && bodies.some((b) => !b?.stream && b?.tools));
+  const finalSys = (sc[sc.length - 1]?.messages || []).filter((m) => m.role === 'system').map((m) => String(m.content)).join('\n');
+  ok('53. final turunda BAĞIMSIZ ELEŞTİRİ + eleştirmen içeriği', finalSys.includes('BAĞIMSIZ ELEŞTİRİ') && finalSys.includes('müzeye sabah git'));
+  const ms = JSON.parse(w.localStorage.getItem('evrim:messages') || '[]');
+  ok('53. son cevap bireşim (SON PLAN)', ms.some((m) => m.role === 'assistant' && String(m.content).includes('SON PLAN')));
+  ok('53. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
+/* ================= 54) v65 DERİN HAFIZA (RAG): vektörel bağlam sistem promptuna girer ================= */
+{
+  const bodies = [];
+  const w = makeWin({ fetch: async (url, opts) => {
+    const u = String(url);
+    if (u.includes('groq.com')) {
+      const body = opts?.body ? JSON.parse(opts.body) : null; bodies.push(body);
+      if (u.includes('/models')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) };
+      if (!body.stream) return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '{}' } }] }), text: async () => '{}' };
+      return fakeRes(body, null, 'Python hakkında hafızandaki not: döngü egzersizi yaptın.');
+    }
+    return { ok: false, status: 500, headers: { get: () => '' }, json: async () => ({}), text: async () => '' };
+  } });
+  w.__EVHOUSEKEY = 'gsk_x';
+  w.localStorage.setItem('evrim:settings', JSON.stringify({ rag: true }));
+  w.localStorage.setItem('evrim:ragvecs', JSON.stringify({ mB: { v: [0.9, 0.0] }, mA: { v: [0.0, 0.9] } }));
+  w.localStorage.setItem('evrim:memories', JSON.stringify([
+    { id: 'mA', kind: 'fact', content: 'Kullanıcı kahve sevmez.', createdAt: new Date().toISOString() },
+    { id: 'mB', kind: 'fact', content: 'Kullanıcı Python döngü egzersizi yaptı.', createdAt: new Date().toISOString() },
+  ]));
+  w.__EVEMBED = async () => [[0.95, 0.05]];
+  try { w.eval(bundle); } catch (e) { w.errors.push('THROW: ' + e.stack); }
+  await wait(400);
+  $(w, '#gotoSettings')?.click(); await wait(300);
+  ok('54. RAG ayar UI elemanları var', !!$(w, '#setRag') && $(w, '#setRag').checked && !!$(w, '#btnRagIndex') && !!$(w, '#ragStat'));
+  ok('54. ragStat indeks sayısını gösteriyor', String($(w, '#ragStat').textContent).includes('2 kayıt'));
+  $(w, '#input').value = 'Python konusunu hatırlıyor musun?'; $(w, '#send').click();
+  await wait(3000);
+  const sc = bodies.filter((b) => b?.stream);
+  const sysSent = (sc[0]?.messages || []).filter((m) => m.role === 'system').map((m) => String(m.content)).join('\n');
+  ok('54. sistem promptunda İLGİLİ BAĞLAM bölümü var', sysSent.includes('İLGİLİ BAĞLAM'));
+  const ragBolumu = sysSent.split('İLGİLİ BAĞLAM')[1] || '';
+  ok('54. ANLAMCA yakın kayıt bağlama girdi', ragBolumu.includes('Python döngü egzersizi'));
+  ok('54. alakasız kayıt eleme ile DIŞARIDA kaldı', !ragBolumu.split('##')[0].includes('kahve'));
+  ok('54. hata yok', w.errors.length === 0);
+  w.close?.();
+}
+
 console.log(`\nSONUÇ: ${pass} ✅ / ${fail} ❌`);
 process.exit(fail ? 1 : 0);
