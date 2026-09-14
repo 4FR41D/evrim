@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-13T20:53:58.488Z",
- "ortPuan": 0,
- "frontierOrt": 8.3,
- "calismaSayisi": 13,
- "ekSoruToplam": 12,
- "trend": "9.7 → 10 → 10 → 10 → 10 → 10 → 0 → 0",
- "frontierTrend": "8.3",
+ "tarih": "2026-09-14T05:09:54.943Z",
+ "ortPuan": 7.6,
+ "frontierOrt": 6,
+ "calismaSayisi": 14,
+ "ekSoruToplam": 13,
+ "trend": "10 → 10 → 10 → 10 → 10 → 0 → 0 → 7.6",
+ "frontierTrend": "8.3 → 6",
  "sonYama": null,
  "sonBench": [
   {
@@ -13,51 +13,103 @@
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
    "frontierPuan": 10,
-   "frontierNeden": "Tüm kriterler eksiksiz ve doğru şekilde karşılandı."
+   "frontierNeden": "Tüm kriterler eksiksiz ve işlevsel şekilde karşılandı"
   },
   {
    "id": "matematik-tuzak",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "puan": 10,
+   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden büyüktür",
    "frontierPuan": 10,
-   "frontierNeden": "9.9, 9.11'den büyük çünkü ondalık kısmı 0.9, 0.11'den yüksek."
+   "frontierNeden": "9.9 (9.90) 9.11'den büyüktür."
   },
   {
    "id": "yuzde-tuzak",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "puan": 10,
+   "neden": "Doğru hesaplama yapıldı: 100 TL * 1.2 = 120 TL, ardından %20 indirimle 120 * 0.8 = 96 TL.",
    "frontierPuan": 10,
-   "frontierNeden": "Son fiyat 96 TL'dir"
+   "frontierNeden": "Doğru hesaplama: 100×1.2=120, sonra 120×0.8=96 TL"
   },
   {
    "id": "mantik-siralama",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "puan": 10,
+   "neden": "Verilen sıralamaya göre Zeynep en kısa.",
    "frontierPuan": 10,
-   "frontierNeden": "Zeynep en kısa çünkü sıralama Ali > Ayşe > Mert > Zeynep"
+   "frontierNeden": "Sıralama doğru, en kısa Zeynep."
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "neden": "Cevap 2 değil, 1 olması beklenir.",
    "frontierPuan": 0,
-   "frontierNeden": "Cevap 2 değil, 1 olarak verilmiş"
+   "frontierNeden": "Cevap 2 değil, 1 olması beklenir."
   },
   {
    "id": "plan-yapma",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 8,
-   "frontierNeden": "Plan net, yerel yerler ve yemekler belirtilmiş, tempo uygulanabilir, ancak detay eksik."
+   "puan": 8,
+   "neden": "Plan net, yerel yerler ve yemekler içeriyor, ancak bazı detaylar eksik (örneğin saatler, ulaşım).",
+   "frontierPuan": 0,
+   "frontierNeden": "Yanıt, istenen gezi planı yerine sadece bir araç çağrısı içeriyor."
   },
   {
    "id": "portakal-tuzak",
-   "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "puan": 10,
+   "neden": "Cevap doğru: aldığın 3 portakalları sayıyor.",
+   "frontierPuan": 0,
+   "frontierNeden": "Yanlış, 3 portakal aldın, bu yüzden 3 portakalın var."
+  },
+  {
+   "id": "kod-uretme",
+   "puan": 10,
+   "neden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, geçersiz girişleri 0 döndürür.",
    "frontierPuan": 10,
-   "frontierNeden": "Cevap doğru: aldığın 3 portakal senin elinde."
+   "frontierNeden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, NaN'leri yok sayar ve geçerli olmayan girişlerde 0 döner."
+  },
+  {
+   "id": "mantik-kisit",
+   "puan": 10,
+   "neden": "Ali Pazartesi gitmez ve Ayşe Ali'den bir gün sonra gelmeli; bu yüzden Ali Salı, Ayşe Çarşamba, Can Pazartesi olur.",
+   "frontierPuan": 10,
+   "frontierNeden": "Ali salı, Ayşe çarşamba, Can pazartesi"
+  },
+  {
+   "id": "yanlis-onerme",
+   "puan": 0,
+   "neden": "Soru yanlış bir önermeyi içeriyor; Kars Antlaşması Göktürk-Avar savaşlarını bitirmez.",
+   "frontierPuan": 0,
+   "frontierNeden": "Soru yanlış bir önermeyi içeriyor; Kars Antlaşması Göktürk-Avar savaşlarını bitirmez."
   }
  ],
  "beyin": "openai/gpt-oss-120b",
- "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free"
+ "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
+ "sonAyar": {
+  "degisiklik": true,
+  "yeniSira": [
+   "nex-agi/nex-n2.5-mini:free",
+   "nex-agi/nex-n2.5-pro:free",
+   "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "nvidia/nemotron-3-super-120b-a12b:free",
+   "google/gemma-4-26b-a4b-it:free",
+   "google/gemma-4-31b-it:free",
+   "dots-studio/dots-3-note-preview:free"
+  ],
+  "yeniSkip": [],
+  "olcum": 8
+ },
+ "sonOneriYama": {
+  "basarisiz": "kapı reddetti (geri alındı)",
+  "denenen": [
+   {
+    "dosya": "web/js/app.js",
+    "sonuc": {
+     "basarisiz": "bul 2 kez geçiyor (1 olmalı)"
+    }
+   },
+   {
+    "dosya": "web/js/store.js",
+    "sonuc": {
+     "basarisiz": "kapı reddetti (geri alındı)"
+    }
+   }
+  ]
+ }
 }

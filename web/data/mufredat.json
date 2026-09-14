@@ -494,7 +494,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/14-the-generative-ai-application-lifecycle",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/14-the-generative-ai-application-lifecycle/README.md",
-   "yerel": "data/dersler/14.md"
+   "yerel": "data/dersler/14.md",
+   "ekQuizler": [
+    {
+     "soru": "LLMOps'un çekirdeğini oluşturan üç temel bileşen hangisidir?",
+     "secenekler": [
+      "a. Eğitim, veri toplama, dağıtım",
+      "b. Değerlendirme, izleme, sürümleme",
+      "c. Çıktı optimizasyonu, güvenlik, ölçeklenebilirlik",
+      "d. Kullanıcı arayüzü, API, dokümantasyon"
+     ],
+     "dogru": 1,
+     "aciklama": "LLMOps'un çekirdeği, modelin değerlendirilmesi (eval), izlenmesi ve sürümlemesi süreçlerini kapsar; bu bileşenler sürekli iyileştirme döngüsünü sağlar."
+    }
+   ]
   },
   {
    "no": 15,
