@@ -531,7 +531,20 @@
    },
    "link": "https://github.com/microsoft/generative-ai-for-beginners/tree/main/15-rag-and-vector-databases",
    "ham": "https://raw.githubusercontent.com/microsoft/generative-ai-for-beginners/main/15-rag-and-vector-databases/README.md",
-   "yerel": "data/dersler/15.md"
+   "yerel": "data/dersler/15.md",
+   "ekQuizler": [
+    {
+     "soru": "RAG (Retrieval‑Augmented Generation) yönteminin halüsinasyonu azaltmasının temel nedeni nedir?",
+     "secenekler": [
+      "a) Model, yanıt üretirken dışarıdan getirilen gerçek belgelerle desteklenir, bu da hayali bilgi üretimini sınırlar.",
+      "b) RAG, modelin parametre sayısını artırarak daha fazla bilgi depolar.",
+      "c) Sistem, yanıtları rastgele bir şekilde birleştirerek çeşitlilik sağlar.",
+      "d) RAG, sadece önceden tanımlı sabit şablonları kullanır."
+     ],
+     "dogru": 0,
+     "aciklama": "Gerçek belgeler bağlam olarak sağlandığında model, kendi tahminlerine dayanmak yerine doğrulanmış içerikle yanıt üretir, böylece hayali (halüsinasyon) bilgi riski azalır."
+    }
+   ]
   },
   {
    "no": 16,

@@ -1,40 +1,40 @@
 {
- "tarih": "2026-09-14T05:09:54.943Z",
- "ortPuan": 7.6,
+ "tarih": "2026-09-14T12:52:08.190Z",
+ "ortPuan": 6.8,
  "frontierOrt": 6,
- "calismaSayisi": 14,
- "ekSoruToplam": 13,
- "trend": "10 → 10 → 10 → 10 → 10 → 0 → 0 → 7.6",
- "frontierTrend": "8.3 → 6",
+ "calismaSayisi": 15,
+ "ekSoruToplam": 14,
+ "trend": "10 → 10 → 10 → 10 → 0 → 0 → 7.6 → 6.8",
+ "frontierTrend": "8.3 → 6 → 6",
  "sonYama": null,
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
-   "neden": "cevap alınamadı (ağ/kota)",
+   "neden": "İstenen tek satır JSON formatı dışında çok uzun HTML kodu verildi.",
    "frontierPuan": 10,
-   "frontierNeden": "Tüm kriterler eksiksiz ve işlevsel şekilde karşılandı"
+   "frontierNeden": "Tüm kriterler eksiksiz ve doğru şekilde karşılandı."
   },
   {
    "id": "matematik-tuzak",
    "puan": 10,
-   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 9.11'in 0.11'inden büyüktür",
+   "neden": "9.9 > 9.11 çünkü ondalık kısmı 0.9, 0.11'den büyüktür",
    "frontierPuan": 10,
-   "frontierNeden": "9.9 (9.90) 9.11'den büyüktür."
+   "frontierNeden": "9.9 (9.90) 9.11'den büyüktür, çünkü ondalık karşılaştırmada 9.90 > 9.11 olur."
   },
   {
    "id": "yuzde-tuzak",
    "puan": 10,
-   "neden": "Doğru hesaplama yapıldı: 100 TL * 1.2 = 120 TL, ardından %20 indirimle 120 * 0.8 = 96 TL.",
+   "neden": "Doğru hesaplama: 100 TL × 1.2 = 120 TL, ardından 120 TL × 0.8 = 96 TL.",
    "frontierPuan": 10,
-   "frontierNeden": "Doğru hesaplama: 100×1.2=120, sonra 120×0.8=96 TL"
+   "frontierNeden": "Doğru hesaplama: 100 TL ×1,20 =120 TL, sonra 120 TL ×0,80 =96 TL"
   },
   {
    "id": "mantik-siralama",
    "puan": 10,
-   "neden": "Verilen sıralamaya göre Zeynep en kısa.",
+   "neden": "Zeynep en kısa, çünkü sıralama Ali > Ayşe > Mert > Zeynep",
    "frontierPuan": 10,
-   "frontierNeden": "Sıralama doğru, en kısa Zeynep."
+   "frontierNeden": "Zeynep en kısa, çünkü verilen sıralama Ali > Ayşe > Mert > Zeynep'tir"
   },
   {
    "id": "elma-tuzak",
@@ -46,70 +46,45 @@
   {
    "id": "plan-yapma",
    "puan": 8,
-   "neden": "Plan net, yerel yerler ve yemekler içeriyor, ancak bazı detaylar eksik (örneğin saatler, ulaşım).",
+   "neden": "Plan gün gün ayrıntılı, yerel mekanlar ve tempo dengeli, ancak bazı önerilerde net giriş eksik.",
    "frontierPuan": 0,
    "frontierNeden": "Yanıt, istenen gezi planı yerine sadece bir araç çağrısı içeriyor."
   },
   {
    "id": "portakal-tuzak",
    "puan": 10,
-   "neden": "Cevap doğru: aldığın 3 portakalları sayıyor.",
+   "neden": "Cevap doğru: aldığın 3 portakal senin elinde.",
    "frontierPuan": 0,
-   "frontierNeden": "Yanlış, 3 portakal aldın, bu yüzden 3 portakalın var."
+   "frontierNeden": "Cevap, sorunun doğru anlamını yansıtmıyor; 3 tanesini aldın demek, senin elinde 3 portakal var demektir."
   },
   {
    "id": "kod-uretme",
    "puan": 10,
-   "neden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, geçersiz girişleri 0 döndürür.",
+   "neden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, geçersiz girişleri 0 döndürür ve NaN filtreler.",
    "frontierPuan": 10,
-   "frontierNeden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, NaN'leri yok sayar ve geçerli olmayan girişlerde 0 döner."
+   "frontierNeden": "Fonksiyon doğru şekilde sayısal öğeleri toplar, geçersiz girişleri 0 döndürür."
   },
   {
    "id": "mantik-kisit",
    "puan": 10,
    "neden": "Ali Pazartesi gitmez ve Ayşe Ali'den bir gün sonra gelmeli; bu yüzden Ali Salı, Ayşe Çarşamba, Can Pazartesi olur.",
    "frontierPuan": 10,
-   "frontierNeden": "Ali salı, Ayşe çarşamba, Can pazartesi"
+   "frontierNeden": "Ali salı, Ayşe çarşamba, Can pazartesi; Ali pazartesi gitmez ve Ayşe tam bir gün sonra gider, bu tek çözüm."
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "Soru yanlış bir önermeyi içeriyor; Kars Antlaşması Göktürk-Avar savaşlarını bitirmez.",
    "frontierPuan": 0,
-   "frontierNeden": "Soru yanlış bir önermeyi içeriyor; Kars Antlaşması Göktürk-Avar savaşlarını bitirmez."
+   "frontierNeden": "Soru yanlış bir önermeyi içeriyor; Göktürk-Avar Savaşı'nı bitiren Kars Antlaşması yoktur."
   }
  ],
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nex-agi/nex-n2.5-mini:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "basarisiz": "kapı reddetti (geri alındı)",
-  "denenen": [
-   {
-    "dosya": "web/js/app.js",
-    "sonuc": {
-     "basarisiz": "bul 2 kez geçiyor (1 olmalı)"
-    }
-   },
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "basarisiz": "kapı reddetti (geri alındı)"
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
