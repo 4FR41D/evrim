@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-15T05:18:38.018Z",
+ "tarih": "2026-09-15T11:54:41.371Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 17,
+ "calismaSayisi": 18,
  "ekSoruToplam": 14,
- "trend": "10 → 10 → 0 → 0 → 7.6 → 6.8 → 0 → 0",
- "frontierTrend": "8.3 → 6 → 6 → 0",
+ "trend": "10 → 0 → 0 → 7.6 → 6.8 → 0 → 0 → 0",
+ "frontierTrend": "8.3 → 6 → 6 → 0 → 0",
  "sonYama": null,
  "sonBench": [
   {
@@ -40,8 +40,8 @@
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "plan-yapma",
@@ -82,32 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "nex-agi/nex-n2.5-mini:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulandi": true,
-  "dosya": "web/js/store.js",
-  "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "uygulandi": true,
-     "dosya": "web/js/store.js",
-     "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
