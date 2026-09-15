@@ -1,12 +1,18 @@
 {
- "tarih": "2026-09-14T05:09:54.941Z",
+ "tarih": "2026-09-15T05:18:38.016Z",
  "son": {
-  "t": "2026-09-14T05:09:54.941Z",
+  "t": "2026-09-15T05:18:38.016Z",
   "dosya": "web/js/store.js",
-  "oneri": "`localStorage` veri serileştirmesini JSON yerine `structuredClone`/`MessageChannel` ile yapıp, büyük nesnelerde sıkıştırma (LZString) ekleyerek depolama alanı t",
-  "sonuc": "kapı reddetti — geri alındı"
+  "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
+  "sonuc": "UYGULANDI (suite yeşil)"
  },
  "gecmis": [
+  {
+   "t": "2026-09-15T05:18:38.016Z",
+   "dosya": "web/js/store.js",
+   "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
+   "sonuc": "UYGULANDI (suite yeşil)"
+  },
   {
    "t": "2026-09-14T05:09:54.941Z",
    "dosya": "web/js/store.js",

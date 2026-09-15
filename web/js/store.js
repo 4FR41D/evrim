@@ -28,7 +28,10 @@ export const store = {
     catch (e) { console.error('localStorage yazılamadı', e); }
     return value;
   },
-  remove(table) { localStorage.removeItem(NS + table); },
+  remove(table) {
+    try { localStorage.removeItem(NS + table); }
+    catch (e) { console.error('localStorage temizlenemedi', e); }
+  },
 };
 
 export const uid = (p = 'id') => `${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
