@@ -1,99 +1,121 @@
 {
- "tarih": "2026-09-15T21:38:00.929Z",
+ "tarih": "2026-09-16T05:08:04.209Z",
  "ortPuan": 0,
- "frontierOrt": null,
- "calismaSayisi": 20,
+ "frontierOrt": 0,
+ "calismaSayisi": 21,
  "ekSoruToplam": 14,
- "trend": "0 → 7.6 → 6.8 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "8.3 → 6 → 6 → 0 → 0 → 0",
- "sonYama": {
-  "hedef": "site-tasarim",
-  "uygulandi": false,
-  "kural": "We need to produce a single line behavior rule (no bullet, max 220 characters, no quotes/backticks/). Should be Turkish. Must follow pattern: first restate what the problem asks in one sentence, then instruct to answer. Example: X tarzı sorularda önc",
-  "detay": [
-   "site-tasarim:0",
-   "matematik-tuzak:atlandı",
-   "yuzde-tuzak:atlandı"
-  ]
- },
+ "trend": "7.6 → 6.8 → 0 → 0 → 0 → 0 → 0 → 0",
+ "frontierTrend": "6 → 6 → 0 → 0 → 0 → 0",
+ "sonYama": null,
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "matematik-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "atlandi": "bugün zaten yapıldı"
+  "degisiklik": true,
+  "yeniSira": [
+   "nvidia/nemotron-3-super-120b-a12b:free",
+   "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "nex-agi/nex-n2.5-pro:free",
+   "nex-agi/nex-n2.5-mini:free",
+   "google/gemma-4-26b-a4b-it:free",
+   "google/gemma-4-31b-it:free",
+   "dots-studio/dots-3-note-preview:free"
+  ],
+  "yeniSkip": [],
+  "olcum": 8
  },
  "sonOneriYama": {
-  "atlandi": "bugün zaten denendi"
+  "uygulanmadi": true,
+  "denenen": [
+   {
+    "dosya": "web/js/store.js",
+    "sonuc": {
+     "reddedildi": "localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
+    }
+   },
+   {
+    "dosya": "web/js/llm.js",
+    "sonuc": {
+     "reddedildi": "Zaten AbortController kullanılıyor"
+    }
+   },
+   {
+    "dosya": "web/js/rag.js",
+    "sonuc": {
+     "reddedildi": "Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
+    }
+   }
+  ]
  }
 }
