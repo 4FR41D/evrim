@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-16T05:08:04.209Z",
+ "tarih": "2026-09-16T11:44:31.399Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 21,
+ "calismaSayisi": 22,
  "ekSoruToplam": 14,
- "trend": "7.6 → 6.8 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "6 → 6 → 0 → 0 → 0 → 0",
+ "trend": "6.8 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
+ "frontierTrend": "6 → 0 → 0 → 0 → 0 → 0",
  "sonYama": null,
  "sonBench": [
   {
@@ -82,40 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "nex-agi/nex-n2.5-mini:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "Zaten AbortController kullanılıyor"
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
