@@ -1,75 +1,85 @@
 {
- "tarih": "2026-09-16T17:06:22.193Z",
+ "tarih": "2026-09-16T21:29:30.199Z",
  "ortPuan": 0,
- "frontierOrt": 0,
- "calismaSayisi": 23,
+ "frontierOrt": null,
+ "calismaSayisi": 24,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
- "sonYama": null,
+ "sonYama": {
+  "hedef": "site-tasarim",
+  "uygulandi": false,
+  "kural": "We need to produce a single line (no bullet points, max 220 characters, no quotes, backticks, ). Must be a general behavior rule: first restate what the problem asks in one sentence, then answer. Example style: X tarzı sorularda önce ... yaz, sonra .",
+  "detay": [
+   "site-tasarim:ağ/kota",
+   "site-tasarim:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
+ },
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "matematik-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yanlis-onerme",
