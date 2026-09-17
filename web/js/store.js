@@ -300,6 +300,10 @@ export function wipeData() {
 
 export function storageSize() {
   let total = 0;
-  for (const t of TABLES) total += (localStorage.getItem(NS + t) || '').length;
+  for (const t of TABLES) {
+    try {
+      total += (localStorage.getItem(NS + t) || '').length;
+    } catch {}
+  }
   return total;
 }
