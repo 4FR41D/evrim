@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-17T05:11:44.892Z",
+ "tarih": "2026-09-18T04:59:14.380Z",
  "degisiklik": true,
  "yeniSira": [
+  "nvidia/nemotron-3-super-120b-a12b:free",
   "nex-agi/nex-n2.5-mini:free",
   "nex-agi/nex-n2.5-pro:free",
   "nvidia/nemotron-3-ultra-550b-a55b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
   "google/gemma-4-26b-a4b-it:free",
   "google/gemma-4-31b-it:free",
   "dots-studio/dots-3-note-preview:free"
@@ -13,62 +13,72 @@
  "yeniSkip": [],
  "olcumler": [
   {
-   "id": "nvidia/nemotron-3-super-120b-a12b:free",
-   "ok": false,
-   "ms": 254
-  },
-  {
-   "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "id": "nex-agi/nex-n2.5-mini:free",
    "ok": true,
-   "ms": 266
+   "ms": 367
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": true,
-   "ms": 495
+   "ms": 836
   },
   {
-   "id": "nex-agi/nex-n2.5-mini:free",
+   "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
    "ok": true,
-   "ms": 617
+   "ms": 279
+  },
+  {
+   "id": "nvidia/nemotron-3-super-120b-a12b:free",
+   "ok": true,
+   "ms": 221
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 140
+   "ms": 134
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 126
+   "ms": 136
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 459
+   "ms": 490
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-0731:free",
+   "ok": false,
+   "ms": 388
   },
   {
    "id": "inclusionai/ling-3.0-flash-fin:free",
    "ok": false,
-   "ms": 537
+   "ms": 689
+  },
+  {
+   "id": "qwen/qwen3.8-27b:free",
+   "ok": false,
+   "ms": 149
   }
  ],
  "tarihce": {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
-   "ewma": 11412,
-   "n": 4
+   "ewma": 6959,
+   "n": 5
   },
   "nex-agi/nex-n2.5-pro:free": {
-   "ewma": 697,
-   "n": 3
+   "ewma": 753,
+   "n": 4
   },
   "nex-agi/nex-n2.5-mini:free": {
-   "ewma": 606,
-   "n": 2
+   "ewma": 510,
+   "n": 3
   },
   "nvidia/nemotron-3-super-120b-a12b:free": {
-   "ewma": 232,
-   "n": 2
+   "ewma": 228,
+   "n": 3
   }
  }
 }
