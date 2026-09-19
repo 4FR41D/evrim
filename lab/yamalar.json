@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-18T05:00:11.665Z",
+ "tarih": "2026-09-19T04:58:16.035Z",
  "son": {
-  "t": "2026-09-18T05:00:11.665Z",
+  "t": "2026-09-19T04:58:16.035Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-19T04:58:16.035Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
+  },
+  {
+   "t": "2026-09-19T04:58:12.577Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: AbortController ile timeout desteği zaten llm.js dosyasında withTimeout fonksiyonu üzerinden sağlanmaktadır; ek bir değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-19T04:57:54.086Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde bulunuyor (store.read, store.write, store.remove ve storageSize), dolayısıyla öneri "
+  },
   {
    "t": "2026-09-18T05:00:11.665Z",
    "dosya": "web/js/rag.js",
