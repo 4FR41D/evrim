@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-19T04:58:16.035Z",
+ "tarih": "2026-09-20T05:11:27.304Z",
  "son": {
-  "t": "2026-09-19T04:58:16.035Z",
+  "t": "2026-09-20T05:11:27.304Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; cache: 'no-store' eklemek için uygulanacak bir yer yoktur."
  },
  "gecmis": [
+  {
+   "t": "2026-09-20T05:11:27.304Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; cache: 'no-store' eklemek için uygulanacak bir yer yoktur."
+  },
+  {
+   "t": "2026-09-20T05:11:25.629Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrıları zaten AbortController kullanan withTimeout fonksiyonu üzerinden yapılıyor; ek bir değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-20T05:11:00.004Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek bir değişiklik gerekmez."
+  },
   {
    "t": "2026-09-19T04:58:16.035Z",
    "dosya": "web/js/rag.js",
