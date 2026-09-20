@@ -1,8 +1,8 @@
 {
- "tarih": "2026-09-20T05:11:27.306Z",
+ "tarih": "2026-09-20T11:34:14.555Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 37,
+ "calismaSayisi": 38,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
@@ -82,40 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "nex-agi/nex-n2.5-mini:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 9
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch bloğunda korunuyor; ek bir değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "Tüm fetch çağrıları zaten AbortController kullanan withTimeout fonksiyonu üzerinden yapılıyor; ek bir değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch çağrısı bulunmamaktadır; cache: 'no-store' eklemek için uygulanacak bir yer yoktur."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
