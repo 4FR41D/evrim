@@ -1,12 +1,22 @@
 {
- "tarih": "2026-09-20T16:15:45.143Z",
+ "tarih": "2026-09-20T20:58:14.576Z",
  "ortPuan": 0,
- "frontierOrt": 0,
- "calismaSayisi": 39,
+ "frontierOrt": null,
+ "calismaSayisi": 40,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
- "sonYama": null,
+ "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
+ "sonYama": {
+  "hedef": "matematik-tuzak",
+  "uygulandi": false,
+  "kural": "We need to produce a single line, Turkish, no bullet, max 220 characters, no quotes/backticks/. Must be a general behavior rule to fix the failure. Use pattern: X tarzı sorularda önce ... yaz, sonra .... Must be one line, no bullet, no quotes, no bac",
+  "detay": [
+   "matematik-tuzak:ağ/kota",
+   "matematik-tuzak:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
+ },
  "sonBench": [
   {
    "id": "site-tasarim",
@@ -19,36 +29,36 @@
    "id": "matematik-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "portakal-tuzak",
