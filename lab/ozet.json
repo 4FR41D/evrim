@@ -1,8 +1,8 @@
 {
- "tarih": "2026-09-21T05:07:48.094Z",
+ "tarih": "2026-09-21T12:58:39.155Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 41,
+ "calismaSayisi": 42,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
@@ -26,15 +26,15 @@
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "elma-tuzak",
@@ -61,8 +61,8 @@
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-kisit",
@@ -82,31 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 9
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "Zaten tüm fetch çağrıları AbortController ile timeout kullanıyor; ek değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
