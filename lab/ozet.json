@@ -1,16 +1,12 @@
 {
- "tarih": "2026-09-22T17:05:56.952Z",
+ "tarih": "2026-09-22T21:27:01.978Z",
  "ortPuan": 0,
  "frontierOrt": null,
- "calismaSayisi": 46,
+ "calismaSayisi": 47,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
- "sonYama": {
-  "hedef": "site-tasarim",
-  "uygulandi": false,
-  "neden": "kural adayı üretilemedi (kota/format)"
- },
+ "frontierTrend": "0 → 0 → 0 → 0 → 0",
+ "sonYama": null,
  "sonBench": [
   {
    "id": "site-tasarim",
