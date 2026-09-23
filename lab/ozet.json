@@ -1,8 +1,8 @@
 {
- "tarih": "2026-09-23T11:46:30.137Z",
+ "tarih": "2026-09-23T17:08:25.160Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 49,
+ "calismaSayisi": 50,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
@@ -75,8 +75,8 @@
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
