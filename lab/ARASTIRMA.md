@@ -3,6 +3,7 @@
 7/24 otomatik döngü (GitHub Actions, 6 saatte bir): bench + jüri puanı + yeni quiz + öneriler.
 
 | Çalışma (UTC) | Bench ort. | Yeni soru | Detay |
+| 2026-09-24 21:42 | 0/10 · F:-/10 | +0 | site:0 matematik:0 yuzde:0 mantik:0 elma:0 plan:0 portakal:0 kod:0 mantik:0 yanlis:0 |
 | 2026-09-24 17:20 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0 mantik:0 yanlis:0 |
 | 2026-09-24 11:56 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
 | 2026-09-24 05:08 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
