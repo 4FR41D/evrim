@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-24T11:56:40.229Z",
+ "tarih": "2026-09-24T17:20:17.810Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 53,
+ "calismaSayisi": 54,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0 → 0 → 0 → 0",
+ "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
  "sonYama": null,
  "sonBench": [
   {
@@ -47,8 +47,8 @@
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "portakal-tuzak",
@@ -61,22 +61,22 @@
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
