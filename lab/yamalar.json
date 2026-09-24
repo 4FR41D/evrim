@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-23T05:04:54.527Z",
+ "tarih": "2026-09-24T05:08:39.202Z",
  "son": {
-  "t": "2026-09-23T05:04:54.527Z",
+  "t": "2026-09-24T05:08:39.202Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmadığı için öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-24T05:08:39.202Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
+  },
+  {
+   "t": "2026-09-24T05:08:32.544Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrıları zaten withTimeout ile AbortController kullanıyor; ekstra değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-24T05:08:20.504Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde; ek değişiklik gerekmez."
+  },
   {
    "t": "2026-09-23T05:04:54.527Z",
    "dosya": "web/js/rag.js",
@@ -143,11 +158,6 @@
    "t": "2026-09-13T21:53:39.578Z",
    "dosya": "web/js/agent.js",
    "sonuc": "bolge secilemedi: yanit yok"
-  },
-  {
-   "t": "2026-09-13T21:23:25.925Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage'nın senkron API'si, IndexedDB'nin temel olarak asenkron yapısıyla doğrudan değiştirilemez; okuma/yazma/silme işlemlerinin senkr"
   }
  ]
 }
