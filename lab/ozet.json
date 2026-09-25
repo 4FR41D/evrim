@@ -1,8 +1,8 @@
 {
- "tarih": "2026-09-25T05:13:28.103Z",
+ "tarih": "2026-09-25T12:01:32.676Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 56,
+ "calismaSayisi": 57,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
@@ -82,40 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "nex-agi/nex-n2.5-mini:free",
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 9
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "AbortController ile timeout zaten tüm fetch çağrılarında kullanılıyor; ekstra değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
