@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-24T05:08:39.202Z",
+ "tarih": "2026-09-25T05:13:28.101Z",
  "son": {
-  "t": "2026-09-24T05:08:39.202Z",
+  "t": "2026-09-25T05:13:28.101Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-25T05:13:28.101Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
+  },
+  {
+   "t": "2026-09-25T05:13:26.048Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: AbortController ile timeout zaten tüm fetch çağrılarında kullanılıyor; ekstra değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-25T05:13:06.780Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
+  },
   {
    "t": "2026-09-24T05:08:39.202Z",
    "dosya": "web/js/rag.js",
@@ -143,21 +158,6 @@
    "dosya": "web/js/store.js",
    "oneri": "`localStorage` veri serileştirmesini JSON yerine `structuredClone`/`MessageChannel` ile yapıp, büyük nesnelerde sıkıştırma (LZString) ekleyerek depolama alanı t",
    "sonuc": "kapı reddetti — geri alındı"
-  },
-  {
-   "t": "2026-09-14T05:07:33.639Z",
-   "dosya": "web/js/app.js",
-   "sonuc": "doğrulama: bul 2 kez geçiyor (1 olmalı)"
-  },
-  {
-   "t": "2026-09-13T21:53:59.599Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "beyin yanıt vermedi"
-  },
-  {
-   "t": "2026-09-13T21:53:39.578Z",
-   "dosya": "web/js/agent.js",
-   "sonuc": "bolge secilemedi: yanit yok"
   }
  ]
 }
