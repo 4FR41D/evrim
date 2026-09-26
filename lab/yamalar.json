@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-25T05:13:28.101Z",
+ "tarih": "2026-09-26T05:14:30.932Z",
  "son": {
-  "t": "2026-09-25T05:13:28.101Z",
+  "t": "2026-09-26T05:14:30.932Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada RAG sorgularında kullanılan bir `fetch` çağrısı bulunmamaktadır; bu nedenle öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-26T05:14:30.932Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada RAG sorgularında kullanılan bir `fetch` çağrısı bulunmamaktadır; bu nedenle öneri uygulanamaz."
+  },
+  {
+   "t": "2026-09-26T05:14:08.383Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrıları zaten withTimeout üzerinden AbortController kullanılarak zaman aşımı ve iptal desteği sağlanmaktadır; ek bir değişiklik "
+  },
+  {
+   "t": "2026-09-26T05:13:55.145Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloklarıyla korunuyor; ek değişiklik gerekmez."
+  },
   {
    "t": "2026-09-25T05:13:28.101Z",
    "dosya": "web/js/rag.js",
@@ -141,23 +156,6 @@
    "t": "2026-09-16T05:08:01.168Z",
    "dosya": "web/js/llm.js",
    "sonuc": "model reddetti: Zaten AbortController kullanılıyor"
-  },
-  {
-   "t": "2026-09-16T05:07:31.733Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-15T05:18:38.016Z",
-   "dosya": "web/js/store.js",
-   "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-   "sonuc": "UYGULANDI (suite yeşil)"
-  },
-  {
-   "t": "2026-09-14T05:09:54.941Z",
-   "dosya": "web/js/store.js",
-   "oneri": "`localStorage` veri serileştirmesini JSON yerine `structuredClone`/`MessageChannel` ile yapıp, büyük nesnelerde sıkıştırma (LZString) ekleyerek depolama alanı t",
-   "sonuc": "kapı reddetti — geri alındı"
   }
  ]
 }

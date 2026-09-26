@@ -1,94 +1,121 @@
 {
- "tarih": "2026-09-25T21:43:32.607Z",
+ "tarih": "2026-09-26T05:14:30.934Z",
  "ortPuan": 0,
- "frontierOrt": null,
- "calismaSayisi": 59,
+ "frontierOrt": 0,
+ "calismaSayisi": 60,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
- "sonYama": {
-  "hedef": "site-tasarim",
-  "uygulandi": false,
-  "neden": "kural adayı üretilemedi (kota/format)"
- },
+ "sonYama": null,
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "matematik-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": null,
-   "frontierNeden": "cevap alınamadı (ağ/kota)"
+   "frontierPuan": 0,
+   "frontierNeden": "jüri parse edilemedi"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "atlandi": "bugün zaten yapıldı"
+  "degisiklik": true,
+  "yeniSira": [
+   "nvidia/nemotron-3-super-120b-a12b:free",
+   "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "nex-agi/nex-n2.5-mini:free",
+   "nex-agi/nex-n2.5-pro:free",
+   "google/gemma-4-26b-a4b-it:free",
+   "google/gemma-4-31b-it:free",
+   "dots-studio/dots-3-note-preview:free"
+  ],
+  "yeniSkip": [],
+  "olcum": 9
  },
  "sonOneriYama": {
-  "atlandi": "bugün zaten denendi"
+  "uygulanmadi": true,
+  "denenen": [
+   {
+    "dosya": "web/js/store.js",
+    "sonuc": {
+     "reddedildi": "localStorage erişimleri zaten try/catch bloklarıyla korunuyor; ek değişiklik gerekmez."
+    }
+   },
+   {
+    "dosya": "web/js/llm.js",
+    "sonuc": {
+     "reddedildi": "Tüm fetch çağrıları zaten withTimeout üzerinden AbortController kullanılarak zaman aşımı ve iptal desteği sağlanmaktadır; ek bir değişiklik "
+    }
+   },
+   {
+    "dosya": "web/js/rag.js",
+    "sonuc": {
+     "reddedildi": "Dosyada RAG sorgularında kullanılan bir `fetch` çağrısı bulunmamaktadır; bu nedenle öneri uygulanamaz."
+    }
+   }
+  ]
  }
 }
