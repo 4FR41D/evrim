@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-27T05:29:32.507Z",
+ "tarih": "2026-09-28T05:35:25.255Z",
  "son": {
-  "t": "2026-09-27T05:29:32.506Z",
+  "t": "2026-09-28T05:35:25.255Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: RAG sorgularında kullanılan `fetch` ifadesi dosyada bulunamadığı için `cache: 'no-store'` zorunlu kılma önerisi uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadığı için cache: 'no-store' zorunlu kılınamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-28T05:35:25.255Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadığı için cache: 'no-store' zorunlu kılınamaz."
+  },
+  {
+   "t": "2026-09-28T05:35:21.251Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Zaten AbortController ile timeout mekanizması mevcut; ek değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-28T05:35:08.142Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: Zaten try/catch ile localStorage erişimleri korunuyor; ek değişiklik gerekmez."
+  },
   {
    "t": "2026-09-27T05:29:32.506Z",
    "dosya": "web/js/rag.js",
@@ -140,21 +155,6 @@
    "t": "2026-09-19T04:57:54.086Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde bulunuyor (store.read, store.write, store.remove ve storageSize), dolayısıyla öneri "
-  },
-  {
-   "t": "2026-09-18T05:00:11.665Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır, bu yüzden öneri uygulanamaz."
-  },
-  {
-   "t": "2026-09-18T05:00:09.501Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Zaten AbortController kullanılıyor; ekstra değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-18T04:59:59.440Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğu içinde; ek değişiklik gerekmez."
   }
  ]
 }
