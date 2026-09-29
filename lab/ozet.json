@@ -1,15 +1,20 @@
 {
- "tarih": "2026-09-29T06:05:14.908Z",
+ "tarih": "2026-09-29T13:08:39.881Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 71,
+ "calismaSayisi": 72,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
  "sonYama": {
   "hedef": "site-tasarim",
   "uygulandi": false,
-  "neden": "kural adayı üretilemedi (kota/format)"
+  "kural": "We need to produce a single behavior rule, one line, no bullet, max 220 characters, no quotes, backticks, no quotes, no . Must be in Turkish. Should follow format: X tarzı sorularda önce ... yaz, sonra .... So we need a general rule for bench questio",
+  "detay": [
+   "site-tasarim:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
  },
  "sonBench": [
   {
@@ -86,31 +91,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "basarisiz": "bul 0 kez geçiyor (1 olmalı)"
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "AbortController zaten tüm fetch çağrılarında (withTimeout fonksiyonu üzerinden) kullanılıyor; ekstra değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "basarisiz": "JSON bozuk"
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
