@@ -1,11 +1,28 @@
 {
- "tarih": "2026-09-28T05:35:25.255Z",
+ "tarih": "2026-09-29T06:05:14.907Z",
  "son": {
-  "t": "2026-09-28T05:35:25.255Z",
+  "t": "2026-09-29T06:05:14.907Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadığı için cache: 'no-store' zorunlu kılınamaz."
+  "sonuc": "JSON parse edilemedi",
+  "ham": "{\"uygunDegil\":\"Dosya\":\"js/rag.js\",\"uygunDegil\":\"Dosyada fetch çağrısı bulunamadığı için öneri uygulanamaz.\"}"
  },
  "gecmis": [
+  {
+   "t": "2026-09-29T06:05:14.907Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "JSON parse edilemedi",
+   "ham": "{\"uygunDegil\":\"Dosya\":\"js/rag.js\",\"uygunDegil\":\"Dosyada fetch çağrısı bulunamadığı için öneri uygulanamaz.\"}"
+  },
+  {
+   "t": "2026-09-29T06:05:09.710Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: AbortController zaten tüm fetch çağrılarında (withTimeout fonksiyonu üzerinden) kullanılıyor; ekstra değişiklik gerekmez."
+  },
+  {
+   "t": "2026-09-29T06:04:29.543Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "doğrulama: bul 0 kez geçiyor (1 olmalı)"
+  },
   {
    "t": "2026-09-28T05:35:25.255Z",
    "dosya": "web/js/rag.js",
@@ -140,21 +157,6 @@
    "t": "2026-09-20T05:11:00.004Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-19T04:58:16.035Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
-  },
-  {
-   "t": "2026-09-19T04:58:12.577Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: AbortController ile timeout desteği zaten llm.js dosyasında withTimeout fonksiyonu üzerinden sağlanmaktadır; ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-19T04:57:54.086Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde bulunuyor (store.read, store.write, store.remove ve storageSize), dolayısıyla öneri "
   }
  ]
 }
