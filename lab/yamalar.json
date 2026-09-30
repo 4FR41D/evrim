@@ -1,12 +1,26 @@
 {
- "tarih": "2026-09-29T06:05:14.907Z",
+ "tarih": "2026-09-30T05:44:19.584Z",
  "son": {
-  "t": "2026-09-29T06:05:14.907Z",
+  "t": "2026-09-30T05:44:19.584Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "JSON parse edilemedi",
-  "ham": "{\"uygunDegil\":\"Dosya\":\"js/rag.js\",\"uygunDegil\":\"Dosyada fetch çağrısı bulunamadığı için öneri uygulanamaz.\"}"
+  "sonuc": "model reddetti: Belirtilen dosyada `fetch` çağrısı bulunamadığı için `cache: 'no-store'` zorunlu kılma önerisi uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-09-30T05:44:19.584Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Belirtilen dosyada `fetch` çağrısı bulunamadığı için `cache: 'no-store'` zorunlu kılma önerisi uygulanamaz."
+  },
+  {
+   "t": "2026-09-30T05:44:17.026Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: AbortController zaten withTimeout fonksiyonu üzerinden tüm fetch çağrılarında kullanılıyor"
+  },
+  {
+   "t": "2026-09-30T05:43:55.458Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
+  },
   {
    "t": "2026-09-29T06:05:14.907Z",
    "dosya": "web/js/rag.js",
@@ -142,21 +156,6 @@
    "t": "2026-09-21T05:07:12.697Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-20T05:11:27.304Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; cache: 'no-store' eklemek için uygulanacak bir yer yoktur."
-  },
-  {
-   "t": "2026-09-20T05:11:25.629Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Tüm fetch çağrıları zaten AbortController kullanan withTimeout fonksiyonu üzerinden yapılıyor; ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-20T05:11:00.004Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek bir değişiklik gerekmez."
   }
  ]
 }
