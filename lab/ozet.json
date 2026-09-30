@@ -1,11 +1,11 @@
 {
- "tarih": "2026-09-30T05:44:19.586Z",
+ "tarih": "2026-09-30T12:45:20.835Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 74,
+ "calismaSayisi": 75,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0",
+ "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
  "sonYama": null,
  "sonBench": [
   {
@@ -82,31 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "AbortController zaten withTimeout fonksiyonu üzerinden tüm fetch çağrılarında kullanılıyor"
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Belirtilen dosyada `fetch` çağrısı bulunamadığı için `cache: 'no-store'` zorunlu kılma önerisi uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
