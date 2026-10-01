@@ -1,11 +1,26 @@
 {
- "tarih": "2026-09-30T05:44:19.584Z",
+ "tarih": "2026-10-01T06:08:30.470Z",
  "son": {
-  "t": "2026-09-30T05:44:19.584Z",
+  "t": "2026-10-01T06:08:30.470Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Belirtilen dosyada `fetch` çağrısı bulunamadığı için `cache: 'no-store'` zorunlu kılma önerisi uygulanamaz."
+  "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; önerilen `cache: 'no-store'` eklemesi uygulanacak bir yer yoktur."
  },
  "gecmis": [
+  {
+   "t": "2026-10-01T06:08:30.470Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; önerilen `cache: 'no-store'` eklemesi uygulanacak bir yer yoktur."
+  },
+  {
+   "t": "2026-10-01T06:08:27.293Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
+  },
+  {
+   "t": "2026-10-01T06:07:58.850Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez"
+  },
   {
    "t": "2026-09-30T05:44:19.584Z",
    "dosya": "web/js/rag.js",
@@ -141,21 +156,6 @@
    "t": "2026-09-22T05:13:13.045Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: Zaten localStorage erişimleri try/catch bloğu içinde yer alıyor; ek bir değişiklik gerekli değil."
-  },
-  {
-   "t": "2026-09-21T05:07:48.092Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
-  },
-  {
-   "t": "2026-09-21T05:07:46.135Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Zaten tüm fetch çağrıları AbortController ile timeout kullanıyor; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-21T05:07:12.697Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
   }
  ]
 }
