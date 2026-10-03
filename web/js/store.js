@@ -299,11 +299,13 @@ export function wipeData() {
 }
 
 export function storageSize() {
-  let total = 0;
-  for (const t of TABLES) {
-    try {
+  try {
+    let total = 0;
+    for (const t of TABLES) {
       total += (localStorage.getItem(NS + t) || '').length;
-    } catch {}
+    }
+    return total;
+  } catch {
+    return 0;
   }
-  return total;
 }
