@@ -1,12 +1,26 @@
 {
- "tarih": "2026-10-03T05:33:54.025Z",
+ "tarih": "2026-10-04T06:02:35.165Z",
  "son": {
-  "t": "2026-10-03T05:33:54.025Z",
-  "dosya": "web/js/store.js",
-  "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-  "sonuc": "UYGULANDI (suite yeşil)"
+  "t": "2026-10-04T06:02:35.165Z",
+  "dosya": "web/js/rag.js",
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-10-04T06:02:35.165Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, öneri uygulanamaz."
+  },
+  {
+   "t": "2026-10-04T06:02:33.568Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrıları zaten withTimeout fonksiyonu üzerinden AbortController kullanılarak zaman aşımı ve iptal sağlanıyor; ekstra değişiklik g"
+  },
+  {
+   "t": "2026-10-04T06:02:27.726Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: Öneri zaten uygulanmış"
+  },
   {
    "t": "2026-10-03T05:33:54.025Z",
    "dosya": "web/js/store.js",
@@ -143,21 +157,6 @@
    "t": "2026-09-24T05:08:32.544Z",
    "dosya": "web/js/llm.js",
    "sonuc": "model reddetti: Tüm fetch çağrıları zaten withTimeout ile AbortController kullanıyor; ekstra değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-24T05:08:20.504Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch blokları içinde; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-23T05:04:54.527Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmadığı için öneri uygulanamaz."
-  },
-  {
-   "t": "2026-09-23T05:04:51.768Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Dosyada zaten tüm fetch çağrıları AbortController içeren withTimeout fonksiyonu üzerinden yapılıyor; ek bir değişiklik gerekmez."
   }
  ]
 }
