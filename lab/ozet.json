@@ -1,8 +1,8 @@
 {
- "tarih": "2026-10-04T06:02:35.167Z",
+ "tarih": "2026-10-04T12:30:30.149Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 87,
+ "calismaSayisi": 88,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
@@ -82,31 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 9
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "Öneri zaten uygulanmış"
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "Tüm fetch çağrıları zaten withTimeout fonksiyonu üzerinden AbortController kullanılarak zaman aşımı ve iptal sağlanıyor; ekstra değişiklik g"
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch çağrısı bulunamadı, öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
