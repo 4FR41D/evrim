@@ -1,11 +1,26 @@
 {
- "tarih": "2026-10-08T06:16:39.665Z",
+ "tarih": "2026-10-09T06:19:23.879Z",
  "son": {
-  "t": "2026-10-08T06:16:39.665Z",
-  "dosya": "web/js/llm.js",
-  "sonuc": "beyin yanıt vermedi"
+  "t": "2026-10-09T06:19:23.879Z",
+  "dosya": "web/js/rag.js",
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-10-09T06:19:23.879Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
+  },
+  {
+   "t": "2026-10-09T06:19:21.992Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: llm.js dosyasındaki tüm fetch çağrılarında zaten AbortController ile timeout sağlanıyor (withTimeout fonksiyonu); ek bir değişiklik gerekmez"
+  },
+  {
+   "t": "2026-10-09T06:19:12.946Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimi zaten try/catch ile korunuyor"
+  },
   {
    "t": "2026-10-08T06:16:39.665Z",
    "dosya": "web/js/llm.js",
@@ -142,21 +157,6 @@
    "t": "2026-09-29T06:04:29.543Z",
    "dosya": "web/js/store.js",
    "sonuc": "doğrulama: bul 0 kez geçiyor (1 olmalı)"
-  },
-  {
-   "t": "2026-09-28T05:35:25.255Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadığı için cache: 'no-store' zorunlu kılınamaz."
-  },
-  {
-   "t": "2026-09-28T05:35:21.251Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Zaten AbortController ile timeout mekanizması mevcut; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-28T05:35:08.142Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: Zaten try/catch ile localStorage erişimleri korunuyor; ek değişiklik gerekmez."
   }
  ]
 }
