@@ -1,11 +1,26 @@
 {
- "tarih": "2026-10-09T06:19:23.879Z",
+ "tarih": "2026-10-10T06:02:58.887Z",
  "son": {
-  "t": "2026-10-09T06:19:23.879Z",
+  "t": "2026-10-10T06:02:58.887Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-10-10T06:02:58.887Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
+  },
+  {
+   "t": "2026-10-10T06:02:55.806Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Zaten AbortController ile timeout mekanizması mevcut; ek değişiklik gerekmez."
+  },
+  {
+   "t": "2026-10-10T06:02:46.429Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda bulunuyor, ek değişiklik gerekmez."
+  },
   {
    "t": "2026-10-09T06:19:23.879Z",
    "dosya": "web/js/rag.js",
@@ -141,22 +156,6 @@
    "t": "2026-09-30T05:43:55.458Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda korunuyor; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-29T06:05:14.907Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "JSON parse edilemedi",
-   "ham": "{\"uygunDegil\":\"Dosya\":\"js/rag.js\",\"uygunDegil\":\"Dosyada fetch çağrısı bulunamadığı için öneri uygulanamaz.\"}"
-  },
-  {
-   "t": "2026-09-29T06:05:09.710Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: AbortController zaten tüm fetch çağrılarında (withTimeout fonksiyonu üzerinden) kullanılıyor; ekstra değişiklik gerekmez."
-  },
-  {
-   "t": "2026-09-29T06:04:29.543Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "doğrulama: bul 0 kez geçiyor (1 olmalı)"
   }
  ]
 }

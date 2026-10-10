@@ -1,60 +1,52 @@
 {
- "tarih": "2026-10-09T06:18:30.264Z",
+ "tarih": "2026-10-10T06:02:03.418Z",
  "degisiklik": false,
- "sebep": "başarılı ölçüm yok — liste korundu",
+ "sebep": "sıra zaten optimal",
  "olcumler": [
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "ok": false,
-   "ms": 333,
-   "hata": "boş yanıt"
+   "ok": true,
+   "ms": 317
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 236,
-   "hata": "boş yanıt"
+   "ms": 160
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 46,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-mini\",\""
+   "ms": 15
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": false,
-   "ms": 55,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-pro\",\"c"
+   "ms": 25
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 640,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-26b-a4b-it:free is temporarily rate-limited upstr"
+   "ms": 122
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 174,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it:free is temporarily rate-limited upstream."
+   "ms": 172
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 1335,
-   "hata": "boş yanıt"
+   "ms": 1578
   },
   {
    "id": "apodex/apodex-1.1-mini:free",
    "ok": false,
-   "ms": 1763,
-   "hata": "boş yanıt"
+   "ms": 567
   }
  ],
  "tarihce": {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
-   "ewma": 384,
+   "ewma": 357,
    "n": 10
   },
   "nex-agi/nex-n2.5-pro:free": {
