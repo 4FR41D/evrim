@@ -1,15 +1,20 @@
 {
- "tarih": "2026-10-11T05:56:20.547Z",
+ "tarih": "2026-10-11T13:05:20.963Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 107,
+ "calismaSayisi": 108,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "sonYama": {
   "hedef": "site-tasarim",
   "uygulandi": false,
-  "neden": "kural adayı üretilemedi (kota/format)"
+  "kural": "Her zaman önce sorunun ne istediğini tek cümleyle özetleyerek yeniden yaz, ardından bu özeti temel alarak istenen cevabı ver",
+  "detay": [
+   "site-tasarim:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
  },
  "sonBench": [
   {
@@ -86,31 +91,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "localStorage erişimleri zaten try/catch blokları içinde bulunuyor; ek bir değişiklik gerekmez."
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "reddedildi": "Zaten tüm fetch çağrıları AbortController ile withTimeout kullanılarak zaman aşımı koruması sağlanmıştır."
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
