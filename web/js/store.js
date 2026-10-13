@@ -40,15 +40,20 @@ export const now = () => new Date().toISOString();
 // ---------- tekil tablolar ----------
 /** v56: günlük aktivite işareti (streak) — ders/tekrar günleri */
 export function gunIsaretle(kaynak) {
-  const bugun = new Date().toLocaleDateString('sv-SE');
-  const g = store.read('gunluk', { tarihler: [], son: {} });
-  if (!g.tarihler.includes(bugun)) {
-    g.tarihler.push(bugun);
-    if (g.tarihler.length > 120) g.tarihler = g.tarihler.slice(-120);
+  try {
+    const bugun = new Date().toLocaleDateString('sv-SE');
+    const g = store.read('gunluk', { tarihler: [], son: {} });
+    if (!g.tarihler.includes(bugun)) {
+      g.tarihler.push(bugun);
+      if (g.tarihler.length > 120) g.tarihler = g.tarihler.slice(-120);
+    }
+    g.son[kaynak || 'genel'] = bugun;
+    store.write('gunluk', g);
+    return g.tarihler.length;
+  } catch (e) {
+    console.error('localStorage erişimi başarısız (gunIsaretle)', e);
+    return 0;
   }
-  g.son[kaynak || 'genel'] = bugun;
-  store.write('gunluk', g);
-  return g.tarihler.length;
 }
 
 /** v56: kesintisiz seri gün sayısı */
