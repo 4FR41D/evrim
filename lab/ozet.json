@@ -1,86 +1,91 @@
 {
- "tarih": "2026-10-14T17:20:48.450Z",
+ "tarih": "2026-10-14T21:52:02.075Z",
  "ortPuan": 0,
- "frontierOrt": 0,
- "calismaSayisi": 117,
+ "frontierOrt": null,
+ "calismaSayisi": 118,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
+ "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
  "sonYama": {
   "hedef": "site-tasarim",
   "uygulandi": false,
-  "neden": "kural adayı üretilemedi (kota/format)"
+  "kural": "HTML landing page sorularında önce istenen özellikleri tek cümleyle özetle, ardından tüm gereksinimleri karşılayan tek HTML dosyasıyla cevap ver.",
+  "detay": [
+   "site-tasarim:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
  },
  "sonBench": [
   {
    "id": "site-tasarim",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "matematik-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yuzde-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-siralama",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
