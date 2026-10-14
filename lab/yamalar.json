@@ -1,12 +1,26 @@
 {
- "tarih": "2026-10-13T00:55:56.741Z",
+ "tarih": "2026-10-14T05:04:54.867Z",
  "son": {
-  "t": "2026-10-13T00:55:56.741Z",
-  "dosya": "web/js/store.js",
-  "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-  "sonuc": "UYGULANDI (suite yeşil)"
+  "t": "2026-10-14T05:04:54.867Z",
+  "dosya": "web/js/rag.js",
+  "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-10-14T05:04:54.867Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
+  },
+  {
+   "t": "2026-10-14T05:04:52.814Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrılarında zaten AbortController ile timeout mevcut; ekstra değişiklik gerekmez."
+  },
+  {
+   "t": "2026-10-14T05:04:19.860Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloklarıyla korunuyor; ek bir değişiklik gerekmez."
+  },
   {
    "t": "2026-10-13T00:55:56.741Z",
    "dosya": "web/js/store.js",
@@ -142,22 +156,6 @@
    "t": "2026-10-04T06:02:27.726Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: Öneri zaten uygulanmış"
-  },
-  {
-   "t": "2026-10-03T05:33:54.025Z",
-   "dosya": "web/js/store.js",
-   "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-   "sonuc": "UYGULANDI (suite yeşil)"
-  },
-  {
-   "t": "2026-10-02T05:49:22.495Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
-  },
-  {
-   "t": "2026-10-02T05:49:18.654Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Zaten AbortController kullanılıyor"
   }
  ]
 }

@@ -1,22 +1,22 @@
 {
- "tarih": "2026-10-13T00:49:52.292Z",
+ "tarih": "2026-10-14T05:03:30.573Z",
  "degisiklik": false,
  "sebep": "sıra zaten optimal",
  "olcumler": [
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
    "ok": true,
-   "ms": 258
+   "ms": 326
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 227
+   "ms": 255
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 58
+   "ms": 31
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
@@ -26,27 +26,22 @@
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 150
+   "ms": 207
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 122
+   "ms": 133
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 3132
-  },
-  {
-   "id": "apodex/apodex-1.1-mini:free",
-   "ok": false,
-   "ms": 664
+   "ms": 773
   }
  ],
  "tarihce": {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
-   "ewma": 292,
+   "ewma": 306,
    "n": 10
   },
   "nex-agi/nex-n2.5-pro:free": {
