@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS = {
 
 export const store = {
   read(table, fallback) {
+    if (typeof localStorage === 'undefined') return fallback;
     try {
       const raw = localStorage.getItem(NS + table);
       return raw === null ? fallback : JSON.parse(raw);
