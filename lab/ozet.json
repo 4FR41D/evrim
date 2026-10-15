@@ -1,8 +1,8 @@
 {
- "tarih": "2026-10-15T04:55:43.244Z",
+ "tarih": "2026-10-15T11:39:59.911Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 119,
+ "calismaSayisi": 120,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
@@ -82,23 +82,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": false,
-  "sebep": "değişiklik gerekmedi",
-  "olcum": 7
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulandi": true,
-  "dosya": "web/js/store.js",
-  "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "uygulandi": true,
-     "dosya": "web/js/store.js",
-     "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
