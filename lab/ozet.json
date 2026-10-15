@@ -1,12 +1,21 @@
 {
- "tarih": "2026-10-15T17:11:31.414Z",
+ "tarih": "2026-10-15T21:36:49.985Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 121,
+ "calismaSayisi": 122,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
- "sonYama": null,
+ "sonYama": {
+  "hedef": "site-tasarim",
+  "uygulandi": false,
+  "kural": "Landing page HTML kodu istenen sorularda önce istenen özelliklerin (tek dosya, CSS gömülü, mobil uy",
+  "detay": [
+   "site-tasarim:0",
+   "matematik-tuzak:atlandı",
+   "yuzde-tuzak:atlandı"
+  ]
+ },
  "sonBench": [
   {
    "id": "site-tasarim",
@@ -40,43 +49,43 @@
    "id": "elma-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "plan-yapma",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "portakal-tuzak",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "kod-uretme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "mantik-kisit",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   },
   {
    "id": "yanlis-onerme",
    "puan": 0,
    "neden": "cevap alınamadı (ağ/kota)",
-   "frontierPuan": 0,
-   "frontierNeden": "jüri parse edilemedi"
+   "frontierPuan": null,
+   "frontierNeden": "cevap alınamadı (ağ/kota)"
   }
  ],
  "beyin": "openai/gpt-oss-120b",
