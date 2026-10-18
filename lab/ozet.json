@@ -1,8 +1,8 @@
 {
- "tarih": "2026-10-18T04:52:05.318Z",
+ "tarih": "2026-10-18T11:15:48.265Z",
  "ortPuan": 0,
  "frontierOrt": 0,
- "calismaSayisi": 131,
+ "calismaSayisi": 132,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "0 → 0 → 0 → 0 → 0 → 0 → 0",
@@ -86,41 +86,9 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "degisiklik": true,
-  "yeniSira": [
-   "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "xingchen-agi/xing4.0-29b-a4b:free",
-   "nvidia/nemotron-3-super-120b-a12b:free",
-   "nex-agi/nex-n2.5-mini:free",
-   "nex-agi/nex-n2.5-pro:free",
-   "google/gemma-4-26b-a4b-it:free",
-   "google/gemma-4-31b-it:free",
-   "dots-studio/dots-3-note-preview:free"
-  ],
-  "yeniSkip": [],
-  "olcum": 8
+  "atlandi": "bugün zaten yapıldı"
  },
  "sonOneriYama": {
-  "uygulanmadi": true,
-  "denenen": [
-   {
-    "dosya": "web/js/store.js",
-    "sonuc": {
-     "reddedildi": "Zaten try/catch ile korumalı"
-    }
-   },
-   {
-    "dosya": "web/js/llm.js",
-    "sonuc": {
-     "basarisiz": "dosya hedefle farklı/beyaz liste dışında"
-    }
-   },
-   {
-    "dosya": "web/js/rag.js",
-    "sonuc": {
-     "reddedildi": "Dosyada fetch kullanımı bulunmamaktadır, bu yüzden öneri uygulanamaz."
-    }
-   }
-  ]
+  "atlandi": "bugün zaten denendi"
  }
 }
