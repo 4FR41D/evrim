@@ -1,60 +1,62 @@
 {
- "tarih": "2026-10-17T04:38:52.621Z",
- "degisiklik": false,
- "sebep": "başarılı ölçüm yok — liste korundu",
+ "tarih": "2026-10-18T04:48:47.061Z",
+ "degisiklik": true,
+ "yeniSira": [
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "xingchen-agi/xing4.0-29b-a4b:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nex-agi/nex-n2.5-mini:free",
+  "nex-agi/nex-n2.5-pro:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "dots-studio/dots-3-note-preview:free"
+ ],
+ "yeniSkip": [],
  "olcumler": [
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
-   "ok": false,
-   "ms": 303,
-   "hata": "boş yanıt"
+   "ok": true,
+   "ms": 283
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 272,
-   "hata": "boş yanıt"
+   "ms": 161
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 22,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-mini\",\""
+   "ms": 28
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": false,
-   "ms": 48,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-pro\",\"c"
+   "ms": 20
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 167,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-26b-a4b-it:free is temporarily rate-limited upstr"
+   "ms": 148
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 150,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it:free is temporarily rate-limited upstream."
+   "ms": 130
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 516,
-   "hata": "boş yanıt"
+   "ms": 358
   },
   {
    "id": "xingchen-agi/xing4.0-29b-a4b:free",
-   "ok": false,
-   "ms": 3797,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"xingchen-agi/xing4.0-29b-a4b:free is temporarily rate-limited up"
+   "ok": true,
+   "ms": 768
   }
  ],
  "tarihce": {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
-   "ewma": 292,
+   "ewma": 288,
    "n": 10
   },
   "nex-agi/nex-n2.5-pro:free": {
@@ -68,6 +70,10 @@
   "nvidia/nemotron-3-super-120b-a12b:free": {
    "ewma": 274,
    "n": 10
+  },
+  "xingchen-agi/xing4.0-29b-a4b:free": {
+   "ewma": 768,
+   "n": 1
   }
  }
 }
