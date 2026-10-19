@@ -1,11 +1,26 @@
 {
- "tarih": "2026-10-18T04:52:05.316Z",
+ "tarih": "2026-10-19T04:51:43.269Z",
  "son": {
-  "t": "2026-10-18T04:52:05.316Z",
+  "t": "2026-10-19T04:51:43.269Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch kullanımı bulunmamaktadır, bu yüzden öneri uygulanamaz."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamadı."
  },
  "gecmis": [
+  {
+   "t": "2026-10-19T04:51:43.269Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamadı."
+  },
+  {
+   "t": "2026-10-19T04:51:31.057Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "model reddetti: Tüm fetch çağrıları zaten `withTimeout` aracılığıyla `AbortController` kullanıyor; ek bir değişiklik gerekmez."
+  },
+  {
+   "t": "2026-10-19T04:51:18.896Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: Öneri zaten uygulanmış; store.read, store.write, store.remove ve diğer yerel depolama erişimleri zaten try/catch bloğunda bulunuyor."
+  },
   {
    "t": "2026-10-18T04:52:05.316Z",
    "dosya": "web/js/rag.js",
@@ -143,21 +158,6 @@
    "t": "2026-10-07T06:13:20.840Z",
    "dosya": "web/js/rag.js",
    "sonuc": "model reddetti: Dosyada fetch kullanımı bulunmadığı için öneri uygulanamaz."
-  },
-  {
-   "t": "2026-10-07T06:13:19.022Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
-  },
-  {
-   "t": "2026-10-07T06:12:55.995Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda (store.read/write/remove ve storageSize) olduğu için ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-10-06T00:14:00.829Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, cache: 'no-store' zorunlu kılınacak yer yok."
   }
  ]
 }
