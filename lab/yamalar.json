@@ -1,11 +1,26 @@
 {
- "tarih": "2026-10-19T04:51:43.269Z",
+ "tarih": "2026-10-20T05:03:03.988Z",
  "son": {
-  "t": "2026-10-19T04:51:43.269Z",
+  "t": "2026-10-20T05:03:03.988Z",
   "dosya": "web/js/rag.js",
-  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamadı."
+  "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
  },
  "gecmis": [
+  {
+   "t": "2026-10-20T05:03:03.988Z",
+   "dosya": "web/js/rag.js",
+   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
+  },
+  {
+   "t": "2026-10-20T05:02:59.602Z",
+   "dosya": "web/js/llm.js",
+   "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
+  },
+  {
+   "t": "2026-10-20T05:02:24.633Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "model reddetti: Öneri zaten uygulanmış; ek değişiklik gerekmez."
+  },
   {
    "t": "2026-10-19T04:51:43.269Z",
    "dosya": "web/js/rag.js",
@@ -143,21 +158,6 @@
    "t": "2026-10-09T06:19:12.946Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimi zaten try/catch ile korunuyor"
-  },
-  {
-   "t": "2026-10-08T06:16:39.665Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "beyin yanıt vermedi"
-  },
-  {
-   "t": "2026-10-08T06:14:23.788Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğu içinde (store.read, write, remove ve storageSize) bulunmakta; ek bir koruma gerekmez."
-  },
-  {
-   "t": "2026-10-07T06:13:20.840Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch kullanımı bulunmadığı için öneri uygulanamaz."
   }
  ]
 }
