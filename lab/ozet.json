@@ -1,11 +1,11 @@
 {
- "tarih": "2026-10-21T11:58:24.949Z",
+ "tarih": "2026-10-21T17:20:07.486Z",
  "ortPuan": 0,
  "frontierOrt": null,
- "calismaSayisi": 144,
+ "calismaSayisi": 145,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
- "frontierTrend": "0 → 0",
+ "frontierTrend": "0",
  "sonYama": null,
  "sonBench": [
   {
