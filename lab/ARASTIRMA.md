@@ -3,6 +3,7 @@
 7/24 otomatik döngü (GitHub Actions, 6 saatte bir): bench + jüri puanı + yeni quiz + öneriler.
 
 | Çalışma (UTC) | Bench ort. | Yeni soru | Detay |
+| 2026-10-23 11:48 | 0/10 · F:-/10 | +0 | site:0 matematik:0 yuzde:0 mantik:0 elma:0 plan:0 portakal:0 kod:0 mantik:0 yanlis:0 |
 | 2026-10-23 05:00 | 0/10 · F:-/10 | +0 | site:0 matematik:0 yuzde:0 mantik:0 elma:0 plan:0 portakal:0 kod:0 mantik:0 yanlis:0 |
 | 2026-10-22 21:43 | 0/10 · F:-/10 | +0 | site:0 matematik:0 yuzde:0 mantik:0 elma:0 plan:0 portakal:0 kod:0 mantik:0 yanlis:0 |
 | 2026-10-22 17:18 | 0/10 · F:-/10 | +0 | site:0 matematik:0 yuzde:0 mantik:0 elma:0 plan:0 portakal:0 kod:0 mantik:0 yanlis:0 |
@@ -63,4 +64,3 @@
 | 2026-10-06 06:30 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
 | 2026-10-06 00:14 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
 | 2026-10-05 14:47 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
-| 2026-10-05 05:50 | 0/10 · F:0/10 | +0 | site:0/F0 matematik:0/F0 yuzde:0/F0 mantik:0/F0 elma:0/F0 plan:0/F0 portakal:0/F0 kod:0/F0 mantik:0/F0 yanlis:0/F0 |
