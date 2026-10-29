@@ -1,11 +1,16 @@
 {
- "tarih": "2026-10-28T05:53:50.012Z",
+ "tarih": "2026-10-29T05:59:33.740Z",
  "son": {
-  "t": "2026-10-28T05:53:50.012Z",
+  "t": "2026-10-29T05:59:33.740Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-10-29T05:59:33.740Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-10-28T05:53:50.012Z",
    "dosya": "web/js/store.js",
@@ -153,11 +158,6 @@
    "t": "2026-10-12T06:08:26.157Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda bulunuyor; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-10-11T05:56:20.544Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamaz."
   }
  ]
 }
