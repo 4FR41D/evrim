@@ -1,11 +1,16 @@
 {
- "tarih": "2026-10-29T05:59:33.740Z",
+ "tarih": "2026-10-30T06:00:12.413Z",
  "son": {
-  "t": "2026-10-29T05:59:33.740Z",
+  "t": "2026-10-30T06:00:12.413Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-10-30T06:00:12.413Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-10-29T05:59:33.740Z",
    "dosya": "web/js/store.js",
@@ -153,11 +158,6 @@
    "t": "2026-10-12T06:08:40.412Z",
    "dosya": "web/js/llm.js",
    "sonuc": "model reddetti: Zaten AbortController kullanılarak timeout sağlanmıştır."
-  },
-  {
-   "t": "2026-10-12T06:08:26.157Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloğunda bulunuyor; ek değişiklik gerekmez."
   }
  ]
 }
