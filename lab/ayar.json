@@ -1,62 +1,62 @@
 {
- "tarih": "2026-10-31T05:51:16.124Z",
+ "tarih": "2026-11-01T06:13:58.940Z",
  "degisiklik": false,
  "sebep": "sıra zaten optimal",
  "olcumler": [
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
    "ok": true,
-   "ms": 301
+   "ms": 300
   },
   {
    "id": "xingchen-agi/xing4.0-29b-a4b:free",
    "ok": true,
-   "ms": 861
+   "ms": 690
   },
   {
    "id": "minimax/minimax-m3.1-flash:free",
    "ok": false,
-   "ms": 31
+   "ms": 30
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 28
+   "ms": 49
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 33
+   "ms": 36
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": false,
-   "ms": 29
+   "ms": 36
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 109
+   "ms": 124
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 116
+   "ms": 189
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 467
+   "ms": 542
   },
   {
    "id": "recursive/flint-v1.0:free",
    "ok": false,
-   "ms": 114
+   "ms": 253
   }
  ],
  "tarihce": {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
-   "ewma": 302,
+   "ewma": 301,
    "n": 10
   },
   "nex-agi/nex-n2.5-pro:free": {
@@ -72,8 +72,8 @@
    "n": 10
   },
   "xingchen-agi/xing4.0-29b-a4b:free": {
-   "ewma": 749,
-   "n": 5
+   "ewma": 725,
+   "n": 6
   },
   "minimax/minimax-m3.1-flash:free": {
    "ewma": 861,
