@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-01T06:14:49.745Z",
+ "tarih": "2026-11-02T06:13:38.793Z",
  "son": {
-  "t": "2026-11-01T06:14:49.745Z",
+  "t": "2026-11-02T06:13:38.793Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-02T06:13:38.793Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-01T06:14:49.745Z",
    "dosya": "web/js/store.js",
@@ -152,12 +157,6 @@
    "t": "2026-10-14T05:04:19.860Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: localStorage erişimleri zaten try/catch bloklarıyla korunuyor; ek bir değişiklik gerekmez."
-  },
-  {
-   "t": "2026-10-13T00:55:56.741Z",
-   "dosya": "web/js/store.js",
-   "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-   "sonuc": "UYGULANDI (suite yeşil)"
   }
  ]
 }
