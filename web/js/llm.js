@@ -259,8 +259,8 @@ async function withTimeout(url, opts, ms = 60000) {
 // v79: lab:bas/lab:son ve lab:skip İŞARETLERİ arasını lab KOD AYARI kendisi günceller
 // (ölçüm → yama → node --check + tam suite → başarısızsa geri al; kill-switch: lab/AYAR_KAPALI)
 const OR_PRIORITY = [ /*lab:bas*/
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
   'xingchen-agi/xing4.0-29b-a4b:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
   'minimax/minimax-m3.1-flash:free',
   'nvidia/nemotron-3-super-120b-a12b:free',
   'nex-agi/nex-n2.5-mini:free',

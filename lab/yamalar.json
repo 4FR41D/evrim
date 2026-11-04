@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-03T01:09:58.242Z",
+ "tarih": "2026-11-04T06:37:29.092Z",
  "son": {
-  "t": "2026-11-03T01:09:58.242Z",
+  "t": "2026-11-04T06:37:29.092Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-04T06:37:29.092Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-03T01:09:58.242Z",
    "dosya": "web/js/store.js",
@@ -152,11 +157,6 @@
    "t": "2026-10-14T05:04:54.867Z",
    "dosya": "web/js/rag.js",
    "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
-  },
-  {
-   "t": "2026-10-14T05:04:52.814Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "model reddetti: Tüm fetch çağrılarında zaten AbortController ile timeout mevcut; ekstra değişiklik gerekmez."
   }
  ]
 }
