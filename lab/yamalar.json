@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-04T06:37:29.092Z",
+ "tarih": "2026-11-05T06:57:06.415Z",
  "son": {
-  "t": "2026-11-04T06:37:29.092Z",
+  "t": "2026-11-05T06:57:06.414Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-05T06:57:06.414Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-04T06:37:29.092Z",
    "dosya": "web/js/store.js",
@@ -152,11 +157,6 @@
    "dosya": "web/js/store.js",
    "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
    "sonuc": "UYGULANDI (suite yeşil)"
-  },
-  {
-   "t": "2026-10-14T05:04:54.867Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada `fetch` çağrısı bulunmamaktadır; öneri uygulanamaz."
   }
  ]
 }
