@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-05T06:57:06.415Z",
+ "tarih": "2026-11-06T06:55:01.167Z",
  "son": {
-  "t": "2026-11-05T06:57:06.414Z",
+  "t": "2026-11-06T06:55:01.166Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-06T06:55:01.166Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-05T06:57:06.414Z",
    "dosya": "web/js/store.js",
@@ -151,12 +156,6 @@
    "t": "2026-10-16T04:45:35.592Z",
    "dosya": "web/js/store.js",
    "sonuc": "doğrulama: bul 0 kez geçiyor (1 olmalı)"
-  },
-  {
-   "t": "2026-10-15T04:55:43.241Z",
-   "dosya": "web/js/store.js",
-   "oneri": "`localStorage` erişimini `try/catch` bloğuna alarak, tarayıcıda `localStorage` devre dışı bırakıldığında uygulamanın çökmesini önle.",
-   "sonuc": "UYGULANDI (suite yeşil)"
   }
  ]
 }
