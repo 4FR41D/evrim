@@ -1,67 +1,57 @@
 {
- "tarih": "2026-11-06T06:54:10.182Z",
+ "tarih": "2026-11-07T06:09:00.245Z",
  "degisiklik": false,
- "sebep": "başarılı ölçüm yok — liste korundu",
+ "sebep": "sıra zaten optimal",
  "olcumler": [
   {
    "id": "xingchen-agi/xing4.0-29b-a4b:free",
-   "ok": false,
-   "ms": 382,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"xingchen-agi/xing4.0-29b-a4b:free is temporarily rate-limited up"
+   "ok": true,
+   "ms": 2620
   },
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
    "ok": false,
-   "ms": 330,
-   "hata": "boş yanıt"
+   "ms": 281
   },
   {
    "id": "minimax/minimax-m3.1-flash:free",
    "ok": false,
-   "ms": 34,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"The free launch period for MiniMax M3.1 Flash ended on Oct 22, 2026. The `:free` variant has been retired; use `minimax"
+   "ms": 36
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 31,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nvidia/nemotron-3-super-"
+   "ms": 22
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 44,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-mini\",\""
+   "ms": 21
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": false,
-   "ms": 50,
-   "hata": "HTTP 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: nex-agi/nex-n2.5-pro\",\"c"
+   "ms": 17
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 155,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-26b-a4b-it:free is temporarily rate-limited upstr"
+   "ms": 269
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 147,
-   "hata": "HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it:free is temporarily rate-limited upstream."
+   "ms": 178
   },
   {
    "id": "dots-studio/dots-3-note-preview:free",
    "ok": false,
-   "ms": 484,
-   "hata": "boş yanıt"
+   "ms": 612
   },
   {
-   "id": "recursive/flint-v1.0:free",
+   "id": "liquid/lfm-3-1.7b:free",
    "ok": false,
-   "ms": 589,
-   "hata": "boş yanıt"
+   "ms": 1064
   }
  ],
  "tarihce": {
@@ -82,8 +72,8 @@
    "n": 10
   },
   "xingchen-agi/xing4.0-29b-a4b:free": {
-   "ewma": 670,
-   "n": 7
+   "ewma": 1450,
+   "n": 8
   },
   "minimax/minimax-m3.1-flash:free": {
    "ewma": 861,
