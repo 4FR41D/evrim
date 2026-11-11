@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-10T07:30:03.357Z",
+ "tarih": "2026-11-11T06:29:33.311Z",
  "son": {
-  "t": "2026-11-10T07:30:03.357Z",
+  "t": "2026-11-11T06:29:33.311Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-11T06:29:33.311Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-10T07:30:03.357Z",
    "dosya": "web/js/store.js",
@@ -150,11 +155,6 @@
    "t": "2026-10-18T04:51:56.560Z",
    "dosya": "web/js/llm.js",
    "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
-  },
-  {
-   "t": "2026-10-18T04:49:56.119Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: Zaten try/catch ile korumalı"
   }
  ]
 }
