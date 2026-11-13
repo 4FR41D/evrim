@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-12T00:55:39.429Z",
+ "tarih": "2026-11-13T06:56:39.454Z",
  "son": {
-  "t": "2026-11-12T00:55:39.428Z",
+  "t": "2026-11-13T06:56:39.454Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-13T06:56:39.454Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-12T00:55:39.428Z",
    "dosya": "web/js/store.js",
@@ -150,11 +155,6 @@
    "t": "2026-10-19T04:51:18.896Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: Öneri zaten uygulanmış; store.read, store.write, store.remove ve diğer yerel depolama erişimleri zaten try/catch bloğunda bulunuyor."
-  },
-  {
-   "t": "2026-10-18T04:52:05.316Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch kullanımı bulunmamaktadır, bu yüzden öneri uygulanamaz."
   }
  ]
 }
