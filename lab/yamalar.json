@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-15T06:41:52.926Z",
+ "tarih": "2026-11-16T06:39:05.596Z",
  "son": {
-  "t": "2026-11-15T06:41:52.925Z",
+  "t": "2026-11-16T06:39:05.595Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-16T06:39:05.595Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-15T06:41:52.925Z",
    "dosya": "web/js/store.js",
@@ -150,11 +155,6 @@
    "t": "2026-10-20T05:02:24.633Z",
    "dosya": "web/js/store.js",
    "sonuc": "model reddetti: Öneri zaten uygulanmış; ek değişiklik gerekmez."
-  },
-  {
-   "t": "2026-10-19T04:51:43.269Z",
-   "dosya": "web/js/rag.js",
-   "sonuc": "model reddetti: Dosyada fetch çağrısı bulunamadı, bu yüzden öneri uygulanamadı."
   }
  ]
 }
