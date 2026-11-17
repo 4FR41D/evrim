@@ -1,66 +1,66 @@
 {
- "tarih": "2026-11-16T06:38:14.800Z",
+ "tarih": "2026-11-17T08:04:54.704Z",
  "degisiklik": false,
  "sebep": "başarılı ölçüm yok — liste korundu",
  "olcumler": [
   {
    "id": "xingchen-agi/xing4.0-29b-a4b:free",
    "ok": false,
-   "ms": 35,
+   "ms": 31,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
    "ok": false,
-   "ms": 28,
+   "ms": 30,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "minimax/minimax-m3.1-flash:free",
    "ok": false,
-   "ms": 29,
+   "ms": 33,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "nvidia/nemotron-3-super-120b-a12b:free",
    "ok": false,
-   "ms": 26,
+   "ms": 32,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "nex-agi/nex-n2.5-mini:free",
    "ok": false,
-   "ms": 32,
+   "ms": 33,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "nex-agi/nex-n2.5-pro:free",
    "ok": false,
-   "ms": 30,
+   "ms": 32,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "google/gemma-4-26b-a4b-it:free",
    "ok": false,
-   "ms": 27,
+   "ms": 32,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "google/gemma-4-31b-it:free",
    "ok": false,
-   "ms": 24,
+   "ms": 33,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "inclusionai/ling-3.2-flash:free",
    "ok": false,
-   "ms": 31,
+   "ms": 32,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   },
   {
    "id": "particle-ai/particle-1:free",
    "ok": false,
-   "ms": 25,
+   "ms": 30,
    "hata": "HTTP 401: {\"error\":{\"message\":\"User not found.\",\"code\":401}}"
   }
  ],

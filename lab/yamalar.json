@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-16T06:39:05.596Z",
+ "tarih": "2026-11-17T08:05:46.042Z",
  "son": {
-  "t": "2026-11-16T06:39:05.595Z",
+  "t": "2026-11-17T08:05:46.042Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-17T08:05:46.042Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-16T06:39:05.595Z",
    "dosya": "web/js/store.js",
@@ -150,11 +155,6 @@
    "t": "2026-10-20T05:02:59.602Z",
    "dosya": "web/js/llm.js",
    "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
-  },
-  {
-   "t": "2026-10-20T05:02:24.633Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "model reddetti: Öneri zaten uygulanmış; ek değişiklik gerekmez."
   }
  ]
 }
