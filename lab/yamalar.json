@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-17T08:05:46.042Z",
+ "tarih": "2026-11-18T07:39:15.388Z",
  "son": {
-  "t": "2026-11-17T08:05:46.042Z",
+  "t": "2026-11-18T07:39:15.388Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-18T07:39:15.388Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-17T08:05:46.042Z",
    "dosya": "web/js/store.js",
@@ -150,11 +155,6 @@
    "t": "2026-10-20T05:03:03.988Z",
    "dosya": "web/js/rag.js",
    "sonuc": "model reddetti: Dosyada fetch çağrısı bulunmamaktadır; öneri uygulanamaz."
-  },
-  {
-   "t": "2026-10-20T05:02:59.602Z",
-   "dosya": "web/js/llm.js",
-   "sonuc": "doğrulama: dosya hedefle farklı/beyaz liste dışında"
   }
  ]
 }
