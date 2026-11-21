@@ -1,8 +1,8 @@
 {
- "tarih": "2026-11-20T20:27:55.680Z",
+ "tarih": "2026-11-21T07:17:36.541Z",
  "ortPuan": 0,
  "frontierOrt": null,
- "calismaSayisi": 227,
+ "calismaSayisi": 228,
  "ekSoruToplam": 14,
  "trend": "0 → 0 → 0 → 0 → 0 → 0 → 0 → 0",
  "frontierTrend": "",
@@ -82,9 +82,18 @@
  "beyin": "openai/gpt-oss-120b",
  "frontierBeyin": "nvidia/nemotron-3-super-120b-a12b:free",
  "sonAyar": {
-  "atlandi": "bugün zaten yapıldı"
+  "degisiklik": false,
+  "sebep": "başarılı ölçüm yok"
  },
  "sonOneriYama": {
-  "atlandi": "bugün zaten denendi"
+  "uygulanmadi": true,
+  "denenen": [
+   {
+    "dosya": "web/js/store.js",
+    "sonuc": {
+     "basarisiz": "cevap alınamadı"
+    }
+   }
+  ]
  }
 }
