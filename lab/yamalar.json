@@ -1,11 +1,16 @@
 {
- "tarih": "2026-11-26T08:28:14.305Z",
+ "tarih": "2026-11-27T08:42:12.530Z",
  "son": {
-  "t": "2026-11-26T08:28:14.304Z",
+  "t": "2026-11-27T08:42:12.530Z",
   "dosya": "web/js/store.js",
   "sonuc": "beyin yanıt vermedi"
  },
  "gecmis": [
+  {
+   "t": "2026-11-27T08:42:12.530Z",
+   "dosya": "web/js/store.js",
+   "sonuc": "beyin yanıt vermedi"
+  },
   {
    "t": "2026-11-26T08:28:14.304Z",
    "dosya": "web/js/store.js",
@@ -148,11 +153,6 @@
   },
   {
    "t": "2026-10-29T05:59:33.740Z",
-   "dosya": "web/js/store.js",
-   "sonuc": "beyin yanıt vermedi"
-  },
-  {
-   "t": "2026-10-28T05:53:50.012Z",
    "dosya": "web/js/store.js",
    "sonuc": "beyin yanıt vermedi"
   }
